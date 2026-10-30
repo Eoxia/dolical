@@ -235,6 +235,7 @@ window.dolical.eventform.checkAvailability = function($form) {
 
   $.getJSON(U.config().urls.event, {
     action: 'availability',
+    token: U.config().token,
     id: parseInt($form.attr('data-id'), 10) || 0,
     start: Math.floor(period.start.getTime() / 1000),
     end: Math.floor(period.end.getTime() / 1000),
@@ -309,7 +310,7 @@ window.dolical.eventform.open = function(params) {
   $box.html('<div class="dolical-form__loading"><i class="fas fa-circle-notch fa-spin"></i></div>');
   $modal.addClass('modal-active');
 
-  $.get(config.urls.event, $.extend({action: 'form'}, params || {}), null, 'html').done(function(html) {
+  $.get(config.urls.event, $.extend({action: 'form', token: config.token}, params || {}), null, 'html').done(function(html) {
     $box.html(html);
     F.setup($box);
   }).fail(function(xhr) {
