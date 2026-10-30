@@ -50,7 +50,7 @@ $action = GETPOST('action', 'aZ09');
  * Actions
  */
 
-if ($action === 'saveshared' && dolical_can_read_all($user)) {
+if ($action === 'saveshared' && dolical_can_read_all($user) && dolical_valid_post()) {
     // Only colleagues whose agenda the user may display
     $shared = array_values(array_intersect(GETPOST('shared', 'array:int'), array_keys(dolical_get_calendar_users($user))));
     $shared = array_values(array_diff($shared, [(int) $user->id]));

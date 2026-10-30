@@ -298,6 +298,11 @@ function dolical_series_occurrences(ActionComm $event): array
     $sql  = 'SELECT id, datep FROM ' . MAIN_DB_PREFIX . 'actioncomm';
     $sql .= " WHERE recurid = '" . $db->escape($event->recurid) . "'";
     $sql .= ' AND entity = ' . ((int) $event->entity);
+    // A series of the native agenda is named after the second it was made : its author tells it apart from another
+    // one made in the same second
+    if (!preg_match('/^ev\d+$/', (string) $event->recurid)) {
+        $sql .= ' AND fk_user_author = ' . ((int) $event->authorid);
+    }
     $sql .= ' ORDER BY datep ASC, id ASC';
 
     $occurrences = [];

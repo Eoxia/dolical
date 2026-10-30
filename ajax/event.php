@@ -74,7 +74,8 @@ function dolical_json_exit(array $payload, int $code = 200): void
     exit;
 }
 
-if (!$user->hasRight('dolical', 'read') || !$user->hasRight('agenda', 'myactions', 'read')) {
+// The calendar is for the internal users, as its pages
+if (!$user->hasRight('dolical', 'read') || !$user->hasRight('agenda', 'myactions', 'read') || $user->socid > 0) {
     dolical_json_exit(['success' => false, 'error' => $langs->trans('NotEnoughPermissions')], 403);
 }
 
@@ -181,6 +182,18 @@ if ($action === 'form') {
         ];
     }
 
+    // What comes from the browser or from a cloned event is kept only when the user may see it
+    if ($event === null) {
+        $formValues['socid']      = dolical_can_see_object($user, 'societe', (int) $formValues['socid']) ? (int) $formValues['socid'] : 0;
+        $formValues['project_id'] = dolical_can_see_object($user, 'project', (int) $formValues['project_id']) ? (int) $formValues['project_id'] : 0;
+        $formValues['contacts']   = array_values(array_filter($formValues['contacts'], function ($contactId) use ($user) {
+            return dolical_can_see_object($user, 'contact', (int) $contactId);
+        }));
+        $formValues['elements']   = array_values(array_filter($formValues['elements'], function ($key) use ($user) {
+            return preg_match('/^([a-z_]+):(\d+)$/', (string) $key, $matches) && dolical_can_see_object($user, $matches[1], (int) $matches[2]);
+        }));
+    }
+
     // Labels of what is already chosen, the selects only search the rest
     $selectedContacts = [];
     foreach ($formValues['contacts'] as $contactId) {
@@ -212,6 +225,11 @@ if ($action === 'form') {
     $linkableTypes    = dolical_get_linkable_types($user);
     foreach ($formValues['elements'] as $key) {
         if (!preg_match('/^([a-z_]+):(\d+)$/', $key, $matches) || !isset($linkableTypes[$matches[1]])) {
+            continue;
+        }
+        // A document of the event the user may not see stays linked, without its details
+        if (!dolical_can_see_object($user, $matches[1], (int) $matches[2])) {
+            $selectedElements[$key] = $linkableTypes[$matches[1]]['label'] . ' #' . ((int) $matches[2]);
             continue;
         }
         $object = fetchObjectByElement((int) $matches[2], $matches[1]);
@@ -276,10 +294,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     dolical_json_exit(['success' => false, 'error' => 'BadMethod'], 405);
 }
 
-// main.inc.php only checks the token when MAIN_SECURITY_CSRF_WITH_TOKEN asks for it, or when one is sent : every
-// change made here requires the token of the session, whatever the setup
-$token = GETPOST('token', 'alpha');
-if ($token === '' || !in_array($token, [currentToken(), newToken()], true)) {
+// Every change made here requires the token of the session, whatever the setup
+if (!dolical_valid_post()) {
     dolical_json_exit(['success' => false, 'error' => $langs->trans('SecurityTokenHasExpiredSoActionHasBeenCanceledPleaseRetry')], 403);
 }
 
@@ -498,7 +514,11 @@ switch ($action) {
             $sql  .= ' VALUES (' . ((int) $event->id) . ", 'user', " . ((int) $user->id) . ', 0, ' . ((int) $event->transparency) . ', ' . ((int) $status) . ')';
             $resql = $db->query($sql);
         }
-        dolical_json_exit(['success' => (bool) $resql, 'error' => $resql ? '' : $db->lasterror()]);
+        // The database tells the log, not the browser
+        if (!$resql) {
+            dol_syslog('DoliCal answer: ' . $db->lasterror(), LOG_ERR);
+        }
+        dolical_json_exit(['success' => (bool) $resql, 'error' => $resql ? '' : $langs->trans('Error')]);
         break;
 
     case 'delete':

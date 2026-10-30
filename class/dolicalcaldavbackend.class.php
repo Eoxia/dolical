@@ -235,6 +235,10 @@ class DoliCalCalDavBackend extends \Sabre\CalDAV\Backend\AbstractBackend
         if (!dolical_can_create($this->user)) {
             throw new \Sabre\DAV\Exception\Forbidden('Not allowed to create events');
         }
+        // dolical-<id>.ics names the events made in Dolibarr, and a "|" would cut the reference stored in ref_ext
+        if (preg_match('/^dolical-\d+\.ics$/', (string) $objectUri) || preg_match('/[|\x00-\x1F\x7F]/', (string) $objectUri)) {
+            throw new \Sabre\DAV\Exception\Forbidden('Reserved file name');
+        }
         $read = dolical_caldav_read($calendarData, (string) $this->user->email);
         if (dolical_caldav_create($this->user, $objectUri, $read) <= 0) {
             throw new \Sabre\DAV\Exception('The event could not be saved');

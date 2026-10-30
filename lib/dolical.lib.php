@@ -79,6 +79,19 @@ function dolical_header(string $title, string $morecssonbody = ''): void
 }
 
 /**
+ * Whether the request is a POST carrying the token of the session. main.inc.php checks it only as far as
+ * MAIN_SECURITY_CSRF_WITH_TOKEN asks : every change made by DoliCal requires it, whatever the setup
+ *
+ * @return bool
+ */
+function dolical_valid_post(): bool
+{
+    $token = GETPOST('token', 'alpha');
+
+    return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && $token !== '' && in_array($token, [currentToken(), newToken()], true);
+}
+
+/**
  * Whether the user may look at the agenda of other people (native right "read the events of others")
  *
  * @param  User $user Current user

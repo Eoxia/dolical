@@ -84,6 +84,10 @@ $authBackend = new \Sabre\DAV\Auth\Backend\BasicCallBack(static function ($login
     $authModes = explode(',', empty($dolibarr_main_authentication) || $dolibarr_main_authentication === 'openid_connect' ? 'dolibarr' : $dolibarr_main_authentication);
     if (in_array('forceuser', $authModes, true) || checkLoginPassEntity($login, $password, (int) $conf->entity, $authModes, 'dav') !== $login) {
         dol_syslog('DoliCal CalDAV: authentication failed for ' . $login, LOG_NOTICE);
+        // The security events of Dolibarr record it, as a failure on the login page
+        $langs->load('errors');
+        $user->context['audit'] = $langs->trans('ErrorBadLoginPassword') . ' - login=' . dol_trunc(sanitizeVal((string) $login, 'alphanohtml'), 64) . ' (CalDAV)';
+        $user->call_trigger('USER_LOGIN_FAILED', $user);
         return false;
     }
     if ($user->fetch(0, $login, '', 1) <= 0 || (int) $user->status !== User::STATUS_ENABLED || $user->socid > 0 || $user->isNotIntoValidityDateRange()) {
