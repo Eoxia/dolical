@@ -21,7 +21,9 @@ ModuleDoliCalName  = DoliCal
 ModuleDoliCalDesc  = Agenda d'équipe sur les événements natifs de Dolibarr
 DoliCalDescription = Agenda d'équipe sur les événements natifs de Dolibarr : plusieurs agendas côte à côte, participants, pièces jointes et documents liés
 DoliCal            = DoliCal
-EnableDolical      = Activez le module DoliCal pour accéder à cette page
+ReadModule         = Consulter %s
+ReadAdminPage      = Accéder à la configuration du module %s
+ModuleSettings     = Réglages
 
 #
 # Menu - Menu
@@ -290,28 +292,13 @@ DoliCalReport                    = Compte-rendu
 DoliCalReportEdit                = Modifier le compte-rendu
 DoliCalReportPrompt              = Ce rendez-vous est terminé : comment s'est-il passé ?
 DoliCalReportWrite               = Écrire le compte-rendu
-DoliCalReportDictate             = Dicter
 DoliCalReportAdd                 = Ajouter un compte-rendu
-DoliCalReportDictateHelp         = Touchez le micro et racontez le rendez-vous : le mémo vocal est joint à l'événement, transcrit puis rédigé en compte-rendu par l'IA. Relisez avant d'enregistrer.
-DoliCalReportDictateNoAi         = Le micro enregistre un mémo vocal joint à l'événement. Pour qu'il soit rédigé automatiquement en compte-rendu, un administrateur doit activer le module IA avec ChatGPT.
 DoliCalReportPlaceholder         = Ce qui s'est dit, les décisions, les prochaines étapes…
-DoliCalReportMedia               = Photos, documents et mémos vocaux
 DoliCalReportMarkDone            = Marquer le rendez-vous comme réalisé
 DoliCalReportSaved               = Compte-rendu enregistré
-DoliCalReportWriting             = Transcription et rédaction du mémo vocal…
-DoliCalReportWritten             = Compte-rendu rédigé à partir du mémo vocal : relisez-le avant d'enregistrer.
-DoliCalReportEmptyVoice          = Le mémo vocal ne contient rien à rédiger. Il reste joint à l'événement.
-DoliCalReportVoiceKept           = Mémo vocal joint à l'événement.
-DoliCalReportAiFailed            = La rédaction automatique n'a pas abouti (%s).
 DoliCalReportNudgeTitle          = Rendez-vous terminé
 DoliCalReportNudgeText           = « %s » est terminé. Un compte-rendu pour l'équipe ?
 DoliCalLater                     = Plus tard
-DoliCalVoiceNoRecording          = Aucun mémo vocal à rédiger.
-DoliCalVoiceTooLong              = Le mémo vocal dépasse 25 Mo : enregistrez-en un plus court.
-DoliCalVoiceInvalidAnswer        = Réponse inattendue du service d'IA.
-DoliCalVoiceNotWritten           = Le service d'IA n'a pas rédigé le compte-rendu (%s).
-DoliCalVoiceHttpError            = Le service d'IA a répondu par une erreur HTTP %s.
-DoliCalVoiceUnavailable          = La rédaction automatique demande le module IA avec ChatGPT.
 
 #
 # Synchronization - Synchronisation
@@ -353,7 +340,5 @@ DoliCalCalDavCalendarOf          = Agenda de %s
 #
 DoliCalSetupReminderByDefault     = Rappel activé par défaut
 DoliCalSetupReminderByDefaultHelp = Un nouvel événement propose un rappel, avec le délai défini dans la configuration de l'agenda. Chacun peut l'éteindre dans le formulaire.
-DoliCalSetupReportFromVoice       = Compte-rendu dicté
-DoliCalSetupReportFromVoiceHelp   = Le mémo vocal d'un compte-rendu est transcrit et rédigé par le module IA (ChatGPT). Chaque enregistrement est alors envoyé à OpenAI.
 DoliCalSetupCalDav                = Synchronisation des téléphones (CalDAV)
 DoliCalSetupCalDavHelp            = Chacun peut synchroniser son agenda avec DAVx⁵, un iPhone, un Mac ou Thunderbird, avec son identifiant et son mot de passe Dolibarr.

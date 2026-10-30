@@ -21,7 +21,9 @@ ModuleDoliCalName  = DoliCal
 ModuleDoliCalDesc  = Team calendar on the native events of Dolibarr
 DoliCalDescription = Team calendar on the native events of Dolibarr: several calendars side by side, participants, attachments and linked documents
 DoliCal            = DoliCal
-EnableDolical      = Enable the DoliCal module to access this page
+ReadModule         = Read %s
+ReadAdminPage      = Access the module configuration %s
+ModuleSettings     = Settings
 
 #
 # Menu - Menu
@@ -290,28 +292,13 @@ DoliCalReport                    = Report
 DoliCalReportEdit                = Edit the report
 DoliCalReportPrompt              = This meeting is over: how did it go?
 DoliCalReportWrite               = Write the report
-DoliCalReportDictate             = Dictate
 DoliCalReportAdd                 = Add a report
-DoliCalReportDictateHelp         = Tap the microphone and tell how the meeting went: the voice note is attached to the event, transcribed, then written up as a report by the AI. Read it over before saving.
-DoliCalReportDictateNoAi         = The microphone records a voice note attached to the event. To have it written up as a report automatically, an administrator has to enable the AI module with ChatGPT.
 DoliCalReportPlaceholder         = What was said, the decisions, the next steps…
-DoliCalReportMedia               = Photos, documents and voice notes
 DoliCalReportMarkDone            = Mark the meeting as done
 DoliCalReportSaved               = Report saved
-DoliCalReportWriting             = Transcribing and writing up the voice note…
-DoliCalReportWritten             = Report written from the voice note: read it over before saving.
-DoliCalReportEmptyVoice          = The voice note holds nothing to write up. It stays attached to the event.
-DoliCalReportVoiceKept           = Voice note attached to the event.
-DoliCalReportAiFailed            = Automatic writing failed (%s).
 DoliCalReportNudgeTitle          = Meeting over
 DoliCalReportNudgeText           = "%s" is over. A report for the team?
 DoliCalLater                     = Later
-DoliCalVoiceNoRecording          = No voice note to write up.
-DoliCalVoiceTooLong              = The voice note is over 25 MB: record a shorter one.
-DoliCalVoiceInvalidAnswer        = Unexpected answer from the AI service.
-DoliCalVoiceNotWritten           = The AI service did not write the report (%s).
-DoliCalVoiceHttpError            = The AI service answered with HTTP error %s.
-DoliCalVoiceUnavailable          = Automatic writing needs the AI module with ChatGPT.
 
 #
 # Synchronization - Synchronisation
@@ -353,7 +340,5 @@ DoliCalCalDavCalendarOf          = Agenda of %s
 #
 DoliCalSetupReminderByDefault     = Reminder on by default
 DoliCalSetupReminderByDefaultHelp = A new event offers a reminder, with the delay set in the setup of the agenda. Everyone can turn it off in the form.
-DoliCalSetupReportFromVoice       = Dictated report
-DoliCalSetupReportFromVoiceHelp   = The voice note of a report is transcribed and written up by the AI module (ChatGPT). Every recording is then sent to OpenAI.
 DoliCalSetupCalDav                = Phone synchronization (CalDAV)
 DoliCalSetupCalDavHelp            = Everyone can sync his agenda with DAVx⁵, an iPhone, a Mac or Thunderbird, with his Dolibarr login and password.

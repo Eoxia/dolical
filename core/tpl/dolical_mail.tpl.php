@@ -23,7 +23,7 @@
  * Rendered by dolical_mail_html() (inherits its scope). Expects: $mail ['title', 'intro', 'rows', 'button',
  * 'secondary', 'note'], $mysoc.
  * The styles are inline on purpose : mail clients drop style sheets, this is the one place of the module where
- * they cannot live in the SCSS.
+ * they cannot live in css/dolical.css.
  */
 
 $company = !empty($mysoc->name) ? $mysoc->name : '';

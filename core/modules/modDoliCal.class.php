@@ -43,13 +43,7 @@ class modDoliCal extends DolibarrModules
 
         parent::__construct($db);
 
-        if (file_exists(__DIR__ . '/../../../saturne/lib/saturne_functions.lib.php')) {
-            require_once __DIR__ . '/../../../saturne/lib/saturne_functions.lib.php';
-            saturne_load_langs(['dolical@dolical']);
-        } else {
-            $this->error++;
-            $this->errors[] = $langs->trans('activateModuleDependNotSatisfied', 'DoliCal', 'Saturne');
-        }
+        $langs->load('dolical@dolical');
 
         // ID for module (must be unique)
         $this->numero = 436352;
@@ -80,7 +74,7 @@ class modDoliCal extends DolibarrModules
         $this->editor_url  = 'https://www.eoxia.com';
 
         // Possible values for version are: 'development', 'experimental', 'dolibarr', 'dolibarr_deprecated' or a version string like 'x.y.z'
-        $this->version = '1.0.0';
+        $this->version = '1.1.0';
 
         // Key used in llx_const table to save module status enabled/disabled (where DOLICAL is value of property name of module in uppercase)
         $this->const_name = 'MAIN_MODULE_' . strtoupper($this->name);
@@ -149,8 +143,8 @@ class modDoliCal extends DolibarrModules
         // Dependencies
         // A condition to hide module
         $this->hidden = getDolGlobalInt('MODULE_DOLICAL_DISABLED');
-        // The agenda is made of native events only : the Agenda module owns them, Saturne provides the page frame
-        $this->depends      = ['modSaturne', 'modAgenda', 'modSociete'];
+        // The agenda is made of native events only : the Agenda module owns them
+        $this->depends      = ['modAgenda', 'modSociete'];
         $this->requiredby   = [];
         $this->conflictwith = [];
 
@@ -188,7 +182,6 @@ class modDoliCal extends DolibarrModules
 
             // CONST REMINDER, REPORT AND SYNCHRONIZATION
             $i++ => ['DOLICAL_REMINDER_BY_DEFAULT', 'integer', 1, '', 0, 'current'],
-            $i++ => ['DOLICAL_REPORT_FROM_VOICE', 'integer', 1, '', 0, 'current'],
             $i++ => ['DOLICAL_CALDAV', 'integer', 1, '', 0, 'current'],
 
             // CONST MODULE
@@ -245,8 +238,7 @@ class modDoliCal extends DolibarrModules
         $this->rights[$r][5] = 'read';
 
         // Main menu entries to add
-        // The left menu is a flat list sorted on 'position' : the entries of the module stay under 2000, the
-        // range Saturne keeps for the configuration block it appends to the modules it serves.
+        // The left menu is a flat list sorted on 'position'
         $this->menu = [];
         $r          = 0;
 
@@ -377,19 +369,18 @@ class modDoliCal extends DolibarrModules
     {
         global $conf, $langs;
 
-        // Saturne provides the functions used by the module : refuse the activation rather than a fatal error when it is missing
-        if (!function_exists('saturne_load_langs')) {
-            $this->error = $langs->trans('activateModuleDependNotSatisfied', $this->name, 'modSaturne', $this->name);
-            return -1;
-        }
-
         dolibarr_set_const($this->db, 'DOLICAL_VERSION', $this->version, 'chaine', 0, '', $conf->entity);
         dolibarr_set_const($this->db, 'DOLICAL_DB_VERSION', $this->version, 'chaine', 0, '', $conf->entity);
 
-        // The report of a meeting is a field of the native event : the agenda of Dolibarr shows it too
-        saturne_manage_extrafields([
-            'dolical_report' => ['Label' => 'DoliCalReport', 'type' => 'text', 'length' => 2000, 'elementtype' => ['actioncomm'], 'position' => $this->numero . 10, 'list' => 1, 'enabled' => 'isModEnabled(\'dolical\')', 'alwayseditable' => 1],
-        ], ['entity' => 0, 'langfile' => 'dolical@dolical']);
+        // The report of a meeting is a field of the native event : the agenda of Dolibarr shows it too. Already there
+        // when the module is enabled again, the field is kept with its content
+        require_once DOL_DOCUMENT_ROOT . '/core/class/extrafields.class.php';
+        $extrafields = new ExtraFields($this->db);
+        $result      = $extrafields->addExtraField('dolical_report', 'DoliCalReport', 'text', (int) ($this->numero . '10'), '2000', 'actioncomm', 0, 0, '', '', 1, '', '1', '', '', '0', 'dolical@dolical', "isModEnabled('dolical')");
+        if ($result < 0) {
+            $this->error = $extrafields->error;
+            return 0;
+        }
 
         // Permissions
         $this->remove($options);

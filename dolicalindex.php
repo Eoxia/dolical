@@ -35,37 +35,12 @@ require_once __DIR__ . '/lib/dolical_event.lib.php';
 
 global $conf, $db, $langs, $user;
 
-saturne_load_langs(['agenda', 'companies']);
+$langs->loadLangs(['dolical@dolical', 'agenda', 'companies', 'errors']);
 
-// Security check
+// Security check : the calendar is for the internal users
 $permissionToRead = $user->hasRight('dolical', 'read') && $user->hasRight('agenda', 'myactions', 'read');
-saturne_check_access($permissionToRead);
-
-/*
- * Actions
- */
-
-// The media block of a report sends its photos, documents and voice notes to the page that shows it, and draws
-// itself again from the answer. Only into the documents of an event the user may write the report of
-$action = GETPOST('action', 'aZ09');
-if (in_array($action, ['uploadPhoto', 'uploadFile', 'linkPhoto', 'deletePhoto', 'deleteFile', 'add_audio', 'delete_audio'], true)) {
-    require_once __DIR__ . '/lib/dolical_invitation.lib.php';
-
-    $subDir     = GETPOST('sub_dir', 'alphanohtml');
-    $token      = GETPOST('token', 'alpha');
-    $mediaEvent = preg_match('/^\d+$/', $subDir) && GETPOST('module_name', 'alpha') === 'actions' ? dolical_load_event((int) $subDir, $user) : null;
-    if ($mediaEvent === null || $token === '' || !in_array($token, [currentToken(), newToken()], true) || !dolical_can_report($user, $mediaEvent)) {
-        http_response_code(403);
-        exit;
-    }
-
-    dolical_report_media_action($action, $mediaEvent);
-    // The messages of the upload would pop up on the next page : the block tells by itself
-    unset($_SESSION['dol_events']);
-
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<div>' . dolical_report_media_block($mediaEvent, true) . '</div>';
-    exit;
+if (!$permissionToRead || $user->socid > 0) {
+    accessforbidden();
 }
 
 /*
@@ -165,11 +140,6 @@ $calendarConfig = [
         // Reminders and reports
         'notifBlocked'         => $langs->transnoentities('DoliCalReminderBlocked'),
         'reportSaved'          => $langs->transnoentities('DoliCalReportSaved'),
-        'reportWriting'        => $langs->transnoentities('DoliCalReportWriting'),
-        'reportWritten'        => $langs->transnoentities('DoliCalReportWritten'),
-        'reportEmpty'          => $langs->transnoentities('DoliCalReportEmptyVoice'),
-        'reportVoiceKept'      => $langs->transnoentities('DoliCalReportVoiceKept'),
-        'reportAiFailed'       => $langs->transnoentities('DoliCalReportAiFailed', '%ERROR%'),
         'reportNudgeText'      => $langs->transnoentities('DoliCalReportNudgeText', '%LABEL%'),
         'hasReport'            => $langs->transnoentities('DoliCalReport'),
     ],
@@ -180,8 +150,7 @@ $title = $langs->trans('DoliCalCalendar');
 // The calendar has its own side panel : the left menu only took its room
 $conf->dol_hide_leftmenu = 1;
 
-// With the media library of DoliCal : the reports pick their photos in it
-saturne_header(1, '', $title, '', '', 0, 0, [], [], '', 'dolical-page');
+dolical_header($title, 'dolical-page');
 
 require __DIR__ . '/core/tpl/dolical_calendar.tpl.php';
 

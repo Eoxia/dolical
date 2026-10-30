@@ -38,13 +38,15 @@ require_once __DIR__ . '/../lib/dolical.lib.php';
 
 global $conf, $db, $langs, $user;
 
-saturne_load_langs(['admin', 'agenda']);
+$langs->loadLangs(['dolical@dolical', 'admin', 'agenda', 'errors']);
 
 $action = GETPOST('action', 'aZ09');
 
 // Security check
 $permissionToRead = $user->hasRight('dolical', 'adminpage', 'read');
-saturne_check_access($permissionToRead);
+if (!$permissionToRead || $user->socid > 0) {
+    accessforbidden();
+}
 
 $views = ['day' => 'DoliCalViewDay', 'week' => 'DoliCalViewWeek', 'team' => 'DoliCalViewTeam', 'month' => 'DoliCalViewMonth', 'list' => 'DoliCalViewList'];
 
@@ -67,7 +69,7 @@ if ($action == 'update') {
     dolibarr_set_const($db, 'DOLICAL_NOTIFY_ORGANIZER', GETPOSTINT('DOLICAL_NOTIFY_ORGANIZER') ? 1 : 0, 'integer', 0, '', $conf->entity);
     dolibarr_set_const($db, 'DOLICAL_AUTO_REMIND', GETPOSTINT('DOLICAL_AUTO_REMIND') ? 1 : 0, 'integer', 0, '', $conf->entity);
     dolibarr_set_const($db, 'DOLICAL_AUTO_REMIND_DAYS', min(30, max(1, GETPOSTINT('DOLICAL_AUTO_REMIND_DAYS'))), 'integer', 0, '', $conf->entity);
-    foreach (['DOLICAL_REMINDER_BY_DEFAULT', 'DOLICAL_REPORT_FROM_VOICE', 'DOLICAL_CALDAV'] as $constName) {
+    foreach (['DOLICAL_REMINDER_BY_DEFAULT', 'DOLICAL_CALDAV'] as $constName) {
         dolibarr_set_const($db, $constName, GETPOSTINT($constName) ? 1 : 0, 'integer', 0, '', $conf->entity);
     }
     $timezone = GETPOST('DOLICAL_TIMEZONE', 'alphanohtml');
@@ -89,7 +91,7 @@ if ($action == 'update') {
 $title   = $langs->trans('ModuleSetup', 'DoliCal');
 $helpUrl = '';
 
-saturne_header(0, '', $title, $helpUrl);
+llxHeader('', $title, $helpUrl);
 
 // Subheader
 $linkBack = '<a href="' . DOL_URL_ROOT . '/admin/modules.php?restore_lastsearch_values=1">' . $langs->trans('BackToModuleList') . '</a>';
@@ -131,7 +133,6 @@ $toggles = [
     'DOLICAL_NOTIFY_ORGANIZER'   => ['DoliCalNotifyOrganizer', 'DoliCalNotifyOrganizerHelp', 1],
     'DOLICAL_AUTO_REMIND'        => ['DoliCalAutoRemind', 'DoliCalAutoRemindHelp', 0],
     'DOLICAL_REMINDER_BY_DEFAULT' => ['DoliCalSetupReminderByDefault', 'DoliCalSetupReminderByDefaultHelp', 1],
-    'DOLICAL_REPORT_FROM_VOICE'  => ['DoliCalSetupReportFromVoice', 'DoliCalSetupReportFromVoiceHelp', 1],
     'DOLICAL_CALDAV'             => ['DoliCalSetupCalDav', 'DoliCalSetupCalDavHelp', 1],
 ];
 foreach ($toggles as $constName => $toggle) {
