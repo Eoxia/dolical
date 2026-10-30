@@ -59,6 +59,16 @@ $id     = GETPOSTINT('id');
  */
 function dolical_json_exit(array $payload, int $code = 200): void
 {
+    // The messages come from trans(), encoded for HTML : the calendar shows them as text, "&eacute;" included
+    if (!empty($payload['error'])) {
+        $payload['error'] = dol_html_entity_decode((string) $payload['error'], ENT_QUOTES | ENT_HTML5);
+    }
+    if (!empty($payload['warnings'])) {
+        $payload['warnings'] = array_map(function ($warning) {
+            return dol_html_entity_decode((string) $warning, ENT_QUOTES | ENT_HTML5);
+        }, $payload['warnings']);
+    }
+
     http_response_code($code);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($payload);
