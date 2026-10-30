@@ -1,0 +1,182 @@
+@use "../variables/variables" as *;
+
+/* Public page of an invitation : the person invited answers, without an account */
+
+.dolical-public-page {
+  box-sizing: border-box;
+  max-width: 580px;
+  margin: 20px auto 48px;
+  padding: 0 16px;
+  color: $ra-text;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.dolical-public-card {
+  padding: 28px;
+  border: 1px solid $ra-border-soft;
+  border-radius: 16px;
+  background: $ra-white;
+  box-shadow: 0 8px 28px rgba(15, 35, 52, 0.1);
+
+  h1 {
+    margin: 6px 0 18px;
+    padding: 0;
+    border: 0;
+    color: $ra-text;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  &.dolical-public-card--invalid {
+    text-align: center;
+
+    p {
+      color: $ra-text-soft;
+    }
+  }
+
+  @media (max-width: $media__small) {
+    padding: 20px;
+  }
+}
+
+.dolical-public-card__big-icon {
+  color: $ra-faded;
+  font-size: 42px;
+}
+
+.dolical-public-card__kicker {
+  color: $ra-primary-dark;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dolical-public-card__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.dolical-public-card__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  i {
+    flex: none;
+    width: 18px;
+    margin-top: 4px;
+    color: $ra-muted;
+    text-align: center;
+  }
+}
+
+.dolical-public-card__status {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: $ra-bg;
+  color: $ra-text-soft;
+
+  &.dolical-public-card__status--accepted {
+    background: $ra-success-soft;
+    color: $ra-success;
+  }
+
+  &.dolical-public-card__status--tentative {
+    background: $ra-warning-soft;
+    color: $ra-warning;
+  }
+
+  &.dolical-public-card__status--declined {
+    background: $ra-danger-soft;
+    color: $ra-danger;
+  }
+}
+
+.dolical-public-card__muted {
+  color: $ra-muted;
+}
+
+.dolical-public-answer {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+
+  @media (max-width: $media__small) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+button.dolical-public-answer__button {
+  --ra-answer: #{$ra-primary};
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 2px solid var(--ra-answer);
+  border-radius: 23px;
+  background: $ra-white;
+  box-shadow: none;
+  color: var(--ra-answer);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: none;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+
+  &.dolical-public-answer__button--accepted {
+    --ra-answer: #{$ra-success};
+  }
+
+  &.dolical-public-answer__button--tentative {
+    --ra-answer: #{$ra-warning};
+  }
+
+  &.dolical-public-answer__button--declined {
+    --ra-answer: #{$ra-danger};
+  }
+
+  &:hover,
+  &.is-current {
+    background: var(--ra-answer);
+    color: $ra-white;
+  }
+}
+
+.dolical-public-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+
+  &.dolical-public-notice--ok {
+    background: $ra-success-soft;
+    color: $ra-success;
+  }
+
+  &.dolical-public-notice--error {
+    background: $ra-danger-soft;
+    color: $ra-danger;
+  }
+}
+
+a.dolical-public-card__ics {
+  display: block;
+  margin-top: 20px;
+  color: $ra-primary-dark;
+  font-size: 14px;
+  text-align: center;
+}
