@@ -396,7 +396,7 @@ function dolical_caldav_read(string $calendarData, string $email): array
     return [
         'vcalendar' => $vcalendar,
         'vevent'    => $vevent,
-        'uid'       => isset($vevent->UID) ? (string) $vevent->UID : '',
+        'uid'       => isset($vevent->UID) ? preg_replace('/[\x00-\x1F\x7F]/', '', (string) $vevent->UID) : '',
         'label'     => isset($vevent->SUMMARY) ? trim((string) $vevent->SUMMARY) : '',
         'start'     => $startTs,
         'end'       => $endTs,
@@ -450,12 +450,14 @@ function dolical_caldav_dates(\Sabre\VObject\Component\VEvent $vevent): array
  * Users and contacts of the instance behind the addresses of a phone event
  *
  * @param  string[] $emails Addresses
- * @param  int      $exceptUserId User left out, the one synchronizing
+ * @param  User     $user   The one synchronizing, left out ; the contacts are the ones he may see
  * @return array            ['users' => int[], 'contacts' => int[]]
  */
-function dolical_caldav_people(array $emails, int $exceptUserId): array
+function dolical_caldav_people(array $emails, User $user): array
 {
     global $db;
+
+    $exceptUserId = (int) $user->id;
 
     $found  = ['users' => [], 'contacts' => []];
     $emails = array_values(array_filter(array_map('dol_strtolower', $emails), 'isValidEmail'));
@@ -470,9 +472,14 @@ function dolical_caldav_people(array $emails, int $exceptUserId): array
             $found['users'][] = (int) $obj->rowid;
         }
     }
-    $resql = $db->query('SELECT MIN(rowid) as rowid FROM ' . MAIN_DB_PREFIX . 'socpeople WHERE entity IN (' . getEntity('contact') . ') AND statut = 1 AND LOWER(email) IN (' . $list . ') GROUP BY LOWER(email)');
+    // One contact per address, the oldest the user may see
+    $seen  = [];
+    $resql = $db->query('SELECT rowid, LOWER(email) as email FROM ' . MAIN_DB_PREFIX . 'socpeople WHERE entity IN (' . getEntity('contact') . ') AND statut = 1 AND LOWER(email) IN (' . $list . ') ORDER BY rowid');
     while ($resql && ($obj = $db->fetch_object($resql))) {
-        $found['contacts'][] = (int) $obj->rowid;
+        if (!isset($seen[$obj->email]) && dolical_can_see_object($user, 'contact', (int) $obj->rowid)) {
+            $seen[$obj->email]   = true;
+            $found['contacts'][] = (int) $obj->rowid;
+        }
     }
 
     return $found;
@@ -554,7 +561,7 @@ function dolical_caldav_create(User $user, string $uri, array $read): int
         }
     }
 
-    $people = dolical_caldav_people(array_keys($read['emails']), (int) $user->id);
+    $people = dolical_caldav_people(array_keys($read['emails']), $user);
     $types  = getDolGlobalString('AGENDA_USE_EVENT_TYPE') ? dolical_get_event_types() : [];
     $type   = getDolGlobalString('AGENDA_USE_EVENT_TYPE_DEFAULT', 'AC_RDV');
 
