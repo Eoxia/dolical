@@ -18,11 +18,9 @@
 /**
  * \file    core/tpl/dolical_event_report.tpl.php
  * \ingroup dolical
- * \brief   Report of a meeting, in its modal : the text, written or dictated, and the media block of Saturne for
- *          the photos, documents and voice notes, stored with the attachments of the event.
+ * \brief   Report of a meeting, in its modal : its text, and whether the event is done.
  *
- * Rendered by ajax/event.php (inherits its scope). Expects: $card from dolical_get_event_card(), $canDictate,
- * $mediaBlock, $langs.
+ * Rendered by ajax/event.php (inherits its scope). Expects: $card from dolical_get_event_card(), $langs.
  */
 
 $people = array_column($card['participants']['people'], 'name');
@@ -32,7 +30,7 @@ $people = array_column($card['participants']['people'], 'name');
     <div class="modal-close"><i class="fas fa-times"></i></div>
 </div>
 <div class="modal-content">
-    <form class="dolical-report" data-id="<?php echo (int) $card['id']; ?>" data-dictate="<?php echo $canDictate ? 1 : 0; ?>" autocomplete="off" novalidate>
+    <form class="dolical-report" data-id="<?php echo (int) $card['id']; ?>" autocomplete="off" novalidate>
         <div class="dolical-report__event">
             <strong><?php echo dol_escape_htmltag($card['label']); ?></strong>
             <span class="dolical-card__muted"><?php echo dol_escape_htmltag(implode(' · ', $card['dateLines'])); ?></span>
@@ -41,23 +39,7 @@ $people = array_column($card['participants']['people'], 'name');
             <?php endif; ?>
         </div>
 
-        <div class="dolical-report__dictation">
-            <i class="fas fa-microphone-alt"></i>
-            <span><?php echo $langs->trans($canDictate ? 'DoliCalReportDictateHelp' : 'DoliCalReportDictateNoAi'); ?></span>
-        </div>
-
         <textarea name="report" rows="10" placeholder="<?php echo dol_escape_htmltag($langs->trans('DoliCalReportPlaceholder')); ?>"><?php echo dol_escape_htmltag($card['report'], 0, 1); ?></textarea>
-        <div class="dolical-report__status" aria-live="polite"></div>
-
-        <div class="dolical-report__media">
-            <span class="dolical-report__media-title"><i class="fas fa-photo-video pictofixedwidth"></i><?php echo $langs->trans('DoliCalReportMedia'); ?></span>
-            <div class="dolical-report__media-block"><?php echo $mediaBlock; ?></div>
-            <label class="dolical-dropzone dolical-report__drop">
-                <input type="file" class="dolical-report__files" multiple>
-                <i class="fas fa-cloud-upload-alt"></i>
-                <span><?php echo $langs->trans('DoliCalDropFiles'); ?></span>
-            </label>
-        </div>
 
         <?php if ($card['canEdit'] && $card['percent'] >= 0 && $card['percent'] < 100) : ?>
             <label class="dolical-check">

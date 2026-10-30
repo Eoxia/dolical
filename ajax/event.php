@@ -40,12 +40,11 @@ if (file_exists('../dolical.main.inc.php')) {
 require_once __DIR__ . '/../lib/dolical_event.lib.php';
 require_once __DIR__ . '/../lib/dolical_invitation.lib.php';
 require_once __DIR__ . '/../lib/dolical_series.lib.php';
-require_once __DIR__ . '/../class/dolicalvoicereport.class.php';
 
 global $conf, $db, $langs, $user;
 
 // commercial carries the labels of the progress of an event (StatusActionToDo...)
-saturne_load_langs(['agenda', 'commercial', 'companies', 'projects', 'other']);
+$langs->loadLangs(['dolical@dolical', 'agenda', 'commercial', 'companies', 'projects', 'other', 'errors']);
 
 $action = GETPOST('action', 'aZ09');
 $id     = GETPOSTINT('id');
@@ -249,26 +248,14 @@ if ($action === 'form') {
 }
 
 if ($action === 'report' && $event !== null) {
-    // Report of a meeting : its text, and the media block for photos, documents and voice notes
+    // Report of a meeting : its text
     $card = dolical_get_event_card($event, $user);
     if (!$card['canReport']) {
         dolical_json_exit(['success' => false, 'error' => $langs->trans('NotEnoughPermissions')], 403);
     }
-    $canDictate = DoliCalVoiceReport::isAvailable();
-    $mediaBlock = dolical_report_media_block($event, true);
 
     header('Content-Type: text/html; charset=utf-8');
     require __DIR__ . '/../core/tpl/dolical_event_report.tpl.php';
-    exit;
-}
-
-if ($action === 'mediablock' && $event !== null) {
-    // The media block of the report drawn again, once files were dropped next to it
-    if (!dolical_can_report($user, $event)) {
-        dolical_json_exit(['success' => false, 'error' => $langs->trans('NotEnoughPermissions')], 403);
-    }
-    header('Content-Type: text/html; charset=utf-8');
-    echo dolical_report_media_block($event, true);
     exit;
 }
 
@@ -533,31 +520,6 @@ switch ($action) {
         $done   = GETPOSTINT('done') && dolical_can_edit_event($user, $event);
         $result = dolical_save_report($event, GETPOST('report', 'restricthtml'), $done, $user);
         dolical_json_exit(['success' => $result > 0, 'error' => $result > 0 ? '' : ($event->error ?: $langs->trans('Error'))]);
-        break;
-
-    case 'dictate':
-        // The voice note just recorded in the media block, written up as a report by the AI module
-        if (!dolical_can_report($user, $event)) {
-            dolical_json_exit(['success' => false, 'error' => $langs->trans('NotEnoughPermissions')], 403);
-        }
-        if (!DoliCalVoiceReport::isAvailable()) {
-            dolical_json_exit(['success' => false, 'error' => $langs->transnoentities('DoliCalVoiceUnavailable')]);
-        }
-        $voiceNote = dolical_latest_voice_note($event);
-        if ($voiceNote === '') {
-            dolical_json_exit(['success' => false, 'error' => $langs->transnoentities('DoliCalVoiceNoRecording')]);
-        }
-        $participants = dolical_get_event_participants($event);
-        $context      = [
-            'label'      => dol_html_entity_decode((string) $event->label, ENT_QUOTES | ENT_HTML5),
-            'date'       => dolical_event_when($event),
-            'people'     => implode(', ', array_column($participants['people'], 'name')),
-            'thirdparty' => $event->socid > 0 && $event->fetch_thirdparty() > 0 ? $event->thirdparty->name : '',
-            'notes'      => dol_string_nohtmltag((string) $event->note_private),
-        ];
-        $writer = new DoliCalVoiceReport($db);
-        $report = $writer->write($voiceNote, $context);
-        dolical_json_exit(['success' => $report !== null, 'report' => (string) $report, 'transcript' => $writer->transcript, 'error' => $report === null ? $writer->error : '']);
         break;
 
     case 'upload':

@@ -128,22 +128,21 @@
         <span class="dolical-nudge__text"></span>
         <div class="dolical-nudge__actions">
             <button type="button" class="dolical-btn dolical-btn--small dolical-btn--primary" data-nudge="write"><i class="fas fa-pen"></i><?php echo $langs->trans('DoliCalReportWrite'); ?></button>
-            <button type="button" class="dolical-btn dolical-btn--small" data-nudge="dictate"><i class="fas fa-microphone"></i><?php echo $langs->trans('DoliCalReportDictate'); ?></button>
             <button type="button" class="dolical-link" data-nudge="later"><?php echo $langs->trans('DoliCalLater'); ?></button>
         </div>
     </div>
 </div>
 
-<div class="wpeo-modal dolical-modal modal-close-only-with-button" id="dolical-event-modal">
-    <div class="modal-container wpeo-modal-event"></div>
+<div class="dolical-modal" id="dolical-event-modal">
+    <div class="modal-container"></div>
 </div>
 
-<div class="wpeo-modal dolical-modal modal-close-only-with-button" id="dolical-report-modal">
-    <div class="modal-container wpeo-modal-event"></div>
+<div class="dolical-modal" id="dolical-report-modal">
+    <div class="modal-container"></div>
 </div>
 
-<div class="wpeo-modal dolical-modal dolical-scope-modal modal-close-only-with-button" id="dolical-scope-modal">
-    <div class="modal-container wpeo-modal-event">
+<div class="dolical-modal dolical-scope-modal" id="dolical-scope-modal">
+    <div class="modal-container">
         <div class="modal-header">
             <h2 class="modal-title"><i class="fas fa-redo-alt pictofixedwidth"></i><span class="dolical-scope__title" data-edit="<?php echo dol_escape_htmltag($langs->trans('DoliCalScopeEditTitle')); ?>" data-delete="<?php echo dol_escape_htmltag($langs->trans('DoliCalScopeDeleteTitle')); ?>"></span></h2>
             <div class="modal-close"><i class="fas fa-times"></i></div>
@@ -162,7 +161,3 @@
         </div>
     </div>
 </div>
-
-<?php // The media block of the reports picks its photos through this editor : it has to be there from the start ?>
-<input type="hidden" name="token" value="<?php echo newToken(); ?>">
-<?php require dol_buildpath('/saturne/core/tpl/medias/photo_editor_modal.tpl.php', 0); ?>

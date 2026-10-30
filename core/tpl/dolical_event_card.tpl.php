@@ -156,7 +156,6 @@ $billingIcons  = ['paid' => 'fas fa-check-circle', 'unpaid' => 'fas fa-hourglass
                 </div>
                 <div class="dolical-card__prompt-actions">
                     <button type="button" class="dolical-btn dolical-btn--small dolical-btn--primary" data-action="report"><i class="fas fa-pen"></i><?php echo $langs->trans('DoliCalReportWrite'); ?></button>
-                    <button type="button" class="dolical-btn dolical-btn--small" data-action="dictate"><i class="fas fa-microphone"></i><?php echo $langs->trans('DoliCalReportDictate'); ?></button>
                 </div>
             </div>
         <?php endif; ?>

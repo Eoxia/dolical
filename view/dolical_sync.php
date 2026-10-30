@@ -36,11 +36,13 @@ require_once __DIR__ . '/../lib/dolical_caldav.lib.php';
 
 global $conf, $db, $langs, $user;
 
-saturne_load_langs(['agenda']);
+$langs->loadLangs(['dolical@dolical', 'agenda', 'errors']);
 
-// Security check
+// Security check : the calendar is for the internal users
 $permissionToRead = $user->hasRight('dolical', 'read') && $user->hasRight('agenda', 'myactions', 'read');
-saturne_check_access($permissionToRead);
+if (!$permissionToRead || $user->socid > 0) {
+    accessforbidden();
+}
 
 $action = GETPOST('action', 'aZ09');
 
@@ -74,7 +76,7 @@ $shared        = dolical_caldav_calendar_users($user);
 
 $title = $langs->trans('DoliCalSyncPhone');
 
-saturne_header(0, '', $title, '', '', 0, 0, [], [], '', 'dolical-page');
+dolical_header($title, 'dolical-page');
 
 require __DIR__ . '/../core/tpl/dolical_sync.tpl.php';
 

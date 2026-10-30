@@ -60,7 +60,7 @@ require_once __DIR__ . '/../lib/dolical_recurrence.lib.php';
 
 global $conf, $db, $langs, $mysoc;
 
-saturne_load_langs(['agenda']);
+$langs->loadLangs(['dolical@dolical', 'agenda', 'errors']);
 
 $eventId   = GETPOSTINT('e');
 $kind      = GETPOST('k', 'aZ09');
@@ -141,7 +141,7 @@ $title = $valid ? dol_html_entity_decode((string) $event->label, ENT_QUOTES | EN
 $conf->dol_hide_topmenu  = 1;
 $conf->dol_hide_leftmenu = 1;
 
-llxHeader('', $title, '', '', 0, 0, [], ['/dolical/css/dolical.min.css'], '', 'dolical-public', '<div>', 1);
+llxHeader('', $title, '', '', 0, 0, [], [dolical_asset('css/dolical.css')], '', 'dolical-public', '<div>', 1);
 
 htmlPrintOnlineHeader($mysoc, $langs, 1, '', '', '', '');
 

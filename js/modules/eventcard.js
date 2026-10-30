@@ -72,7 +72,7 @@ window.dolical.eventcard.event = function() {
 
   $(document).on('mousedown', E.clickOutside);
   $(document).on('keydown', function(event) {
-    if (event.key === 'Escape' && E.isOpen() && !$('.wpeo-modal.modal-active').length) {
+    if (event.key === 'Escape' && E.isOpen() && !$('.dolical-modal.modal-active').length) {
       E.close();
     }
   });
@@ -227,7 +227,7 @@ window.dolical.eventcard.clickOutside = function(event) {
     return;
   }
   const $target = $(event.target);
-  if ($target.closest('.dolical-popover, .dolical-calendar .dolical-event, .wpeo-modal, #saturne-photo-editor-modal, .select2-container, .dolical-toast, .dolical-nudge').length) {
+  if ($target.closest('.dolical-popover, .dolical-calendar .dolical-event, .dolical-modal, .select2-container, .dolical-toast, .dolical-nudge').length) {
     return;
   }
   E.close();
@@ -333,8 +333,7 @@ window.dolical.eventcard.action = function(event) {
       break;
     }
     case 'report':
-    case 'dictate':
-      window.dolical.report.open(id, action === 'dictate');
+      window.dolical.report.open(id);
       break;
     case 'invite':
     case 'remind':

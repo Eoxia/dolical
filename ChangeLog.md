@@ -1,5 +1,13 @@
 # ChangeLog
 
+## 1.1.0
+
+- Plus aucune dépendance à Saturne ni à un autre module externe : le module ne demande que Agenda et Tiers, pour
+  pouvoir rejoindre le cœur de Dolibarr.
+- Style et scripts livrés tels quels (`css/dolical.css`, `js/dolical.js`, `js/modules/`), sans compilation.
+- Le compte-rendu redevient un texte : la dictée, le bloc médias et la médiathèque sont retirés ; les fichiers du
+  rendez-vous restent ses pièces jointes.
+
 ## 1.0.0
 
 - Calendrier d'équipe sur les événements natifs : vues Jour (une colonne par personne), Semaine, Équipe, Mois et Liste.

@@ -1,7 +1,8 @@
 # DoliCal
 
-Agenda d'équipe pour Dolibarr, dans la famille ReedCRM. Il s'appuie **uniquement sur les événements natifs** de
-l'agenda Dolibarr : aucune table ajoutée, tout ce que l'on voit et modifie reste visible dans l'agenda standard.
+Agenda d'équipe pour Dolibarr. Il s'appuie **uniquement sur les événements natifs** de l'agenda Dolibarr : aucune
+table ajoutée, tout ce que l'on voit et modifie reste visible dans l'agenda standard. Il ne dépend d'aucun module
+externe, pour pouvoir rejoindre le cœur de Dolibarr.
 
 ## Ce que fait le module
 
@@ -71,13 +72,10 @@ l'agenda Dolibarr : aucune table ajoutée, tout ce que l'on voit et modifie rest
 ## Compte-rendu après le rendez-vous
 
 - Une fois le rendez-vous terminé, sa carte demande « comment s'est-il passé ? », et le calendrier le propose dans un
-  encart le jour même : **Écrire le compte-rendu** ou **Dicter**.
-- La dictée utilise le micro du bloc médias de Saturne : le mémo vocal est joint à l'événement, transcrit puis rédigé
-  en compte-rendu par le module IA (ChatGPT), comme la description vocale de ReedCRM. Sans IA, le mémo reste joint.
-- Même bloc pour les photos (appareil photo, éditeur, médiathèque) et les documents ; une zone accepte aussi le
-  glisser-déposer de plusieurs fichiers d'un coup. Tout va dans les documents natifs de l'événement.
+  encart le jour même : **Écrire le compte-rendu**.
 - Le texte est le champ complémentaire « Compte-rendu » de l'événement natif (visible aussi dans l'agenda de
-  Dolibarr) ; l'événement peut être marqué réalisé au passage.
+  Dolibarr) ; l'événement peut être marqué réalisé au passage. Les photos et documents du rendez-vous sont ses
+  pièces jointes, ajoutées depuis le formulaire ou la carte.
 
 ## Synchronisation avec les téléphones (CalDAV)
 
@@ -102,7 +100,7 @@ l'agenda Dolibarr : aucune table ajoutée, tout ce que l'on voit et modifie rest
 | Collègues et contacts invités, réponses | `llx_actioncomm_resources` (`user`, `socpeople`, `answer_status`) |
 | Premier document lié | `llx_actioncomm.fk_element` / `elementtype` (onglet *Événements* du document) |
 | Autres documents liés | `llx_element_element` (type `action`) |
-| Pièces jointes, photos et mémos vocaux du compte-rendu | `documents/agenda/<id>` + index ECM |
+| Pièces jointes | `documents/agenda/<id>` + index ECM |
 | Rappels | `llx_actioncomm_reminder` |
 | Série | `llx_actioncomm.recurid`, `recurrule`, `recurdateend` |
 | Compte-rendu | champ complémentaire `dolical_report` de l'événement |
@@ -116,11 +114,9 @@ Ceux du module Agenda : lire / créer / supprimer *mes* événements ou *ceux de
 
 ## Prérequis
 
-Dolibarr 23 ou 24, modules Saturne, Agenda et Tiers.
+Dolibarr 23 ou 24, modules Agenda et Tiers. Aucun module externe.
 
-## Compilation des assets
+## Style et scripts
 
-```sh
-cd htdocs/custom/saturne
-node build-assets.js --module=dolical
-```
+Le style est dans `css/dolical.css`, les scripts dans `js/dolical.js` et `js/modules/`. Ils sont chargés tels quels,
+sans compilation ; leur adresse porte la date du fichier, les navigateurs reprennent donc une version modifiée.

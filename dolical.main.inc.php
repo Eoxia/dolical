@@ -18,18 +18,29 @@
 /**
  * \file    dolical.main.inc.php
  * \ingroup dolical
- * \brief   File that defines environment for Saturne common functions
+ * \brief   Load the Dolibarr environment for the pages of DoliCal, wherever the module is installed
  */
 
-$moduleName          = 'DoliCal';
-$moduleNameLowerCase = strtolower($moduleName);
-$moduleNameUpperCase = strtoupper($moduleName);
+// The module lives in htdocs/custom/dolical or in htdocs/dolical : main.inc.php is one or two levels up
+$res = 0;
+if (!empty($_SERVER['CONTEXT_DOCUMENT_ROOT'])) {
+    $res = @include $_SERVER['CONTEXT_DOCUMENT_ROOT'] . '/main.inc.php';
+}
+if (!$res && file_exists(__DIR__ . '/../main.inc.php')) {
+    $res = @include __DIR__ . '/../main.inc.php';
+}
+if (!$res && file_exists(__DIR__ . '/../../main.inc.php')) {
+    $res = @include __DIR__ . '/../../main.inc.php';
+}
+if (!$res) {
+    die('Include of main fails');
+}
 
-// Load Saturne environment
-if (file_exists(__DIR__ . '/../saturne/saturne.main.inc.php')) {
-    require_once __DIR__ . '/../saturne/saturne.main.inc.php';
-} elseif (file_exists(__DIR__ . '/../../saturne/saturne.main.inc.php')) {
-    require_once __DIR__ . '/../../saturne/saturne.main.inc.php';
-} else {
-    die('Include of saturne main fails');
+require_once __DIR__ . '/lib/dolical.lib.php';
+
+if (!isModEnabled('dolical')) {
+    if (defined('NOLOGIN') || defined('NOREQUIREHTML')) {
+        httponly_accessforbidden('Module DoliCal not enabled');
+    }
+    accessforbidden('Module DoliCal not enabled');
 }

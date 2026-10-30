@@ -30,7 +30,7 @@ function dolical_admin_prepare_head(): array
 {
     global $conf, $langs;
 
-    saturne_load_langs();
+    $langs->load('dolical@dolical');
 
     $h    = 0;
     $head = [];
@@ -40,16 +40,42 @@ function dolical_admin_prepare_head(): array
     $head[$h][2] = 'settings';
     $h++;
 
-    $head[$h][0] = dol_buildpath('saturne/admin/about.php?module_name=DoliCal', 1);
-    $head[$h][1] = $conf->browser->layout == 'classic' ? '<i class="fab fa-readme pictofixedwidth"></i>' . $langs->trans('About') : '<i class="fab fa-readme"></i>';
-    $head[$h][2] = 'about';
-    $h++;
-
     complete_head_from_modules($conf, $langs, null, $head, $h, 'dolical@dolical');
 
     complete_head_from_modules($conf, $langs, null, $head, $h, 'dolical@dolical', 'remove');
 
     return $head;
+}
+
+/**
+ * URL of a file of the module, versioned by its date : the browsers fetch it again once it changed
+ *
+ * @param  string $path Path from the module directory, e.g. css/dolical.css
+ * @return string       Path for llxHeader(), e.g. /dolical/css/dolical.css?v=1761830000
+ */
+function dolical_asset(string $path): string
+{
+    $file = __DIR__ . '/../' . $path;
+
+    return '/dolical/' . $path . (is_file($file) ? '?v=' . filemtime($file) : '');
+}
+
+/**
+ * Header of a page of DoliCal : the Dolibarr header with the style and the scripts of the module
+ *
+ * @param  string $title         Title of the page
+ * @param  string $morecssonbody Class of the body
+ * @return void
+ */
+function dolical_header(string $title, string $morecssonbody = ''): void
+{
+    // The entry point first, then the modules in the order their init must run
+    $js = [dolical_asset('js/dolical.js')];
+    foreach (['calendar', 'eventcard', 'eventform', 'report', 'sync', 'util'] as $module) {
+        $js[] = dolical_asset('js/modules/' . $module . '.js');
+    }
+
+    llxHeader('', $title, '', '', 0, 0, $js, [dolical_asset('css/dolical.css')], '', $morecssonbody);
 }
 
 /**
