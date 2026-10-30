@@ -1,0 +1,78 @@
+@use "../variables/variables" as *;
+
+/* Small pieces : counters, avatars, dots and chips */
+
+.dolical-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: $ra-primary-soft;
+  color: $ra-brand;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.dolical-avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid color-mix(in srgb, var(--ra-color, #{$ra-primary}) 35%, #fff);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ra-color, #{$ra-primary}) 15%, #fff);
+  color: color-mix(in srgb, var(--ra-color, #{$ra-primary}) 75%, #000);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+
+  &.dolical-avatar--small {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
+  }
+}
+
+.dolical-dot {
+  display: inline-block;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ra-color, #{$ra-primary});
+}
+
+.dolical-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ra-color, #94a3b8) 14%, #fff);
+  color: $ra-text;
+  font-size: 12px;
+  line-height: 1.4;
+
+  i {
+    color: var(--ra-color, #{$ra-muted});
+  }
+
+  &.dolical-chip--status {
+    background: $ra-bg;
+  }
+
+  &.dolical-chip--late {
+    background: $ra-danger-soft;
+    color: $ra-danger;
+
+    i {
+      color: $ra-danger;
+    }
+  }
+}

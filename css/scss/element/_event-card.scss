@@ -1,0 +1,538 @@
+@use "../variables/variables" as *;
+
+/* Card of an event : a popover beside the clicked event, a sheet at the bottom of a phone */
+
+@keyframes dolical-pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.dolical-popover {
+  position: fixed;
+  top: var(--ra-top, 80px);
+  left: var(--ra-left, 50%);
+  z-index: 1001;
+  display: none;
+  flex-direction: column;
+  width: 440px;
+  max-width: calc(100vw - 24px);
+  max-height: var(--ra-max-height, calc(100vh - 24px));
+  overflow: hidden;
+  border: 1px solid rgba(15, 35, 52, 0.08);
+  border-radius: 14px;
+  background: $ra-white;
+  box-shadow: $ra-shadow;
+  color: $ra-text;
+
+  &.is-open {
+    display: flex;
+    animation: dolical-pop 0.14s ease-out;
+  }
+
+  &.is-sheet {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    max-height: 86vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  &.is-drop-target {
+    outline: 3px dashed $ra-primary;
+    outline-offset: -6px;
+  }
+}
+
+.dolical-card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+
+  &.dolical-card--loading {
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    color: $ra-primary;
+    font-size: 22px;
+  }
+
+  a {
+    color: inherit;
+  }
+}
+
+.dolical-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 12px 0 18px;
+}
+
+.dolical-card__calendar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  color: $ra-text-soft;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dolical-card__tools {
+  display: flex;
+  flex: none;
+  gap: 2px;
+}
+
+.dolical-card__menu-wrap {
+  position: relative;
+
+  &.is-open .dolical-card__menu {
+    display: flex;
+  }
+}
+
+.dolical-card__menu {
+  position: absolute;
+  top: 34px;
+  right: 0;
+  z-index: 5;
+  display: none;
+  flex-direction: column;
+  min-width: 240px;
+  padding: 6px;
+  border: 1px solid $ra-border-soft;
+  border-radius: 10px;
+  background: $ra-white;
+  box-shadow: $ra-shadow;
+}
+
+a.dolical-card__action,
+button.dolical-card__action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  box-shadow: none;
+  color: $ra-text;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover {
+    background: $ra-bg;
+  }
+
+  &.dolical-card__action--danger {
+    color: $ra-danger;
+  }
+}
+
+.dolical-card__body {
+  flex: 1;
+  min-height: 0;
+  padding: 4px 18px 14px;
+  overflow-y: auto;
+}
+
+.dolical-card__title {
+  margin: 4px 0 8px;
+  color: $ra-text;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.25;
+  word-break: break-word;
+
+  &.dolical-card__title--done {
+    color: $ra-muted;
+    text-decoration: line-through;
+  }
+}
+
+.dolical-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+
+  .dolical-chip--status {
+    // The badge of the status is drawn by Dolibarr : keep it, only tighten it
+    .badge {
+      margin: 0;
+    }
+  }
+}
+
+.dolical-card__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 5px 0;
+}
+
+.dolical-card__row-icon {
+  flex: none;
+  width: 18px;
+  margin-top: 2px;
+  color: $ra-muted;
+  text-align: center;
+}
+
+.dolical-card__grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.dolical-card__muted {
+  color: $ra-muted;
+  font-size: 12.5px;
+}
+
+.dolical-card__indent {
+  margin-left: 30px;
+}
+
+.dolical-card__hint {
+  font-weight: 400;
+}
+
+.dolical-card__section {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid $ra-border-soft;
+}
+
+.dolical-card__section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 700;
+
+  .dolical-card__row-icon {
+    margin: 0 4px 0 0;
+  }
+}
+
+button.dolical-card__invite-all {
+  margin-left: auto;
+}
+
+.dolical-person__invited i {
+  margin: 0 3px 0 2px;
+  font-size: 10px;
+}
+
+.dolical-card__answer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: $ra-bg;
+
+  > span {
+    margin-right: auto;
+    font-weight: 600;
+  }
+}
+
+.dolical-people {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dolical-person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+
+  &:hover .dolical-person__tools {
+    opacity: 1;
+  }
+}
+
+.dolical-person__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.dolical-person__line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dolical-person__name {
+  flex: none;
+  max-width: 60%;
+  overflow: hidden;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  img {
+    display: none;
+  }
+}
+
+.dolical-person__email {
+  overflow: hidden;
+  color: $ra-muted;
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dolical-person__status {
+  color: $ra-muted;
+  font-size: 12px;
+
+  i {
+    margin-right: 3px;
+  }
+
+  &.dolical-person__status--accepted i {
+    color: $ra-success;
+  }
+
+  &.dolical-person__status--tentative i {
+    color: $ra-warning;
+  }
+
+  &.dolical-person__status--declined {
+    color: $ra-danger;
+  }
+
+  &.dolical-person__status--owner i {
+    color: #d69e2e;
+  }
+}
+
+.dolical-person__tools {
+  display: flex;
+  flex: none;
+  opacity: 0.65;
+  transition: opacity 0.15s ease;
+}
+
+.dolical-billing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 4px 30px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+
+  &.dolical-billing--paid {
+    background: $ra-success-soft;
+    color: $ra-success;
+  }
+
+  &.dolical-billing--unpaid {
+    background: $ra-warning-soft;
+    color: $ra-warning;
+  }
+
+  &.dolical-billing--late {
+    background: $ra-danger-soft;
+    color: $ra-danger;
+  }
+
+  &.dolical-billing--signed {
+    background: #fff4e5;
+    color: #c05621;
+  }
+
+  &.dolical-billing--pending {
+    background: $ra-bg;
+    color: $ra-text-soft;
+  }
+}
+
+.dolical-objects {
+  margin: 4px 0 0 30px;
+  padding: 0;
+  list-style: none;
+}
+
+.dolical-object {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  padding: 6px 0;
+  border-bottom: 1px dashed $ra-border-soft;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.dolical-object__ref {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dolical-object__amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.dolical-object__status {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.dolical-object__remain {
+  color: $ra-warning;
+  font-weight: 600;
+
+  &.dolical-object__remain--late {
+    color: $ra-danger;
+  }
+}
+
+.dolical-files__list {
+  margin: 6px 0 0 30px;
+  padding: 0;
+  list-style: none;
+}
+
+.dolical-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+}
+
+.dolical-file__thumb img {
+  display: block;
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.dolical-file__icon {
+  flex: none;
+  width: 44px;
+  font-size: 20px;
+  text-align: center;
+}
+
+.dolical-file__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dolical-file__name {
+  overflow: hidden;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dolical-dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 0 0 30px;
+  padding: 12px;
+  border: 1.5px dashed $ra-border;
+  border-radius: 10px;
+  color: $ra-muted;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+
+  input {
+    display: none;
+  }
+
+  &:hover,
+  &.is-drop-target {
+    border-color: $ra-primary;
+    background: $ra-primary-softer;
+    color: $ra-brand;
+  }
+
+  &.is-busy {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  &.dolical-dropzone--form {
+    margin-left: 0;
+  }
+}
+
+.dolical-card__note {
+  max-height: 120px;
+  overflow: hidden;
+  word-break: break-word;
+
+  &.is-expanded {
+    max-height: none;
+  }
+}
+
+.dolical-card__note-toggle {
+  margin-top: 4px;
+}
+
+.dolical-card__meta {
+  margin-top: 14px;
+  color: $ra-muted;
+  font-size: 11.5px;
+}
+
+.dolical-card__footer {
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid $ra-border-soft;
+  background: #fbfcfd;
+}

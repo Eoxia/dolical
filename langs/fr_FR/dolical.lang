@@ -1,0 +1,359 @@
+# Copyright (C) 2026 EVARISK <technique@evarisk.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+#
+# Module - Module
+#
+
+ModuleDoliCalName  = DoliCal
+ModuleDoliCalDesc  = Agenda d'équipe sur les événements natifs de Dolibarr
+DoliCalDescription = Agenda d'équipe sur les événements natifs de Dolibarr : plusieurs agendas côte à côte, participants, pièces jointes et documents liés
+DoliCal            = DoliCal
+EnableDolical      = Activez le module DoliCal pour accéder à cette page
+
+#
+# Menu - Menu
+#
+
+DoliCalCalendar   = Calendrier
+DoliCalNewEvent   = Nouvel événement
+DoliCalNativeList = Liste des événements
+DoliCalSetup      = Configuration
+DoliCalPlanEvent  = Planifier dans l'agenda
+DoliCalTeamCalendar = Agenda d'équipe (DoliCal)
+
+#
+# Calendar - Calendrier
+#
+
+DoliCalViewDay          = Jour
+DoliCalViewWeek         = Semaine
+DoliCalViewTeam         = Équipe
+DoliCalViewMonth        = Mois
+DoliCalViewList         = Liste
+DoliCalWeekShort        = S
+DoliCalCalendars        = Agendas
+DoliCalSearchPerson     = Rechercher une personne
+DoliCalOnlyMe           = Moi seul
+DoliCalNobody           = Aucun
+DoliCalAddGroup         = Ajouter un groupe…
+DoliCalMe               = moi
+DoliCalHideAutoEvents   = Masquer les événements automatiques
+DoliCalAllStatuses      = Tous les états
+DoliCalOnlyTodo         = À faire et en cours
+DoliCalOnlyDone         = Réalisés
+DoliCalAllTypes         = Tous les types
+DoliCalSearchEvents     = Rechercher un événement
+DoliCalAllDay           = Toute la journée
+DoliCalNoEvent          = Aucun événement sur cette période
+DoliCalNoPeopleSelected = Cochez au moins un agenda dans la colonne de gauche
+DoliCalMoreEvents       = %s de plus
+DoliCalLoadError        = Les événements n'ont pas pu être chargés
+DoliCalMoved            = Événement déplacé
+DoliCalCannotEdit       = Vous ne pouvez pas modifier cet événement
+DoliCalTooManyPeople    = Trop d'agendas sélectionnés pour cette vue
+DoliCalUntitled         = (sans titre)
+DoliCalContactsCount    = %s contact(s) externe(s)
+
+#
+# Card - Fiche
+#
+
+DoliCalMoreActions      = Plus d'actions
+DoliCalMarkDone         = Marquer comme réalisé
+DoliCalReopen           = Remettre à faire
+DoliCalDuplicate        = Dupliquer
+DoliCalCopyLink         = Copier le lien de l'événement
+DoliCalOpenNativeCard   = Ouvrir la fiche Dolibarr
+DoliCalClose            = Fermer
+DoliCalLate             = En retard
+DoliCalCopy             = Copier
+DoliCalCopied           = Copié dans le presse-papiers
+DoliCalShowOnMap        = Voir sur la carte
+DoliCalWillYouAttend    = Vous participez ?
+DoliCalMaybe            = Peut-être
+DoliCalParticipants     = Participants
+DoliCalCopyAllEmails    = Copier les e-mails de tous les participants
+DoliCalCopyEmail        = Copier l'e-mail
+DoliCalMailEveryone     = Écrire à tous les participants
+DoliCalAnswersSummary   = %s confirmé(s), %s en attente de réponse
+DoliCalAnswersDeclined  = %s refusé(s)
+DoliCalOrganizer        = Organisateur
+DoliCalAnswerAccepted   = Invitation acceptée
+DoliCalAnswerTentative  = Réponse : peut-être
+DoliCalAnswerDeclined   = Invitation refusée
+DoliCalAnswerPending    = En attente de réponse
+DoliCalBilling          = Facturation
+DoliCalBillingFromProject = (documents du projet)
+DoliCalBillingPaid      = Facturé et réglé
+DoliCalBillingUnpaid    = Facturé, reste %s à encaisser
+DoliCalBillingLate      = Paiement en retard : reste %s à encaisser
+DoliCalBillingSignedNotBilled = Devis signé, pas encore facturé
+DoliCalBillingProposalPending = Devis en attente de signature
+DoliCalRemainToPay      = Reste à payer : %s
+DoliCalLinkedElements   = Éléments liés
+DoliCalAttachments      = Pièces jointes
+DoliCalDropFiles        = Glissez des fichiers ici ou cliquez pour en ajouter
+DoliCalShowMore         = Afficher tout
+DoliCalMoreDetails      = Plus de détails
+DoliCalCreatedBy        = Créé par %s le %s
+DoliCalModifiedBy       = modifié par %s le %s
+DoliCalConfirmDelete    = Supprimer définitivement cet événement ?
+DoliCalConfirmDeleteFile = Supprimer ce fichier ?
+
+#
+# Form - Formulaire
+#
+
+DoliCalEditEvent          = Modifier l'événement
+DoliCalAddTitle           = Ajouter un titre
+DoliCalBusy               = Occupé (bloque l'agenda des participants)
+DoliCalInvitedUsers       = Participants (utilisateurs)
+DoliCalAddPeople          = Ajouter des collègues
+DoliCalContacts           = Contacts externes
+DoliCalSearchContacts     = Rechercher un contact ou saisir une adresse e-mail
+DoliCalSearchThirdparty   = Rechercher un tiers
+DoliCalSearchProject      = Rechercher un projet
+DoliCalSearchElements     = Rechercher un devis, une commande, une facture, un ticket…
+DoliCalLinkedElementsHelp = Le premier élément devient le lien natif de l'événement : il apparaît dans l'onglet Événements de ce document.
+DoliCalFilesSelected      = %s fichier(s) prêt(s) à être joint(s)
+DoliCalDatesInvalid       = La date de fin doit suivre la date de début
+DoliCalSaved              = Événement enregistré
+DoliCalSearching          = Recherche…
+DoliCalTypeToSearch       = Tapez pour rechercher
+
+#
+# Setup - Configuration
+#
+
+DoliCalSetupHelp                = DoliCal affiche et modifie les événements natifs de l'agenda Dolibarr : rien n'est stocké ailleurs. Les droits utilisés sont ceux du module Agenda (mes événements / les événements de tous).
+DoliCalDefaultView              = Vue à l'ouverture
+DoliCalDefaultViewHelp          = Vue affichée à la première visite ; chacun retrouve ensuite la dernière vue qu'il a choisie
+DoliCalWorkingHours             = Heures de travail
+DoliCalWorkingHoursHelp         = Plage mise en avant dans les vues Jour et Semaine ; le reste de la journée reste accessible en faisant défiler
+DoliCalDefaultDuration          = Durée par défaut
+DoliCalDefaultDurationHelp      = Durée d'un événement créé d'un clic dans le calendrier
+DoliCalShowWeekends             = Afficher les week-ends
+DoliCalShowWeekendsHelp         = Samedi et dimanche dans les vues Semaine, Équipe et Mois
+DoliCalHideAutoEventsHelp       = Les événements créés par Dolibarr (validation d'un devis, envoi d'un e-mail…) sont masqués par défaut ; chacun peut les réafficher
+DoliCalNativeLinkedElements     = Éléments liés sur la fiche native
+DoliCalNativeLinkedElementsHelp = Option native de l'agenda : la fiche Dolibarr d'un événement affiche aussi les éléments liés depuis le calendrier
+DoliCalEventTypes               = Types d'événements
+DoliCalEventTypesHelp           = Les types (rendez-vous, appel…) sont proposés quand l'agenda les utilise
+DoliCalAgendaSetup              = Configuration de l'agenda
+DoliCalNotifyOrganizer          = Prévenir l'organisateur des réponses
+DoliCalNotifyOrganizerHelp      = Un e-mail part vers l'organisateur dès qu'un invité accepte, répond peut-être ou refuse
+DoliCalTimezone                 = Fuseau horaire des invitations
+DoliCalTimezoneHelp             = Heures écrites dans les e-mails et sur la page publique de réponse, quand aucun navigateur ne donne le fuseau
+DoliCalMailTemplates            = Modèles d'e-mails
+DoliCalMailTemplatesHelp        = Facultatifs : invitation, changement de date ou de lieu, réponse reçue. Jetons : __DOLICAL_EVENT_LABEL__, __DOLICAL_EVENT_DATE__, __DOLICAL_EVENT_LOCATION__, __DOLICAL_ORGANIZER_NAME__, __DOLICAL_RECIPIENT_NAME__, __DOLICAL_ANSWER_LINK__ (et __DOLICAL_ANSWER__, __DOLICAL_EVENT_LINK__ pour la réponse)
+DoliCalMailTemplatesLink        = Modèles d'e-mails de Dolibarr
+
+#
+# Invitation - Invitation
+#
+
+DoliCalInvitation                = Invitation
+DoliCalSendInvitations           = Inviter
+DoliCalSendInvitation            = Envoyer l'invitation par e-mail
+DoliCalSendInvitationAgain       = Renvoyer l'invitation par e-mail
+DoliCalInvitedOn                 = Invitation envoyée le %s
+DoliCalInvitationsSent           = %s invitation(s) envoyée(s)
+DoliCalNobodyToInvite            = Aucun participant avec une adresse e-mail à inviter
+DoliCalNewContactByEmail         = Inviter %s (nouveau contact)
+DoliCalCannotCreateContact       = Vous n'avez pas le droit de créer le contact %s
+DoliCalNotifyParticipants        = Envoyer les invitations par e-mail
+DoliCalNotifyParticipantsHelp    = Invitation aux nouveaux participants, modification aux invités si la date ou le lieu change, annulation aux personnes retirées. Chacun répond depuis un lien, sans compte.
+DoliCalMailReminderSubject       = Rappel : %s
+DoliCalMailReminderIntro         = Bonjour %s, %s attend encore votre réponse pour l'événement ci-dessous.
+DoliCalMailCancelSubject         = Annulé : %s
+DoliCalMailCancelIntro           = Bonjour %s, %s a annulé l'événement ci-dessous, ou vous en a retiré : il n'aura pas lieu pour vous.
+DoliCalMailCancelNote            = Le fichier joint retire l'événement de votre agenda (Outlook, Gmail, Apple Calendrier…).
+DoliCalTraceReminderSent         = Relance envoyée à %s : %s
+DoliCalTraceCancelSent           = Annulation envoyée à %s : %s
+DoliCalTemplateReminder          = DoliCal – Relance d'un invité sans réponse
+DoliCalTemplateCancel            = DoliCal – Annulation d'un événement
+DoliCalRemind                    = Relancer (%s)
+DoliCalRemindHelp                = Renvoyer un rappel aux personnes invitées qui n'ont pas encore répondu
+DoliCalNobodyToRemind            = Toutes les personnes invitées ont déjà répondu
+DoliCalCancellationsSent         = %s annulation(s) envoyée(s)
+DoliCalConfirmDeleteInvited      = Supprimer définitivement cet événement ? Une annulation partira vers les personnes invitées par e-mail (%s).
+DoliCalRemindersSent             = %s relance(s) envoyée(s)
+DoliCalBusyWarning               = Déjà pris sur ce créneau :
+DoliCalBusyOther                 = Occupé
+DoliCalAutoRemind                = Relance automatique des invités
+DoliCalAutoRemindHelp            = Une relance part une seule fois vers les invités sans réponse, quelques jours avant l'événement (tâche planifiée quotidienne « Relance des invités DoliCal »)
+DoliCalAutoRemindDays            = Délai de la relance automatique
+DoliCalAutoRemindDaysHelp        = Nombre de jours avant le début de l'événement
+DoliCalAutoRemindDisabled        = Relance automatique désactivée dans la configuration de DoliCal
+DoliCalAutoRemindDone            = %s relance(s) envoyée(s) pour %s événement(s)
+DoliCalCronRemind                = Relance des invités DoliCal
+DoliCalCronRemindComment         = Relance une fois les personnes invitées par e-mail qui n'ont pas répondu, quelques jours avant l'événement
+DoliCalMailInvitationSubject     = Invitation : %s
+DoliCalMailUpdateSubject         = Modification : %s
+DoliCalMailInvitationIntro       = Bonjour %s, %s vous invite à l'événement ci-dessous. Merci d'indiquer si vous serez présent(e).
+DoliCalMailUpdateIntro           = Bonjour %s, %s a modifié l'événement ci-dessous. Merci de confirmer votre présence.
+DoliCalMailInvitationNote        = Le fichier joint ajoute l'événement à votre agenda (Outlook, Gmail, Apple Calendrier…). Pour répondre, utilisez le bouton ci-dessus.
+DoliCalMailWhen                  = Quand
+DoliCalMailAnswerButton          = Répondre à l'invitation
+DoliCalMailAnswerSubject         = %s : %s – %s
+DoliCalMailAnswerIntro           = %s a répondu : %s.
+DoliCalMailOpenEvent             = Ouvrir l'événement
+DoliCalAddToCalendar             = Ajouter à mon agenda
+DoliCalIcsAnswerHere             = Répondre à l'invitation :
+DoliCalTraceInvitationSent       = Invitation envoyée à %s : %s
+DoliCalTraceUpdateSent           = Modification envoyée à %s : %s
+DoliCalTraceAnswer               = Réponse de %s (%s) : %s
+DoliCalTemplateInvitation        = DoliCal – Invitation à un événement
+DoliCalTemplateUpdate            = DoliCal – Modification d'un événement
+DoliCalTemplateAnswer            = DoliCal – Réponse reçue (organisateur)
+DoliCalInvitationInvalid         = Ce lien d'invitation n'est plus valable
+DoliCalInvitationInvalidHelp     = L'événement a peut-être été supprimé, ou vous ne faites plus partie des participants. Contactez l'organisateur.
+DoliCalInvitationFor             = Invitation pour %s
+DoliCalOrganizedBy               = Organisé par %s
+DoliCalInvitationThanks          = Merci, votre réponse a été transmise à l'organisateur.
+DoliCalInvitationFailed          = Votre réponse n'a pas pu être enregistrée. Réessayez ou contactez l'organisateur.
+DoliCalYourAnswer                = Votre réponse :
+DoliCalInvitationPast            = Cet événement est passé, il n'est plus possible d'y répondre.
+DoliCalAnswerYes                 = Oui, je serai là
+DoliCalAnswerNo                  = Non, je ne pourrai pas
+
+#
+# Recurrence - Répétition
+#
+DoliCalRepeat                    = Répétition
+DoliCalRepeatNone                = Ne se répète pas
+DoliCalRepeatDaily               = Tous les jours
+DoliCalRepeatWeekdays            = Tous les jours ouvrés (du lundi au vendredi)
+DoliCalRepeatWeekly              = Toutes les semaines le %s
+DoliCalRepeatBiweekly            = Toutes les deux semaines le %s
+DoliCalRepeatMonthlyDay          = Tous les mois le %s
+DoliCalRepeatMonthlyWeekday      = Tous les mois le %s %s
+DoliCalRepeatYearly              = Tous les ans le %s
+DoliCalRepeatCustom              = Répétition personnalisée
+DoliCalRepeatUntil               = jusqu'au %s
+DoliCalRepeatUntilLabel          = jusqu'au
+DoliCalRepeatUntilInvalid        = La fin de la répétition doit suivre le début de l'événement.
+DoliCalNth1                      = premier
+DoliCalNth2                      = deuxième
+DoliCalNth3                      = troisième
+DoliCalNth4                      = quatrième
+DoliCalNthLast                   = dernier
+DoliCalPartOfSeries              = Cet événement fait partie d'une série de %s dates.
+DoliCalSeriesDates               = %s dates
+DoliCalSeriesFromTo              = du %s au %s
+DoliCalSeriesFrom                = à partir du %s
+DoliCalRepeating                 = Événement récurrent
+DoliCalOccurrencesCreated        = série de %s dates créée
+DoliCalOccurrencesTruncated      = série limitée à %s dates
+DoliCalMovedOccurrence           = Cette date est déplacée, le reste de la série ne bouge pas
+DoliCalDeletedOccurrences        = %s dates supprimées
+DoliCalScopeEditTitle            = Modifier l'événement récurrent
+DoliCalScopeDeleteTitle          = Supprimer l'événement récurrent
+DoliCalScopeOne                  = Cet événement
+DoliCalScopeFollowing            = Cet événement et les suivants
+DoliCalScopeAll                  = Tous les événements de la série
+
+#
+# Reminder - Rappel
+#
+DoliCalReminderBrowser           = Notification
+DoliCalReminderEmail             = E-mail
+DoliCalReminderSwitch            = Me rappeler l'événement
+DoliCalReminderDelay             = Délai du rappel
+DoliCalReminderMinutes           = Minutes
+DoliCalReminderHours             = Heures
+DoliCalReminderDays              = Jours
+DoliCalReminderWeeks             = Semaines
+DoliCalReminderBeforeBy          = avant, par
+DoliCalReminderEveryone          = Aussi pour les participants internes
+DoliCalReminderBlocked           = Les notifications sont bloquées pour ce site : autorisez-les depuis le cadenas de la barre d'adresse, ou choisissez l'e-mail.
+DoliCalReminderBefore            = %s avant
+DoliCalReminderAtStart           = Au début de l'événement
+
+#
+# Report - Compte-rendu
+#
+DoliCalReport                    = Compte-rendu
+DoliCalReportEdit                = Modifier le compte-rendu
+DoliCalReportPrompt              = Ce rendez-vous est terminé : comment s'est-il passé ?
+DoliCalReportWrite               = Écrire le compte-rendu
+DoliCalReportDictate             = Dicter
+DoliCalReportAdd                 = Ajouter un compte-rendu
+DoliCalReportDictateHelp         = Touchez le micro et racontez le rendez-vous : le mémo vocal est joint à l'événement, transcrit puis rédigé en compte-rendu par l'IA. Relisez avant d'enregistrer.
+DoliCalReportDictateNoAi         = Le micro enregistre un mémo vocal joint à l'événement. Pour qu'il soit rédigé automatiquement en compte-rendu, un administrateur doit activer le module IA avec ChatGPT.
+DoliCalReportPlaceholder         = Ce qui s'est dit, les décisions, les prochaines étapes…
+DoliCalReportMedia               = Photos, documents et mémos vocaux
+DoliCalReportMarkDone            = Marquer le rendez-vous comme réalisé
+DoliCalReportSaved               = Compte-rendu enregistré
+DoliCalReportWriting             = Transcription et rédaction du mémo vocal…
+DoliCalReportWritten             = Compte-rendu rédigé à partir du mémo vocal : relisez-le avant d'enregistrer.
+DoliCalReportEmptyVoice          = Le mémo vocal ne contient rien à rédiger. Il reste joint à l'événement.
+DoliCalReportVoiceKept           = Mémo vocal joint à l'événement.
+DoliCalReportAiFailed            = La rédaction automatique n'a pas abouti (%s).
+DoliCalReportNudgeTitle          = Rendez-vous terminé
+DoliCalReportNudgeText           = « %s » est terminé. Un compte-rendu pour l'équipe ?
+DoliCalLater                     = Plus tard
+DoliCalVoiceNoRecording          = Aucun mémo vocal à rédiger.
+DoliCalVoiceTooLong              = Le mémo vocal dépasse 25 Mo : enregistrez-en un plus court.
+DoliCalVoiceInvalidAnswer        = Réponse inattendue du service d'IA.
+DoliCalVoiceNotWritten           = Le service d'IA n'a pas rédigé le compte-rendu (%s).
+DoliCalVoiceHttpError            = Le service d'IA a répondu par une erreur HTTP %s.
+DoliCalVoiceUnavailable          = La rédaction automatique demande le module IA avec ChatGPT.
+
+#
+# Synchronization - Synchronisation
+#
+DoliCalSyncPhone                 = Synchroniser mon téléphone
+DoliCalSyncIntro                 = Votre agenda DoliCal dans le calendrier de votre téléphone, de votre Mac ou de Thunderbird, dans les deux sens : un rendez-vous créé, déplacé ou supprimé d'un côté l'est aussi de l'autre.
+DoliCalSyncDisabled              = La synchronisation est désactivée. Un administrateur peut l'activer dans la configuration de DoliCal.
+DoliCalSyncNotSecure             = Cette adresse est en http : le mot de passe passerait en clair et l'iPhone refuse ce type de compte. Utilisez l'adresse https de votre Dolibarr.
+DoliCalSyncServer                = Adresse du serveur
+DoliCalSyncPassword              = Votre mot de passe Dolibarr
+DoliCalSyncCalendarUrl           = Adresse directe de l'agenda, si l'application la demande
+DoliCalSyncAndroid               = Android (DAVx⁵)
+DoliCalSyncAndroid1              = Installez l'application gratuite DAVx⁵ depuis le Play Store ou F-Droid.
+DoliCalSyncAndroid2              = Touchez + puis « Connexion avec une URL et un nom d'utilisateur ».
+DoliCalSyncAndroid3              = Collez l'adresse du serveur, votre identifiant et votre mot de passe Dolibarr.
+DoliCalSyncAndroid4              = Cochez « Mon agenda Dolibarr » : il apparaît dans le calendrier du téléphone.
+DoliCalSyncApple                 = iPhone, iPad et Mac
+DoliCalSyncApple1                = Réglages › Calendrier › Comptes › Ajouter un compte › Autre.
+DoliCalSyncApple2                = Touchez « Ajouter un compte CalDAV ».
+DoliCalSyncApple3                = Serveur : l'adresse du serveur, puis votre identifiant et votre mot de passe Dolibarr.
+DoliCalSyncApple4                = Sur Mac : Calendrier › Réglages › Comptes › + › Autre compte CalDAV, type « Manuel ».
+DoliCalSyncThunderbird           = Thunderbird
+DoliCalSyncThunderbird1          = Agenda › Nouvel agenda › Sur le réseau.
+DoliCalSyncThunderbird2          = Votre identifiant Dolibarr, et l'adresse du serveur comme emplacement.
+DoliCalSyncThunderbird3          = « Rechercher des agendas », cochez votre agenda puis donnez votre mot de passe.
+DoliCalSyncWhat                  = Ce qui se synchronise
+DoliCalSyncWhat1                 = Vos rendez-vous, ceux que vous organisez et ceux où vous êtes invité, avec les participants et leur réponse.
+DoliCalSyncWhat2                 = Créer, déplacer, renommer ou supprimer un rendez-vous sur le téléphone met Dolibarr à jour ; une répétition créée sur le téléphone devient une série.
+DoliCalSyncWhat3                 = Accepter ou refuser une invitation, et les rappels, dans les deux sens. Un rendez-vous refusé disparaît du téléphone.
+DoliCalSyncWhat4                 = Les rendez-vous des %s derniers jours et tous ceux à venir. Les tiers, projets, documents et pièces jointes restent dans Dolibarr ; le compte-rendu est recopié sous la description.
+DoliCalSyncShared                = Agendas des collègues sur mon téléphone
+DoliCalSyncSharedHelp            = En lecture seule, chacun avec sa couleur.
+DoliCalSyncSharedSaved           = Agendas enregistrés : ils apparaîtront à la prochaine synchronisation.
+DoliCalCalDavMyCalendar          = Mon agenda Dolibarr
+DoliCalCalDavCalendarOf          = Agenda de %s
+
+#
+# Setup - Configuration (rappels, comptes-rendus, synchronisation)
+#
+DoliCalSetupReminderByDefault     = Rappel activé par défaut
+DoliCalSetupReminderByDefaultHelp = Un nouvel événement propose un rappel, avec le délai défini dans la configuration de l'agenda. Chacun peut l'éteindre dans le formulaire.
+DoliCalSetupReportFromVoice       = Compte-rendu dicté
+DoliCalSetupReportFromVoiceHelp   = Le mémo vocal d'un compte-rendu est transcrit et rédigé par le module IA (ChatGPT). Chaque enregistrement est alors envoyé à OpenAI.
+DoliCalSetupCalDav                = Synchronisation des téléphones (CalDAV)
+DoliCalSetupCalDavHelp            = Chacun peut synchroniser son agenda avec DAVx⁵, un iPhone, un Mac ou Thunderbird, avec son identifiant et son mot de passe Dolibarr.

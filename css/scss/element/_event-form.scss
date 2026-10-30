@@ -1,0 +1,353 @@
+@use "../variables/variables" as *;
+
+/* Form of an event, in the Saturne modal : the modal grows with its content instead of fixed thirds */
+
+.wpeo-modal.dolical-modal {
+  .modal-container {
+    display: flex;
+    flex-direction: column;
+    max-width: 780px;
+    height: auto;
+    max-height: calc(100vh - 40px);
+    padding: 0;
+    overflow: hidden;
+    border-radius: 14px;
+
+    .modal-header {
+      flex: none;
+      height: auto;
+      padding: 16px 22px;
+      border-bottom: 1px solid $ra-border-soft;
+
+      .modal-title {
+        color: $ra-text;
+        font-size: 17px;
+        font-weight: 700;
+        text-transform: none;
+      }
+    }
+
+    .modal-content {
+      flex: 1;
+      height: auto;
+      min-height: 0;
+      padding: 16px 22px;
+      overflow-y: auto;
+    }
+
+    .modal-footer {
+      display: flex;
+      flex: none;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      height: auto;
+      padding: 12px 22px;
+      border-top: 1px solid $ra-border-soft;
+      background: #fbfcfd;
+    }
+  }
+
+  @media (max-width: $media__small) {
+    .modal-container {
+      max-height: 100vh;
+      border-radius: 0;
+    }
+  }
+}
+
+.dolical-form__loading {
+  padding: 60px;
+  color: $ra-primary;
+  font-size: 24px;
+  text-align: center;
+}
+
+.dolical-form__error {
+  margin-right: auto;
+  color: $ra-danger;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dolical-form {
+  color: $ra-text;
+  font-size: 13.5px;
+
+  input.dolical-form__label {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0 0 14px;
+    padding: 6px 2px;
+    border: 0;
+    border-bottom: 2px solid $ra-border-soft;
+    border-radius: 0;
+    background: transparent;
+    color: $ra-text;
+    font-size: 22px;
+    font-weight: 600;
+
+    &:focus {
+      border-bottom-color: $ra-primary;
+      outline: none;
+    }
+  }
+}
+
+.dolical-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+
+  @media (max-width: $media__small) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.dolical-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+
+  > label:not(.dolical-check):not(.dolical-dropzone) {
+    color: $ra-text-soft;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  input[type="text"],
+  input[type="date"],
+  input[type="datetime-local"],
+  select,
+  textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 34px;
+    padding: 6px 10px;
+    border: 1px solid $ra-border;
+    border-radius: 6px;
+    background: $ra-white;
+    color: $ra-text;
+    font-family: inherit;
+    font-size: 13.5px;
+
+    &:focus {
+      border-color: $ra-primary;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(99, 172, 201, 0.2);
+    }
+
+    &:disabled {
+      background: $ra-bg;
+      color: $ra-muted;
+    }
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  &.dolical-field--wide {
+    grid-column: 1 / -1;
+  }
+
+  &.dolical-field--check {
+    justify-content: flex-end;
+    padding-bottom: 7px;
+  }
+
+  // select2 in the modal : same height and corners as the other fields
+  .select2-container {
+    width: 100% !important;
+
+    .select2-selection--single,
+    .select2-selection--multiple {
+      min-height: 34px;
+      border-color: $ra-border;
+      border-radius: 6px;
+    }
+  }
+}
+
+.dolical-field__help {
+  color: $ra-muted;
+  font-size: 11.5px;
+}
+
+.dolical-field__icon {
+  color: $ra-muted;
+}
+
+.dolical-field.dolical-form__when {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: $ra-bg;
+}
+
+.dolical-form__dates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  input[type="date"],
+  input[type="datetime-local"] {
+    width: auto;
+  }
+
+  .dolical-check {
+    margin-left: 6px;
+  }
+}
+
+// Colleagues already taken during the slot : a warning, the event can still be saved
+.dolical-field.dolical-form__conflicts {
+  display: none;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: $ra-warning-soft;
+  color: $ra-warning;
+  font-size: 13px;
+
+  &.is-visible {
+    display: flex;
+  }
+
+  > i {
+    margin-top: 3px;
+  }
+
+  ul {
+    margin: 4px 0 0;
+    padding-left: 16px;
+    color: $ra-text;
+  }
+}
+
+.dolical-field.dolical-form__notify {
+  padding: 10px 12px;
+  border: 1px solid $ra-primary-soft;
+  border-radius: 10px;
+  background: $ra-primary-softer;
+
+  .dolical-check {
+    font-weight: 600;
+
+    i {
+      color: $ra-primary-dark;
+    }
+  }
+}
+
+.dolical-form__arrow {
+  color: $ra-muted;
+}
+
+.dolical-form__day {
+  display: none;
+}
+
+.dolical-form.is-fullday {
+  input.dolical-form__day {
+    display: inline-block;
+  }
+
+  input.dolical-form__time {
+    display: none;
+  }
+}
+
+// Repetition : the kind, and the last day once it repeats
+.dolical-field.dolical-form__repeat {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 12px;
+  padding: 0 12px;
+
+  > .dolical-field__help {
+    grid-column: 2;
+  }
+}
+
+.dolical-form__repeat-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  select {
+    width: auto;
+    max-width: 100%;
+  }
+}
+
+.dolical-form__until {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  color: $ra-text-soft;
+  font-size: 12.5px;
+
+  .dolical-form__repeat.is-repeating & {
+    display: inline-flex;
+  }
+
+  input[type="date"] {
+    width: auto;
+  }
+}
+
+// Reminder : a switch, its delay and its kinds once on
+.dolical-field.dolical-form__reminder {
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid $ra-border-soft;
+  border-radius: 10px;
+}
+
+.dolical-form__reminder-options {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding-left: 46px;
+
+  .dolical-form__reminder.is-on & {
+    display: flex;
+  }
+
+  input[type="number"] {
+    box-sizing: border-box;
+    width: 70px;
+    min-height: 34px;
+    padding: 6px 8px;
+    border: 1px solid $ra-border;
+    border-radius: 6px;
+  }
+
+  select {
+    width: auto;
+  }
+
+  .dolical-check i {
+    color: $ra-muted;
+  }
+}
+
+.dolical-form__notif-blocked {
+  display: none;
+  padding-left: 46px;
+  color: $ra-danger;
+
+  .dolical-form__reminder.is-on.is-blocked & {
+    display: block;
+  }
+}
