@@ -17,13 +17,24 @@
 /**
  * \file    js/modules/util.js
  * \ingroup dolical
- * \brief   Helpers shared by the calendar, the card and the form : dates, escaping, colors, clipboard, toast.
- *          No init : nothing runs on its own here.
+ * \brief   Helpers shared by the calendar, the card and the form : dates, escaping, colors, clipboard, toast,
+ *          and the closing of the modals.
  */
 
 'use strict';
 
 window.dolical.util = {};
+
+/**
+ * Util init : a modal closes from its close buttons only, a click beside it would lose what was typed.
+ *
+ * @returns {void}
+ */
+window.dolical.util.init = function() {
+  $(document).on('click', '.dolical-modal .modal-close', function() {
+    $(this).closest('.dolical-modal').removeClass('modal-active');
+  });
+};
 
 /**
  * Configuration of the calendar page, read once from the data attribute of the frame.
