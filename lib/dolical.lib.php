@@ -187,8 +187,8 @@ function dolical_initials(string $name): string
 }
 
 /**
- * People whose agenda the user may display : every active internal user with the right to read all the
- * events, only himself otherwise
+ * People whose agenda the user may display : every active internal employee with the right to read all the
+ * events, only himself otherwise. The current user keeps his own agenda even when he is not an employee
  *
  * @param  User  $user Current user
  * @return array       [id => ['id', 'name', 'login', 'email', 'color', 'initials']], current user first
@@ -201,6 +201,7 @@ function dolical_get_calendar_users(User $user): array
     $sql .= ' FROM ' . MAIN_DB_PREFIX . 'user as u';
     $sql .= ' WHERE u.statut = 1';
     $sql .= ' AND (u.fk_soc IS NULL OR u.fk_soc = 0)';
+    $sql .= ' AND (u.employee = 1 OR u.rowid = ' . ((int) $user->id) . ')';
     $sql .= ' AND u.entity IN (' . getEntity('user') . ')';
     if (!dolical_can_read_all($user)) {
         $sql .= ' AND u.rowid = ' . ((int) $user->id);
