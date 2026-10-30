@@ -103,8 +103,8 @@ class modDoliCal extends DolibarrModules
             'printing' => 0,
             // Set this to 1 if module has its own theme directory (theme)
             'theme' => 0,
-            // Set this to relative path of css file if module has its own css file
-            'css' => [],
+            // Set this to relative path of css file if module has its own css file : the colors of the icon of the top menu
+            'css' => ['/dolical/css/dolical_menu.css'],
             // Set this to relative path of js file if module must load a js on all pages
             'js' => [],
             // Set here all hooks context managed by module : the cards that get the button "Plan in DoliCal"
