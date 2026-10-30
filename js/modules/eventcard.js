@@ -130,7 +130,7 @@ window.dolical.eventcard.reload = function() {
   const config = U.config();
   const id     = E.currentId;
 
-  $.get(config.urls.event, {action: 'card', id: id}, null, 'html').done(function(html) {
+  $.get(config.urls.event, {action: 'card', id: id, token: config.token}, null, 'html').done(function(html) {
     if (E.currentId !== id || !E.isOpen()) {
       return;
     }

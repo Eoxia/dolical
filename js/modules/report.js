@@ -112,7 +112,7 @@ window.dolical.report.open = function(id, record) {
   $box.html('<div class="dolical-form__loading"><i class="fas fa-circle-notch fa-spin"></i></div>');
   $modal.addClass('modal-active');
 
-  $.get(U.config().urls.event, {action: 'report', id: id}, null, 'html').done(function(html) {
+  $.get(U.config().urls.event, {action: 'report', id: id, token: U.config().token}, null, 'html').done(function(html) {
     // The libraries of the media block are modals of their own : out of this one, or they would show inside it
     $('body > .dolical-report-detached').remove();
     $box.html(html);
@@ -158,7 +158,7 @@ window.dolical.report.upload = function(files) {
     if (!response.success && response.error) {
       U.toast(response.error, 'error');
     }
-    $.get(U.config().urls.event, {action: 'mediablock', id: id}, null, 'html').done(function(html) {
+    $.get(U.config().urls.event, {action: 'mediablock', id: id, token: U.config().token}, null, 'html').done(function(html) {
       if (R.currentId !== id) {
         return;
       }

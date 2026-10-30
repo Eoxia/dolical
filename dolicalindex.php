@@ -86,7 +86,8 @@ $calendarConfig = [
         'event'  => dol_buildpath('/dolical/ajax/event.php', 1),
         'search' => dol_buildpath('/dolical/ajax/search.php', 1),
     ],
-    'token'           => newToken(),
+    // The endpoints keep the token of the session (NOTOKENRENEWAL) : the one to send them is the current one
+    'token'           => currentToken(),
     'currentUser'     => (int) $user->id,
     'canReadAll'      => dolical_can_read_all($user),
     'canCreate'       => dolical_can_create($user),
