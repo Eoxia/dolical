@@ -45,7 +45,8 @@ global $user;
 
 header('Content-Type: application/json; charset=utf-8');
 
-if (!$user->hasRight('dolical', 'read') || !$user->hasRight('agenda', 'myactions', 'read')) {
+// The calendar is for the internal users, as its pages
+if (!$user->hasRight('dolical', 'read') || !$user->hasRight('agenda', 'myactions', 'read') || $user->socid > 0) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'NotEnoughPermissions']);
     exit;

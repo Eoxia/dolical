@@ -95,6 +95,69 @@ function dolical_get_linkable_types(User $user): array
 }
 
 /**
+ * Whether the user may see an object : the read right of its module, then the check its own card makes through
+ * restrictedArea() (entity, third party of an external user, customers of a sales representative, private
+ * project). An id coming from the browser is never loaded without it
+ *
+ * @param  User   $user    Current user
+ * @param  string $element societe, contact, project, or a linkable element (propal, facture...)
+ * @param  int    $id      Id of the object
+ * @return bool
+ */
+function dolical_can_see_object(User $user, string $element, int $id): bool
+{
+    global $db;
+
+    if ($id <= 0) {
+        return false;
+    }
+
+    // Module of the object, then the arguments its card gives to restrictedArea()
+    $checks = [
+        'societe'           => [$user->hasRight('societe', 'lire'), 'societe', '&societe', ''],
+        'contact'           => [$user->hasRight('societe', 'contact', 'lire'), 'contact', 'socpeople&societe', ''],
+        'project'           => [isModEnabled('project') && $user->hasRight('projet', 'lire'), 'projet', 'projet&project', ''],
+        'propal'            => [null, 'propal', '', ''],
+        'commande'          => [null, 'commande', '', ''],
+        'facture'           => [null, 'facture', '', ''],
+        'contrat'           => [null, 'contrat', '', ''],
+        'fichinter'         => [null, 'ficheinter', 'fichinter', ''],
+        'ticket'            => [null, 'ticket', '', ''],
+        'shipping'          => [null, 'expedition', '', ''],
+        'supplier_proposal' => [null, 'supplier_proposal', '', ''],
+        'order_supplier'    => [null, 'fournisseur', 'commande_fournisseur', 'commande'],
+        'invoice_supplier'  => [null, 'fournisseur', 'facture_fourn', 'facture'],
+    ];
+    if (!isset($checks[$element])) {
+        return false;
+    }
+    [$right, $feature, $tableAndShare, $feature2] = $checks[$element];
+    // The linkable elements : their module is enabled and the user reads it
+    if ($right === null) {
+        $right = isset(dolical_get_linkable_types($user)[$element]);
+    }
+    if (!$right) {
+        return false;
+    }
+
+    require_once DOL_DOCUMENT_ROOT . '/core/lib/security.lib.php';
+    if (!checkUserAccessToObject($user, [$feature], $id, $tableAndShare, $feature2, 'fk_soc', 'rowid')) {
+        return false;
+    }
+
+    // A private contact is seen by whoever created it only
+    if ($element === 'contact') {
+        $resql = $db->query('SELECT priv, fk_user_creat FROM ' . MAIN_DB_PREFIX . 'socpeople WHERE rowid = ' . ((int) $id));
+        $obj   = $resql ? $db->fetch_object($resql) : null;
+        if (!$obj || (!empty($obj->priv) && (int) $obj->fk_user_creat !== (int) $user->id)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
  * Element code of llx_element_element from the value of llx_actioncomm.elementtype : ActionComm::create()
  * renames facture, commande and contrat on the way in
  *
@@ -455,8 +518,9 @@ function dolical_get_linked_objects(ActionComm $event, User $user): array
     $types   = dolical_get_linkable_types($user);
     $objects = [];
     foreach (dolical_get_event_links($event) as $key => $link) {
-        // A link to an element of a disabled module or a forbidden type is kept in base, only not shown
-        if (!isset($types[$link['element']])) {
+        // A link to an element of a disabled module, of a forbidden type or that the user may not see is kept in
+        // base, only not shown
+        if (!isset($types[$link['element']]) || !dolical_can_see_object($user, $link['element'], (int) $link['id'])) {
             continue;
         }
         $object = fetchObjectByElement($link['id'], $link['element']);
@@ -555,7 +619,7 @@ function dolical_get_billing_summary(ActionComm $event, array $objects, User $us
             }
             while ($obj = $db->fetch_object($resql)) {
                 $invoiceId = (int) ($obj->targettype === 'facture' ? $obj->fk_target : $obj->fk_source);
-                if (isset($invoices['facture:' . $invoiceId])) {
+                if (isset($invoices['facture:' . $invoiceId]) || !dolical_can_see_object($user, 'facture', $invoiceId)) {
                     continue;
                 }
                 $invoice = fetchObjectByElement($invoiceId, 'facture');
@@ -586,6 +650,9 @@ function dolical_get_billing_summary(ActionComm $event, array $objects, User $us
                 continue;
             }
             while ($obj = $db->fetch_object($resql)) {
+                if (!dolical_can_see_object($user, $element, (int) $obj->rowid)) {
+                    continue;
+                }
                 $object = fetchObjectByElement((int) $obj->rowid, $element);
                 if (is_object($object) && $object->id > 0) {
                     $description = dolical_describe_object($object, $element, $types[$element]);
@@ -859,16 +926,17 @@ function dolical_get_event_card(ActionComm $event, User $user): array
     $card['reportDue']  = dolical_report_due($event, $user);
     $card['canReport']  = dolical_can_report($user, $event);
 
-    // Third party and project
+    // Third party and project : their name as on the native card, their details for whoever may see them
     $card['thirdparty'] = null;
     if ($event->socid > 0) {
         $thirdparty = new Societe($db);
         if ($thirdparty->fetch($event->socid) > 0) {
+            $seen               = dolical_can_see_object($user, 'societe', (int) $event->socid);
             $card['thirdparty'] = [
                 'nomUrl' => $thirdparty->getNomUrl(0, '', 0, 0, -1, 0, '', 'valignmiddle'),
-                'town'   => trim($thirdparty->zip . ' ' . $thirdparty->town),
-                'phone'  => (string) $thirdparty->phone,
-                'email'  => (string) $thirdparty->email,
+                'town'   => $seen ? trim($thirdparty->zip . ' ' . $thirdparty->town) : '',
+                'phone'  => $seen ? (string) $thirdparty->phone : '',
+                'email'  => $seen ? (string) $thirdparty->email : '',
             ];
         }
     }
@@ -877,11 +945,12 @@ function dolical_get_event_card(ActionComm $event, User $user): array
         require_once DOL_DOCUMENT_ROOT . '/projet/class/project.class.php';
         $project = new Project($db);
         if ($project->fetch($event->fk_project) > 0) {
+            $seen            = dolical_can_see_object($user, 'project', (int) $event->fk_project);
             $card['project'] = [
                 'nomUrl'  => $project->getNomUrl(0, '', 1),
                 'status'  => $project->getLibStatut(5),
-                'amount'  => $project->opp_amount > 0 ? price($project->opp_amount, 0, $langs, 1, -1, -1, 'auto') : '',
-                'percent' => $project->opp_percent !== '' && $project->opp_percent !== null ? round((float) $project->opp_percent) . ' %' : '',
+                'amount'  => $seen && $project->opp_amount > 0 ? price($project->opp_amount, 0, $langs, 1, -1, -1, 'auto') : '',
+                'percent' => $seen && $project->opp_percent !== '' && $project->opp_percent !== null ? round((float) $project->opp_percent) . ' %' : '',
             ];
         }
     }
@@ -964,6 +1033,10 @@ function dolical_search_elements(User $user, string $search, int $socid = 0): ar
         if ($user->socid > 0) {
             $sql .= ' AND t.fk_soc = ' . ((int) $user->socid);
         }
+        // Same restriction as the native lists for a user limited to his own customers
+        if (!$user->hasRight('societe', 'client', 'voir')) {
+            $sql .= ' AND EXISTS (SELECT sc.fk_soc FROM ' . MAIN_DB_PREFIX . 'societe_commerciaux as sc WHERE sc.fk_soc = t.fk_soc AND sc.fk_user = ' . ((int) $user->id) . ')';
+        }
         $sql .= ' ORDER BY ' . ($socid > 0 ? '(t.fk_soc = ' . ((int) $socid) . ') DESC, ' : '') . 't.rowid DESC';
         $sql .= $db->plimit(8);
 
@@ -1027,6 +1100,10 @@ function dolical_search_contacts(User $user, string $search, int $socid = 0): ar
     }
     if ($user->socid > 0) {
         $sql .= ' AND sp.fk_soc = ' . ((int) $user->socid);
+    }
+    // Same restriction as the native lists for a user limited to his own customers : a contact without third party stays
+    if (!$user->hasRight('societe', 'client', 'voir')) {
+        $sql .= ' AND (sp.fk_soc IS NULL OR sp.fk_soc = 0 OR EXISTS (SELECT sc.fk_soc FROM ' . MAIN_DB_PREFIX . 'societe_commerciaux as sc WHERE sc.fk_soc = sp.fk_soc AND sc.fk_user = ' . ((int) $user->id) . '))';
     }
     $sql .= ' ORDER BY ' . ($socid > 0 ? '(sp.fk_soc = ' . ((int) $socid) . ') DESC, ' : '') . 'sp.lastname, sp.firstname';
     $sql .= $db->plimit(25);
@@ -1170,7 +1247,12 @@ function dolical_save_event(ActionComm $event, array $data, User $user): int
         $event->oldcopy = clone $event;
     }
 
-    if (trim($data['label']) === '') {
+    // Whoever writes the event (form, phone, series), its text is read as the form reads it : no HTML in the title
+    // nor the place, and no line break, they end in mail subjects and iCalendar lines
+    $label    = trim(preg_replace('/\s*[\r\n]+\s*/', ' ', sanitizeVal((string) $data['label'], 'alphanohtml')));
+    $location = trim(preg_replace('/\s*[\r\n]+\s*/', ' ', sanitizeVal((string) $data['location'], 'alphanohtml')));
+
+    if ($label === '') {
         $event->error = $langs->trans('ErrorFieldRequired', $langs->transnoentities('Title'));
         return -1;
     }
@@ -1198,17 +1280,26 @@ function dolical_save_event(ActionComm $event, array $data, User $user): int
         }
     }
 
-    $event->label        = dol_trunc(trim($data['label']), 255, 'right', 'UTF-8', 1);
+    // A third party or a project chosen for the event must be one the user may see ; the ones already there stay
+    $socid     = max(0, (int) $data['socid']);
+    $projectId = max(0, (int) $data['project_id']);
+    if (($socid > 0 && $socid !== (int) $event->socid && !dolical_can_see_object($user, 'societe', $socid))
+        || ($projectId > 0 && $projectId !== (int) $event->fk_project && !dolical_can_see_object($user, 'project', $projectId))) {
+        $event->error = $langs->trans('NotEnoughPermissions');
+        return -1;
+    }
+
+    $event->label        = dol_trunc($label, 255, 'right', 'UTF-8', 1);
     $event->fulldayevent = !empty($data['fullday']) ? 1 : 0;
     $event->datep        = (int) $data['start'];
     $event->datef        = max((int) $data['start'], (int) ($data['end'] ?: $data['start']));
-    $event->location     = dol_trunc(trim((string) $data['location']), 255, 'right', 'UTF-8', 1);
+    $event->location     = dol_trunc($location, 255, 'right', 'UTF-8', 1);
     $event->percentage   = max(-1, min(100, (int) $data['percent']));
     $event->transparency = !empty($data['busy']) ? 1 : 0;
-    $event->socid        = max(0, (int) $data['socid']);
-    $event->fk_project   = max(0, (int) $data['project_id']);
+    $event->socid        = $socid;
+    $event->fk_project   = $projectId;
     if ($isNew || !empty($data['note_changed'])) {
-        $event->note_private = (string) $data['note'];
+        $event->note_private = sanitizeVal((string) $data['note'], 'restricthtml');
     }
 
     // People : the owner first, the answers already given are kept
@@ -1232,9 +1323,12 @@ function dolical_save_event(ActionComm $event, array $data, User $user): int
         ];
     }
 
+    // Contacts : the ones already invited stay, a new one must be a contact the user may see
     $previousContacts         = $event->socpeopleassigned;
     $event->socpeopleassigned = [];
-    $contactIds               = array_values(array_filter(array_map('intval', (array) $data['contact_ids'])));
+    $contactIds               = array_values(array_filter(array_map('intval', (array) $data['contact_ids']), function ($contactId) use ($previousContacts, $user) {
+        return $contactId > 0 && (isset($previousContacts[$contactId]) || dolical_can_see_object($user, 'contact', $contactId));
+    }));
     foreach ($contactIds as $contactId) {
         $event->socpeopleassigned[$contactId] = ['id' => $contactId, 'mandatory' => 0, 'transparency' => 0, 'answer_status' => (int) ($previousContacts[$contactId]['answer_status'] ?? 0)];
     }
@@ -1256,12 +1350,9 @@ function dolical_save_event(ActionComm $event, array $data, User $user): int
             continue;
         }
         $key = $matches[1] . ':' . $matches[2];
-        // A new link must point to a document that exists in an entity the user sees
-        if (!isset($existing[$key])) {
-            $object = fetchObjectByElement((int) $matches[2], $matches[1]);
-            if (!is_object($object) || empty($object->id) || (isset($object->entity) && !in_array((int) $object->entity, array_map('intval', explode(',', getEntity($types[$matches[1]]['entity']))), true))) {
-                continue;
-            }
+        // A new link must point to a document the user may see
+        if (!isset($existing[$key]) && !dolical_can_see_object($user, $matches[1], (int) $matches[2])) {
+            continue;
         }
         $wanted[$key] = ['element' => $matches[1], 'id' => (int) $matches[2]];
     }
@@ -1322,8 +1413,10 @@ function dolical_save_event(ActionComm $event, array $data, User $user): int
     }
 
     if ($error) {
+        // The database tells the log, not the browser
+        dol_syslog(__FUNCTION__ . ' ' . $db->lasterror() . ' ' . $event->error, LOG_ERR);
         $db->rollback();
-        $event->error = $db->lasterror() ?: $event->error;
+        $event->error = $langs->trans('Error');
         return -1;
     }
 
@@ -1346,6 +1439,14 @@ function dolical_save_event(ActionComm $event, array $data, User $user): int
  */
 function dolical_move_event(ActionComm $event, int $start, int $end, bool $allDay, int $fromUser, int $toUser, User $user): int
 {
+    global $langs;
+
+    // Without the right on the events of others, an event stays its owner's, as in the form
+    if ($fromUser > 0 && $toUser > 0 && $fromUser !== $toUser && (int) $event->userownerid === $fromUser && !$user->hasRight('agenda', 'allactions', 'create')) {
+        $event->error = $langs->trans('NotEnoughPermissions');
+        return -1;
+    }
+
     $event->oldcopy      = clone $event;
     $event->datep        = $start;
     $event->datef        = max($start, $end);
