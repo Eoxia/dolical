@@ -61,11 +61,31 @@ const DOLICAL_MAIL_MODES = [
  */
 function dolical_invitation_signature(int $entity, int $eventId, string $kind, int $personId): string
 {
-    global $conf;
+    return substr(hash_hmac('sha256', 'dolical-invitation|' . $entity . '|' . $eventId . '|' . $kind . '|' . $personId, dolical_invitation_secret()), 0, 40);
+}
 
-    $secret = !empty($conf->file->instance_unique_id) ? $conf->file->instance_unique_id : DOL_DATA_ROOT . getDolGlobalString('MAIN_INFO_SOCIETE_NOM');
+/**
+ * Secret of the answer links : the unique id of the instance, or on an old installation without one a random
+ * secret of the module, made once. Nothing anyone could guess from the setup
+ *
+ * @return string
+ */
+function dolical_invitation_secret(): string
+{
+    global $conf, $db;
 
-    return substr(hash_hmac('sha256', 'dolical-invitation|' . $entity . '|' . $eventId . '|' . $kind . '|' . $personId, $secret), 0, 40);
+    if (!empty($conf->file->instance_unique_id)) {
+        return $conf->file->instance_unique_id;
+    }
+
+    $secret = getDolGlobalString('DOLICAL_INVITATION_SECRET');
+    if ($secret === '') {
+        require_once DOL_DOCUMENT_ROOT . '/core/lib/admin.lib.php';
+        $secret = bin2hex(random_bytes(32));
+        dolibarr_set_const($db, 'DOLICAL_INVITATION_SECRET', $secret, 'chaine', 0, '', 0);
+    }
+
+    return $secret;
 }
 
 /**
@@ -208,19 +228,11 @@ function dolical_series_when(ActionComm $event): string
  */
 function dolical_invitation_scope(ActionComm $event): array
 {
-    global $db;
-
     if (empty($event->recurid)) {
         return [(int) $event->id];
     }
 
-    $ids   = [(int) $event->id];
-    $resql = $db->query('SELECT id FROM ' . MAIN_DB_PREFIX . "actioncomm WHERE recurid = '" . $db->escape($event->recurid) . "' AND entity = " . ((int) $event->entity));
-    while ($resql && ($obj = $db->fetch_object($resql))) {
-        $ids[] = (int) $obj->id;
-    }
-
-    return array_values(array_unique($ids));
+    return array_values(array_unique(array_merge([(int) $event->id], array_keys(dolical_series_occurrences($event)))));
 }
 
 /**
@@ -375,7 +387,8 @@ function dolical_event_uid(ActionComm $event, bool $series = false): string
     }
     $dav = dolical_dav_reference($event);
     if ($dav['uid'] !== '') {
-        return $dav['uid'];
+        // Given by a phone : one line of printable text, or it would add lines to the iCalendar file
+        return preg_replace('/[\x00-\x1F\x7F]/', '', $dav['uid']);
     }
 
     return 'dolical-' . $entity . '-' . ((int) $event->id) . '@' . $host;
@@ -507,6 +520,31 @@ function dolical_mail_template(string $type, string $language): ?array
 }
 
 /**
+ * Subject and body of a mail from an email template of Dolibarr. The values of DoliCal come from the event and the
+ * people : escaped when the template is HTML, the whole text escaped when it is plain
+ *
+ * @param  array     $template      ['topic', 'content'], from dolical_mail_template()
+ * @param  array     $substitutions Common substitutions and the __DOLICAL_*__ values, as plain text
+ * @param  Translate $outputLangs   Language of the mail
+ * @return array                    [subject, html]
+ */
+function dolical_mail_from_template(array $template, array $substitutions, Translate $outputLangs): array
+{
+    $subject = make_substitutions($template['topic'], $substitutions, $outputLangs);
+    if (!dol_textishtml($template['content'])) {
+        return [$subject, dol_nl2br(dol_escape_htmltag(make_substitutions($template['content'], $substitutions, $outputLangs), 0, 1))];
+    }
+
+    foreach ($substitutions as $key => $value) {
+        if (strpos($key, '__DOLICAL_') === 0) {
+            $substitutions[$key] = dol_escape_htmltag((string) $value);
+        }
+    }
+
+    return [$subject, make_substitutions($template['content'], $substitutions, $outputLangs)];
+}
+
+/**
  * Body of a mail drawn by the template of the module
  *
  * @param  array $mail ['title', 'intro', 'rows' => [[label, value]], 'button' => [url, text], 'secondary' => [url, text], 'note']
@@ -536,6 +574,9 @@ function dolical_mail_html(array $mail): string
  */
 function dolical_send_mail(string $to, string $subject, string $html, string $replyTo, string $senderName, string $trackId, array $attachments = []): string
 {
+    // A subject stays on one line : a line break in it would add headers to the mail
+    $subject = trim(preg_replace('/[\r\n]+/', ' ', $subject));
+
     // The robot address of the instance sends, the organizer receives the replies : the domain of the
     // organizer would fail the checks of the receiving servers
     $fromEmail = getDolGlobalString('MAIN_MAIL_EMAIL_FROM', $replyTo);
@@ -681,11 +722,7 @@ function dolical_send_invitations(ActionComm $event, User $sender, array $recipi
         ]);
 
         if ($template !== null) {
-            $subject = make_substitutions($template['topic'], $substitutions, $langs);
-            $html    = make_substitutions($template['content'], $substitutions, $langs);
-            if (!dol_textishtml($html)) {
-                $html = dol_nl2br(dol_escape_htmltag($html, 0, 1));
-            }
+            [$subject, $html] = dolical_mail_from_template($template, $substitutions, $langs);
         } else {
             $subject = $langs->transnoentities($settings['subject'], $label);
             $rows    = [[$langs->transnoentities('DoliCalMailWhen'), $when]];
@@ -867,8 +904,13 @@ function dolical_record_answer(ActionComm $event, string $kind, int $personId, i
         return false;
     }
 
-    $type   = $kind === 'u' ? 'user' : 'socpeople';
-    $exists = $kind === 'u' ? isset($event->userassigned[$personId]) : isset($event->socpeopleassigned[$personId]);
+    $type     = $kind === 'u' ? 'user' : 'socpeople';
+    $assigned = $kind === 'u' ? $event->userassigned : $event->socpeopleassigned;
+    $exists   = isset($assigned[$personId]);
+    // The same answer once more, the link of the mail followed again : nothing to record nor to tell the organizer
+    if ($exists && (int) ($assigned[$personId]['answer_status'] ?? 0) === $status) {
+        return true;
+    }
     if ($exists) {
         $sql  = 'UPDATE ' . MAIN_DB_PREFIX . 'actioncomm_resources SET answer_status = ' . ((int) $status);
         $sql .= ' WHERE fk_actioncomm = ' . ((int) $event->id) . " AND element_type = '" . $type . "' AND fk_element = " . ((int) $personId);
@@ -883,11 +925,16 @@ function dolical_record_answer(ActionComm $event, string $kind, int $personId, i
 
     // The invitation of a series is answered once for all its dates to come
     if (!empty($event->recurid)) {
-        $sql  = 'UPDATE ' . MAIN_DB_PREFIX . 'actioncomm_resources SET answer_status = ' . ((int) $status);
-        $sql .= " WHERE element_type = '" . $type . "' AND fk_element = " . ((int) $personId);
-        $sql .= ' AND fk_actioncomm IN (SELECT id FROM (SELECT id FROM ' . MAIN_DB_PREFIX . "actioncomm WHERE recurid = '" . $db->escape($event->recurid) . "'";
-        $sql .= ' AND entity = ' . ((int) $event->entity) . " AND datep >= '" . $db->idate(min((int) $event->datep, dol_now())) . "') as series)";
-        $db->query($sql);
+        $from  = min((int) $event->datep, dol_now());
+        $dates = array_keys(array_filter(dolical_series_occurrences($event), function ($start) use ($from) {
+            return $start >= $from;
+        }));
+        if (!empty($dates)) {
+            $sql  = 'UPDATE ' . MAIN_DB_PREFIX . 'actioncomm_resources SET answer_status = ' . ((int) $status);
+            $sql .= " WHERE element_type = '" . $type . "' AND fk_element = " . ((int) $personId);
+            $sql .= ' AND fk_actioncomm IN (' . $db->sanitize(implode(',', $dates)) . ')';
+            $db->query($sql);
+        }
     }
 
     $organizer = new User($db);
@@ -924,11 +971,7 @@ function dolical_record_answer(ActionComm $event, string $kind, int $personId, i
             '__DOLICAL_ANSWER__'         => $answerText,
             '__DOLICAL_EVENT_LINK__'     => $eventUrl,
         ]);
-        $subject = make_substitutions($template['topic'], $substitutions, $outputLangs);
-        $html    = make_substitutions($template['content'], $substitutions, $outputLangs);
-        if (!dol_textishtml($html)) {
-            $html = dol_nl2br(dol_escape_htmltag($html, 0, 1));
-        }
+        [$subject, $html] = dolical_mail_from_template($template, $substitutions, $outputLangs);
     } else {
         $subject = $outputLangs->transnoentities('DoliCalMailAnswerSubject', $name, $answerText, $label);
         $html    = dolical_mail_html([
@@ -970,12 +1013,13 @@ function dolical_resolve_contacts(array $values, int $socid, User $user, array &
             continue;
         }
 
-        // "Jean Dupont <jean@example.com>", "Jean Dupont jean@example.com" or the address alone
+        // "Jean Dupont <jean@example.com>", "Jean Dupont jean@example.com" or the address alone. The value is decoded
+        // here, after GETPOST : its HTML is removed now, or it would reach the name of the contact
         $typed = trim(rawurldecode(substr($value, 4)));
         $name  = '';
         $email = $typed;
         if (preg_match('/^(.*?)\s*<([^<>\s]+)>\s*$/', $typed, $matches) || preg_match('/^(.*?)\s*([^\s<>]+@[^\s<>]+)\s*$/', $typed, $matches)) {
-            $name  = trim($matches[1], " \t\"'");
+            $name  = trim(sanitizeVal($matches[1], 'alphanohtml'), " \t\"'");
             $email = trim($matches[2]);
         }
         if (!isValidEmail($email)) {
@@ -983,13 +1027,21 @@ function dolical_resolve_contacts(array $values, int $socid, User $user, array &
             continue;
         }
 
+        // An existing contact of this address, among the ones the user may see
         $sql  = 'SELECT rowid FROM ' . MAIN_DB_PREFIX . 'socpeople';
         $sql .= " WHERE email = '" . $db->escape($email) . "' AND statut = 1 AND entity IN (" . getEntity('contact') . ')';
         $sql .= ' ORDER BY ' . ($socid > 0 ? '(fk_soc = ' . ((int) $socid) . ') DESC, ' : '') . 'rowid ASC';
-        $sql .= $db->plimit(1);
+        $sql .= $db->plimit(20);
+        $found = 0;
         $resql = $db->query($sql);
-        if ($resql && ($obj = $db->fetch_object($resql))) {
-            $ids[] = (int) $obj->rowid;
+        if ($resql) {
+            while (!$found && ($obj = $db->fetch_object($resql))) {
+                $found = dolical_can_see_object($user, 'contact', (int) $obj->rowid) ? (int) $obj->rowid : 0;
+            }
+            $db->free($resql);
+        }
+        if ($found > 0) {
+            $ids[] = $found;
             continue;
         }
 
@@ -999,7 +1051,12 @@ function dolical_resolve_contacts(array $values, int $socid, User $user, array &
         }
 
         if ($name === '') {
-            $name = ucwords(str_replace(['.', '_', '-'], ' ', substr($email, 0, strpos($email, '@'))));
+            // An address allows & / = ` in its first part : the name made of it is cleaned the same way
+            $name = trim(sanitizeVal(ucwords(str_replace(['.', '_', '-'], ' ', substr($email, 0, strpos($email, '@')))), 'alphanohtml'));
+        }
+        if ($name === '') {
+            // Only the domain is left, made of letters, digits, dots and dashes
+            $name = substr($email, strpos($email, '@') + 1);
         }
         $words   = preg_split('/\s+/', $name, 2);
         $contact = new Contact($db);
