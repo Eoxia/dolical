@@ -42,8 +42,9 @@ $langs->loadLangs(['dolical@dolical', 'admin', 'agenda', 'errors']);
 
 $action = GETPOST('action', 'aZ09');
 
-// Security check
-$permissionToRead = $user->hasRight('dolical', 'adminpage', 'read');
+// Security check : the right of the module shows the setup, changing it is for the administrators, as in Dolibarr
+$permissionToRead  = $user->hasRight('dolical', 'adminpage', 'read') || $user->admin;
+$permissionToWrite = (bool) $user->admin;
 if (!$permissionToRead || $user->socid > 0) {
     accessforbidden();
 }
@@ -54,7 +55,7 @@ $views = ['day' => 'DoliCalViewDay', 'week' => 'DoliCalViewWeek', 'team' => 'Dol
  * Actions
  */
 
-if ($action == 'update') {
+if ($action == 'update' && $permissionToWrite && dolical_valid_post()) {
     $defaultView = GETPOST('DOLICAL_DEFAULT_VIEW', 'aZ09');
     $dayStart    = min(23, max(0, GETPOSTINT('DOLICAL_DAY_START_HOUR')));
     $dayEnd      = min(24, max($dayStart + 1, GETPOSTINT('DOLICAL_DAY_END_HOUR')));
@@ -163,7 +164,9 @@ print '</td></tr>';
 
 print '</table>';
 
-print '<div class="center"><input type="submit" class="button button-save" value="' . $langs->trans('Save') . '"></div>';
+if ($permissionToWrite) {
+    print '<div class="center"><input type="submit" class="button button-save" value="' . $langs->trans('Save') . '"></div>';
+}
 print '</form>';
 
 print dol_get_fiche_end();
