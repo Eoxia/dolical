@@ -177,6 +177,9 @@ $calendarConfig = [
 
 $title = $langs->trans('DoliCalCalendar');
 
+// The calendar has its own side panel : the left menu only took its room
+$conf->dol_hide_leftmenu = 1;
+
 // With the media library of DoliCal : the reports pick their photos in it
 saturne_header(1, '', $title, '', '', 0, 0, [], [], '', 'dolical-page');
 
