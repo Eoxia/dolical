@@ -551,6 +551,20 @@ function dolical_describe_object(CommonObject $object, string $element, array $t
     $amount      = ($amountField !== '' && isset($object->$amountField)) ? (float) $object->$amountField : null;
     $labelField  = $type['labelfield'];
 
+    // The status of an invoice depends on what is already paid : without it, an unpaid invoice reads « started ».
+    // Counted as the card of the invoice counts it (dol_banner_tab()) : payments, credit notes and deposits used
+    $status = '';
+    if (method_exists($object, 'getLibStatut')) {
+        if (($element === 'facture' || $element === 'invoice_supplier') && method_exists($object, 'getSommePaiement')) {
+            $alreadyPaid = (float) $object->getSommePaiement(0);
+            $alreadyPaid += method_exists($object, 'getSumCreditNotesUsed') ? (float) $object->getSumCreditNotesUsed(0) : 0;
+            $alreadyPaid += method_exists($object, 'getSumDepositsUsed') ? (float) $object->getSumDepositsUsed(0) : 0;
+            $status       = $object->getLibStatut(5, $alreadyPaid);
+        } else {
+            $status = $object->getLibStatut(5);
+        }
+    }
+
     $description = [
         'key'         => $element . ':' . $object->id,
         'element'     => $element,
@@ -559,7 +573,7 @@ function dolical_describe_object(CommonObject $object, string $element, array $t
         'typeLabel'   => $type['label'],
         'picto'       => $type['picto'],
         'nomUrl'      => $object->getNomUrl(1),
-        'status'      => method_exists($object, 'getLibStatut') ? $object->getLibStatut(5) : '',
+        'status'      => $status,
         'amount'      => $amount,
         'amountText'  => $amount !== null ? price($amount, 0, $langs, 1, -1, -1, $conf->currency) . ' ' . $langs->trans($type['amountlabel']) : '',
         'extra'       => ($labelField !== '' && !empty($object->$labelField)) ? (string) $object->$labelField : '',

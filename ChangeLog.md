@@ -20,6 +20,8 @@
   l'enregistrement.
 - Calendrier : créer un rendez-vous en faisant glisser la souris sur des créneaux vides (horaires au quart d'heure en
   vues Jour et Semaine, plusieurs jours en vue Mois et dans la bande « Toute la journée ») ; le clic garde son effet.
+- Fiche d'un événement : le statut d'une facture liée est celui de sa fiche (une facture sans règlement n'est plus
+  « Commencée » mais « Impayée »).
 - Nouvelle entrée de menu : réactiver le module pour la voir.
 
 ## 1.1.0
