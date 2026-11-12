@@ -129,7 +129,7 @@ window.dolical.calendar.init = function() {
 
   // The agenda of a team changes while it is open : refresh it quietly
   setInterval(function() {
-    if (document.visibilityState === 'visible' && !C.drag && !$('#dolical-event-modal').hasClass('modal-active')) {
+    if (document.visibilityState === 'visible' && !C.drag && !C.select && !$('#dolical-event-modal').hasClass('modal-active')) {
       C.load(true);
     }
   }, 120000);
@@ -162,6 +162,7 @@ window.dolical.calendar.event = function() {
   $(document).on('click', '.dolical-calendar .dolical-event', C.clickEvent);
   $(document).on('click', '.dolical-calendar .ra-tg__col, .dolical-calendar .ra-tg__allday-col, .dolical-calendar .ra-month__cell, .dolical-calendar .ra-team__cell', C.clickEmpty);
   $(document).on('pointerdown', '.dolical-calendar .dolical-event.is-editable', C.dragStart);
+  $(document).on('pointerdown', '.dolical-calendar .ra-tg__col, .dolical-calendar .ra-tg__allday-col, .dolical-calendar .ra-month__cell', C.selectStart);
 
   $(document).on('keydown', C.keyboard);
   $(document).on('dolical:changed', function() {
@@ -1312,6 +1313,143 @@ window.dolical.calendar.clickEmpty = function(event) {
     params.end   = params.start + config.defaultDuration * 60;
   }
 
+  window.dolical.eventform.open(params);
+};
+
+/**
+ * Press on an empty place and drag to choose the dates of a new event : down a column of hours for a time, across the
+ * days of the month or of the all day band for several days. A press without moving stays a click (clickEmpty).
+ * Mouse only : on a touch screen the gesture scrolls the page.
+ *
+ * @param   {PointerEvent} event Pointer
+ * @returns {void}
+ */
+window.dolical.calendar.selectStart = function(event) {
+  const C      = window.dolical.calendar;
+  const config = window.dolical.util.config();
+  if (event.button !== 0 || event.pointerType !== 'mouse' || !config.canCreate || C.drag || $(event.target).closest('.dolical-event, [data-goto], button, a').length) {
+    return;
+  }
+  const $cell = $(this);
+  C.select = {
+    $cell: $cell,
+    timed: $cell.hasClass('ra-tg__col'),
+    user: parseInt($cell.attr('data-user'), 10) || 0,
+    startX: event.clientX,
+    startY: event.clientY,
+    anchor: $cell.hasClass('ra-tg__col') ? C.selectMinute($cell[0], event.clientY) : $cell.attr('data-date'),
+    from: null,
+    to: null,
+    active: false,
+    $ghost: null
+  };
+  $(document).on('pointermove.dolicalselect', C.selectMove).on('pointerup.dolicalselect pointercancel.dolicalselect', C.selectEnd);
+};
+
+/**
+ * Minute of the day under the pointer in a column of hours, on the grid of the drag and drop.
+ *
+ * @param   {Element} column Column of a day
+ * @param   {Number}  clientY Pointer
+ * @returns {Number}
+ */
+window.dolical.calendar.selectMinute = function(column, clientY) {
+  const C       = window.dolical.calendar;
+  const minutes = (clientY - column.getBoundingClientRect().top) * 60 / C.HOUR_HEIGHT;
+  return Math.max(0, Math.min(1440 - C.SNAP, Math.floor(minutes / C.SNAP) * C.SNAP));
+};
+
+/**
+ * Follow the pointer : the hours chosen in the column, or the days between the first one and the one under the pointer.
+ *
+ * @param   {PointerEvent} event Pointer
+ * @returns {void}
+ */
+window.dolical.calendar.selectMove = function(event) {
+  const C      = window.dolical.calendar;
+  const U      = window.dolical.util;
+  const select = C.select;
+  if (!select) {
+    return;
+  }
+  if (!select.active) {
+    if (Math.abs(event.clientX - select.startX) + Math.abs(event.clientY - select.startY) < 5) {
+      return;
+    }
+    select.active = true;
+    $('body').addClass('dolical-is-selecting');
+    window.dolical.eventcard.close();
+    if (select.timed) {
+      select.$ghost = $('<div class="ra-select"><span class="ra-select__time"></span></div>').appendTo(select.$cell);
+    }
+  }
+  event.preventDefault();
+
+  if (select.timed) {
+    const minute = C.selectMinute(select.$cell[0], event.clientY);
+    select.from  = Math.min(select.anchor, minute);
+    select.to    = Math.max(select.anchor, minute) + C.SNAP;
+    const day    = U.fromDayKey(select.$cell.attr('data-date'));
+    select.$ghost[0].style.setProperty('--ra-top', (select.from * C.HOUR_HEIGHT / 60) + 'px');
+    select.$ghost[0].style.setProperty('--ra-height', ((select.to - select.from) * C.HOUR_HEIGHT / 60) + 'px');
+    select.$ghost.find('.ra-select__time').text(U.time(new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, select.from)) + ' – ' + U.time(new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, select.to)));
+    return;
+  }
+
+  // Days : the cell under the pointer, of the same kind as the first one
+  const $under = $(document.elementFromPoint(event.clientX, event.clientY)).closest(select.$cell.hasClass('ra-month__cell') ? '.ra-month__cell' : '.ra-tg__allday-col');
+  if (!$under.length) {
+    return;
+  }
+  const key   = $under.attr('data-date');
+  select.from = key < select.anchor ? key : select.anchor;
+  select.to   = key < select.anchor ? select.anchor : key;
+  select.$cell.parent().children('[data-date]').each(function() {
+    const day = this.getAttribute('data-date');
+    $(this).toggleClass('is-selecting', day >= select.from && day <= select.to);
+  });
+};
+
+/**
+ * Release : the form of a new event opens on the dates chosen.
+ *
+ * @returns {void}
+ */
+window.dolical.calendar.selectEnd = function() {
+  const C      = window.dolical.calendar;
+  const U      = window.dolical.util;
+  const config = U.config();
+  const select = C.select;
+
+  $(document).off('.dolicalselect');
+  C.select = null;
+  $('body').removeClass('dolical-is-selecting');
+  $('.dolical-calendar .is-selecting').removeClass('is-selecting');
+  if (!select || !select.active) {
+    return;
+  }
+  if (select.$ghost) {
+    select.$ghost.remove();
+  }
+  // The click that ends the gesture must not open a second form
+  C.justDragged = true;
+  setTimeout(function() {
+    C.justDragged = false;
+  }, 80);
+  if (select.from === null) {
+    return;
+  }
+
+  const params = {user: select.user || (C.state.users.length === 1 ? C.state.users[0] : config.currentUser)};
+  if (select.timed) {
+    const day    = U.fromDayKey(select.$cell.attr('data-date'));
+    params.start = Math.floor(new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, select.from).getTime() / 1000);
+    params.end   = Math.floor(new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, select.to).getTime() / 1000);
+  } else {
+    params.allday = 1;
+    params.start  = Math.floor(U.fromDayKey(select.from).getTime() / 1000);
+    params.end    = Math.floor(U.addDays(U.fromDayKey(select.to), 1).getTime() / 1000) - 1;
+  }
   window.dolical.eventform.open(params);
 };
 
