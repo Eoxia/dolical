@@ -74,7 +74,7 @@ class modDoliCal extends DolibarrModules
         $this->editor_url  = 'https://www.eoxia.com';
 
         // Possible values for version are: 'development', 'experimental', 'dolibarr', 'dolibarr_deprecated' or a version string like 'x.y.z'
-        $this->version = '1.1.0';
+        $this->version = '1.2.0';
 
         // Key used in llx_const table to save module status enabled/disabled (where DOLICAL is value of property name of module in uppercase)
         $this->const_name = 'MAIN_MODULE_' . strtoupper($this->name);
@@ -318,6 +318,22 @@ class modDoliCal extends DolibarrModules
             'position' => 1000 + $r,
             'enabled'  => 'isModEnabled(\'dolical\') && getDolGlobalInt(\'DOLICAL_CALDAV\', 1)',
             'perms'    => '$user->hasRight(\'dolical\', \'read\') && $user->hasRight(\'agenda\', \'myactions\', \'read\')',
+            'target'   => '',
+            'user'     => 0,
+        ];
+
+        $this->menu[$r++] = [
+            'fk_menu'  => 'fk_mainmenu=dolical',
+            'type'     => 'left',
+            'titre'    => 'DoliCalImport',
+            'prefix'   => '<i class="fas fa-file-upload pictofixedwidth"></i>',
+            'mainmenu' => 'dolical',
+            'leftmenu' => 'dolical_import',
+            'url'      => '/dolical/view/dolical_import.php',
+            'langs'    => 'dolical@dolical',
+            'position' => 1000 + $r,
+            'enabled'  => 'isModEnabled(\'dolical\')',
+            'perms'    => '$user->hasRight(\'dolical\', \'read\') && $user->hasRight(\'agenda\', \'myactions\', \'read\') && ($user->hasRight(\'agenda\', \'myactions\', \'create\') || $user->hasRight(\'agenda\', \'allactions\', \'create\'))',
             'target'   => '',
             'user'     => 0,
         ];

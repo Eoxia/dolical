@@ -90,6 +90,9 @@
         <?php if (getDolGlobalInt('DOLICAL_CALDAV', 1)) : ?>
             <a class="dolical-sidebar__sync" href="<?php echo dol_buildpath('/dolical/view/dolical_sync.php', 1); ?>"><i class="fas fa-mobile-alt pictofixedwidth"></i><?php echo $langs->trans('DoliCalSyncPhone'); ?></a>
         <?php endif; ?>
+        <?php if (dolical_can_create($user)) : ?>
+            <a class="dolical-sidebar__import" href="<?php echo dol_buildpath('/dolical/view/dolical_import.php', 1); ?>"><i class="fas fa-file-upload pictofixedwidth"></i><?php echo $langs->trans('DoliCalImport'); ?></a>
+        <?php endif; ?>
     </aside>
 
     <section class="dolical-main">
