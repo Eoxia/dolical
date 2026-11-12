@@ -339,7 +339,7 @@ function dolical_caldav_duration(int $seconds): string
  *
  * @param  string $calendarData iCalendar object
  * @param  string $email        Email of the person synchronizing, to find his answer
- * @return array                ['vcalendar', 'vevent', 'uid', 'label', 'start', 'end', 'fullday', 'location', 'note', 'busy', 'rrule', 'answer' => int|null, 'alarm' => seconds|null, 'emails' => [email => partstat], 'names' => [email => name shown]]
+ * @return array                ['vcalendar', 'vevent', 'uid', 'label', 'start', 'end', 'fullday', 'location', 'note', 'busy', 'rrule', 'answer' => int|null, 'alarm' => seconds|null, 'emails' => [email => partstat], 'names' => [email => name shown], 'organizer' => email]
  * @throws \Sabre\DAV\Exception\BadRequest
  */
 function dolical_caldav_read(string $calendarData, string $email): array
@@ -378,8 +378,10 @@ function dolical_caldav_read(string $calendarData, string $email): array
         }
     }
     // The organizer takes part too, even when the agenda did not list him among the attendees
+    $organizer = '';
     if (isset($vevent->ORGANIZER)) {
-        $address = dol_strtolower(preg_replace('/^mailto:/i', '', (string) $vevent->ORGANIZER->getValue()));
+        $address   = dol_strtolower(preg_replace('/^mailto:/i', '', (string) $vevent->ORGANIZER->getValue()));
+        $organizer = $address;
         if (!isset($emails[$address])) {
             $emails[$address] = 1;
             $names[$address]  = isset($vevent->ORGANIZER['CN']) ? trim((string) $vevent->ORGANIZER['CN']) : '';
@@ -419,6 +421,7 @@ function dolical_caldav_read(string $calendarData, string $email): array
         'alarm'     => $alarm,
         'emails'    => $emails,
         'names'     => $names,
+        'organizer' => $organizer,
     ];
 }
 
@@ -763,12 +766,14 @@ function dolical_caldav_set_answer(ActionComm $event, int $userId, int $status):
 }
 
 /**
- * Dates of a series as its rule, its exceptions and its moved dates give them, the cancelled ones left out : the
- * last ones up to a date, as many as a series of the agenda holds
+ * Dates of a series as its rule, its extra dates (RDATE), its exceptions and its moved dates give them, the cancelled
+ * ones left out : the last ones up to a date, as many as a series of the agenda holds. A date changed on its own keeps
+ * its own title, place and description
  *
  * @param  array $read  From dolical_caldav_read()
  * @param  int   $until Last start to take
- * @return array        [[start, end]] in order, the first one being the event the series starts with ; empty on error
+ * @return array        [[0 => start, 1 => end, 'label', 'location', 'note']] in order, the first one being the event
+ *                      the series starts with ; empty on error
  */
 function dolical_caldav_occurrences(array $read, int $until): array
 {
@@ -779,6 +784,7 @@ function dolical_caldav_occurrences(array $read, int $until): array
     }
 
     $occurrences = [];
+    $seen        = [];
     $end         = new DateTimeImmutable('@' . $until);
     // The dates before the ones kept are walked through too : the library would stop on its own count of them
     $limit = \Sabre\VObject\Settings::$maxRecurrences;
@@ -788,8 +794,25 @@ function dolical_caldav_occurrences(array $read, int $until): array
         // A rule more frequent than the agenda handles (every minute...) stops there
         for ($steps = 0; $iterator->valid() && $iterator->getDtStart() <= $end && $steps < 50000; $steps++) {
             $occurrence = $iterator->getEventObject();
-            if (!isset($occurrence->STATUS) || strtoupper((string) $occurrence->STATUS) !== 'CANCELLED') {
-                $occurrences[] = array_slice(dolical_caldav_dates($occurrence), 0, 2);
+            // The extra dates often repeat the first one : the same date twice is one date
+            $startKey = $iterator->getDtStart()->getTimestamp();
+            if (!isset($seen[$startKey]) && (!isset($occurrence->STATUS) || strtoupper((string) $occurrence->STATUS) !== 'CANCELLED')) {
+                $seen[$startKey] = true;
+                [$first, $last, $fullday] = dolical_caldav_dates($occurrence);
+                if ($fullday) {
+                    // The library gives the end of a date as its start plus a length in seconds : across a change of
+                    // time it is an hour off midnight, and the date would lose or win a day
+                    $next = $iterator->getDtEnd()->setTimezone($zone)->modify('+12 hours')->setTime(0, 0);
+                    $day  = (new DateTimeImmutable('@' . $first))->setTimezone($zone);
+                    $last = ($next > $day ? $next->modify('-1 second') : $day->setTime(23, 59, 59))->getTimestamp();
+                }
+                $occurrences[] = [
+                    $first,
+                    $last,
+                    'label'    => isset($occurrence->SUMMARY) ? trim((string) $occurrence->SUMMARY) : $read['label'],
+                    'location' => isset($occurrence->LOCATION) ? trim((string) $occurrence->LOCATION) : $read['location'],
+                    'note'     => isset($occurrence->DESCRIPTION) ? (string) $occurrence->DESCRIPTION : $read['note'],
+                ];
                 if (count($occurrences) > DOLICAL_RECURRENCE_MAX + 1) {
                     array_shift($occurrences);
                 }
@@ -808,11 +831,12 @@ function dolical_caldav_occurrences(array $read, int $until): array
 
 /**
  * Create the events of an iCalendar object, sent by a phone or read from an imported file : one, or a series with
- * the dates its rule gives, the answers already given and the alarm of the owner
+ * the dates its rule and its extra dates give, the answers already given and the alarm of the owner
  *
- * @param  User      $user  Person acting : the one synchronizing, or the one importing
- * @param  string    $uri   File name of the event in the calendar
- * @param  array     $read  From dolical_caldav_read(), read with the address of the owner
+ * @param  User       $user   Person acting : the one synchronizing, or the one importing
+ * @param  string     $uri    File name of the event in the calendar
+ * @param  array      $read   From dolical_caldav_read(), read with the address of the owner ; 'extra' : text added to
+ *                            every description, 'percent' : status, to do (0) when not given
  * @param  User|null  $owner  Person whose agenda gets the event, the one acting when null
  * @param  int        $until  Last start of a series ; a year after its first date when 0
  * @param  array|null $people From dolical_caldav_people(), when already found
@@ -824,16 +848,27 @@ function dolical_caldav_create(User $user, string $uri, array $read, ?User $owne
 
     $owner = $owner ?? $user;
 
-    // A series : the dates as the rule computes them, its exceptions included. Read before anything is written : a
-    // phone sends again what failed, it must not leave half a series behind
+    // A series : the dates as the rule computes them, its extra dates and exceptions included. Read before anything
+    // is written : a phone sends again what failed, it must not leave half a series behind
     $occurrences = [];
-    if ($read['rrule'] !== '') {
+    if ($read['rrule'] !== '' || isset($read['vevent']->RDATE)) {
         $occurrences = dolical_caldav_occurrences($read, $until > 0 ? $until : (new DateTimeImmutable('@' . $read['start']))->modify('+1 year')->getTimestamp());
         if (!empty($occurrences)) {
-            // The series starts with the first date kept : the first one of the rule may be cancelled, or too old
-            [$read['start'], $read['end']] = array_shift($occurrences);
+            // The series starts with the first date kept : the first one of the rule may be cancelled, or too old, or
+            // changed on its own
+            $first            = array_shift($occurrences);
+            $read['start']    = $first[0];
+            $read['end']      = $first[1];
+            $read['label']    = $first['label'];
+            $read['location'] = $first['location'];
+            $read['note']     = $first['note'];
         }
     }
+    // What the importer adds to every description (people outside the instance, categories, links)
+    $extra = trim((string) ($read['extra'] ?? ''));
+    $note  = function (string $text) use ($extra): string {
+        return trim(trim($text) . ($extra !== '' ? "\n\n" . $extra : ''));
+    };
 
     $people = $people ?? dolical_caldav_people($read['emails'], $user, (int) $owner->id, $read['names'] ?? []);
     $types  = getDolGlobalString('AGENDA_USE_EVENT_TYPE') ? dolical_get_event_types() : [];
@@ -848,7 +883,7 @@ function dolical_caldav_create(User $user, string $uri, array $read, ?User $owne
         'start'        => $read['start'],
         'end'          => $read['end'],
         'location'     => $read['location'],
-        'percent'      => 0,
+        'percent'      => (int) ($read['percent'] ?? 0),
         'busy'         => $read['busy'] ? 1 : 0,
         'owner_id'     => (int) $owner->id,
         'user_ids'     => $people['users'],
@@ -856,7 +891,7 @@ function dolical_caldav_create(User $user, string $uri, array $read, ?User $owne
         'contact_ids'  => $people['contacts'],
         'project_id'   => 0,
         'elements'     => [],
-        'note'         => trim($read['note']),
+        'note'         => $note($read['note']),
         'note_changed' => 1,
     ];
     $id = dolical_save_event($event, $data, $user);
@@ -885,10 +920,22 @@ function dolical_caldav_create(User $user, string $uri, array $read, ?User $owne
     }
 
     if (!empty($occurrences)) {
+        // Extra dates without a rule make a series of their own dates only
         $last = end($occurrences);
-        dolical_set_series([$id], dolical_new_recurid($id), dolical_recurrence_normalize($read['rrule']), (int) $last[0]);
+        dolical_set_series([$id], dolical_new_recurid($id), $read['rrule'] !== '' ? dolical_recurrence_normalize($read['rrule']) : '', (int) $last[0]);
         $event->fetch($id);
-        foreach (dolical_create_occurrences($event, $occurrences, $user) as $occurrenceId) {
+        foreach (dolical_create_occurrences($event, $occurrences, $user) as $index => $occurrenceId) {
+            $occurrence = $occurrences[$index];
+            // A date changed on its own keeps its own text, written the way dolical_save_event() writes it
+            if ($occurrence['label'] !== $read['label'] || $occurrence['location'] !== $read['location'] || $occurrence['note'] !== $read['note']) {
+                $label    = trim(preg_replace('/\s*[\r\n]+\s*/', ' ', sanitizeVal($occurrence['label'], 'alphanohtml')));
+                $location = trim(preg_replace('/\s*[\r\n]+\s*/', ' ', sanitizeVal($occurrence['location'], 'alphanohtml')));
+                $sql      = 'UPDATE ' . MAIN_DB_PREFIX . "actioncomm SET label = '" . $db->escape(dol_trunc($label !== '' ? $label : $event->label, 255, 'right', 'UTF-8', 1)) . "',";
+                $sql     .= " location = '" . $db->escape(dol_trunc($location, 128, 'right', 'UTF-8', 1)) . "',";
+                $sql     .= " note = '" . $db->escape(sanitizeVal($note($occurrence['note']), 'restricthtml')) . "'";
+                $sql     .= ' WHERE id = ' . ((int) $occurrenceId);
+                $db->query($sql);
+            }
             $copy = new ActionComm($db);
             if ($read['alarm'] !== null && $copy->fetch($occurrenceId) > 0) {
                 dolical_caldav_set_alarm($copy, $read['alarm'], $owner);

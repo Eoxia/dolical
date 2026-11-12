@@ -9,9 +9,15 @@
   e-mail n'est envoyé. Un fichier réimporté ne crée pas de doublon et complète les rendez-vous déjà importés des
   participants et du tiers retrouvés depuis ; le bilan liste les personnes introuvables. Les imports précédents sont
   listés (clé native `import_key` sur leurs événements) et chacun se supprime d'un coup en cas d'erreur.
+- Import fidèle à l'agenda d'origine : dates supplémentaires (`RDATE`) importées, date modifiée seule avec son propre
+  titre, lieu et description, journées entières répétées justes au changement d'heure, statut « Non applicable » (plus
+  de rendez-vous passés « en retard »), et sous la description ce que l'événement ne peut garder : titre ou lieu
+  au-delà de 128 caractères, personnes introuvables, catégories, lien de visio.
 - Synchronisation : un rendez-vous créé sur le téléphone garde les réponses déjà données par les participants,
   retrouve participants et tiers de la même façon, et une série dont la première date est annulée commence à la
   suivante.
+- Le lieu d'un événement est coupé à 128 caractères, la taille du champ natif : au-delà, une base stricte refusait
+  l'enregistrement.
 - Nouvelle entrée de menu : réactiver le module pour la voir.
 
 ## 1.1.0
