@@ -204,7 +204,10 @@ function dolical_import_ics(string $file, User $owner, User $user): array
 
         // A series of the past is taken up to a year ahead, one to come over its first year
         $until = max($ahead, (new DateTimeImmutable('@' . $read['start']))->modify('+1 year')->getTimestamp());
-        $id    = dolical_caldav_create($user, $uri, $read, $owner, $until, $people);
+        // A meeting of another agenda is no task : neither to do nor late once past
+        $read['percent'] = -1;
+        $read['extra']   = dolical_import_extra($read, $people, $owned);
+        $id              = dolical_caldav_create($user, $uri, $read, $owner, $until, $people);
         if ($id <= 0) {
             $label              = $read['label'] !== '' ? $read['label'] : $langs->transnoentities('DoliCalUntitled');
             $result['failed'][] = dol_print_date($read['start'], 'day') . ' – ' . dol_trunc($label, 80);
@@ -224,6 +227,81 @@ function dolical_import_ics(string $file, User $owner, User $user): array
     arsort($result['unknown']);
 
     return $result;
+}
+
+/**
+ * What the other agenda shows of a meeting and the event has no field for, added under its description : the whole
+ * title or place when longer than the event keeps, the people not found in the instance (or given without an address)
+ * with their answer, the categories, the link of the video call
+ *
+ * @param  array $read   From dolical_caldav_read()
+ * @param  array $people From dolical_caldav_people()
+ * @param  array $owned  [address of the owner => true], left out
+ * @return string        Lines, empty when nothing is left out
+ */
+function dolical_import_extra(array $read, array $people, array $owned): string
+{
+    global $langs;
+
+    $vevent = $read['vevent'];
+    $lines  = [];
+
+    // A title or a place longer than the event keeps (ActionComm::create() cuts both at 128), whole
+    $oneLine = function (string $text): string {
+        return trim(preg_replace('/\s*[\r\n]+\s*/', ' ', $text));
+    };
+    if (dol_strlen($oneLine($read['label'])) > 128) {
+        $lines[] = $langs->transnoentities('DoliCalImportExtraTitle', $oneLine($read['label']));
+    }
+    if (dol_strlen($oneLine($read['location'])) > 128) {
+        $lines[] = $langs->transnoentities('DoliCalImportExtraPlace', $oneLine($read['location']));
+    }
+
+    // The people not found : the addresses of nobody, and the ones the agenda gave without an address
+    $answers = [1 => 'DoliCalAnswerAccepted', 2 => 'DoliCalAnswerTentative', -1 => 'DoliCalAnswerDeclined', 0 => 'DoliCalAnswerPending'];
+    $outside = [];
+    $missing = $people['unknown'];
+    foreach (array_keys($read['emails']) as $address) {
+        if (!isValidEmail($address) && trim($address) !== '') {
+            $missing[] = $address;
+        }
+    }
+    foreach ($missing as $email) {
+        if (isset($owned[$email])) {
+            continue;
+        }
+        $name      = trim((string) ($read['names'][$email] ?? ''));
+        $person    = ($name !== '' && $name !== $email ? $name . ' (' . $email . ')' : $email);
+        $status    = $email === $read['organizer'] ? $langs->transnoentities('DoliCalOrganizer') : $langs->transnoentities($answers[(int) ($read['emails'][$email] ?? 0)] ?? 'DoliCalAnswerPending');
+        $outside[] = '- ' . $person . ' : ' . $status;
+    }
+    if (!empty($outside)) {
+        $lines[] = $langs->transnoentities('DoliCalImportExtraPeople');
+        $lines   = array_merge($lines, $outside);
+    }
+
+    $categories = [];
+    foreach ($vevent->select('CATEGORIES') as $property) {
+        foreach ($property->getParts() as $category) {
+            // Google writes its own kinds of events there, as addresses
+            if (trim($category) !== '' && strpos($category, '://') === false) {
+                $categories[trim($category)] = true;
+            }
+        }
+    }
+    if (!empty($categories)) {
+        $lines[] = $langs->transnoentities('DoliCalImportExtraCategories', implode(', ', array_keys($categories)));
+    }
+
+    // The link of the meeting, unless the description already gives it
+    foreach (['X-GOOGLE-CONFERENCE', 'URL'] as $name) {
+        $link = isset($vevent->$name) ? trim((string) $vevent->$name) : '';
+        if ($link !== '' && strpos($read['note'], $link) === false) {
+            $lines[] = $langs->transnoentities('DoliCalImportExtraLink', $link);
+        }
+    }
+
+    return implode("\n", $lines);
 }
 
 /**

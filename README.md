@@ -99,8 +99,12 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
 - Les rendez-vous vont dans son propre agenda, ou dans celui d'un collègue avec le droit natif « créer les événements
   des autres ». Il faut le droit de créer des événements.
 - Chaque rendez-vous est créé comme ceux d'un téléphone : alarme reprise en rappel, répétition transformée en série
-  jusqu'à un an après aujourd'hui (au plus 366 dates, les plus récentes). Les rendez-vous annulés sont laissés de côté
-  et aucun e-mail n'est envoyé.
+  jusqu'à un an après aujourd'hui (au plus 366 dates, les plus récentes), dates supplémentaires (`RDATE`) comprises ;
+  une date modifiée seule garde son titre, son lieu et sa description. Les rendez-vous annulés sont laissés de côté
+  et aucun e-mail n'est envoyé. Statut « Non applicable » : un rendez-vous importé n'est ni à faire ni en retard.
+- Ce que l'événement n'a pas de champ pour garder est ajouté sous sa description : titre ou lieu complet au-delà de
+  128 caractères (`ActionComm::create()` les coupe), personnes introuvables ou sans adresse avec leur réponse,
+  catégories, lien de visio absent de la description.
 - Participants (organisateur compris), parmi les utilisateurs actifs et les contacts visibles, avec leur réponse :
   par leur e-mail (pour un utilisateur, le professionnel ou le personnel), sinon par leur nom — celui affiché par
   l'agenda, ou le « prenom.nom » de l'adresse — quand une seule personne le porte. Un nom d'un seul mot ne suffit pas.
