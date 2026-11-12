@@ -339,7 +339,7 @@ function dolical_caldav_duration(int $seconds): string
  *
  * @param  string $calendarData iCalendar object
  * @param  string $email        Email of the person synchronizing, to find his answer
- * @return array                ['vcalendar', 'vevent', 'uid', 'label', 'start', 'end', 'fullday', 'location', 'note', 'busy', 'rrule', 'answer' => int|null, 'alarm' => seconds|null, 'emails' => [email => partstat]]
+ * @return array                ['vcalendar', 'vevent', 'uid', 'label', 'start', 'end', 'fullday', 'location', 'note', 'busy', 'rrule', 'answer' => int|null, 'alarm' => seconds|null, 'emails' => [email => partstat], 'names' => [email => name shown]]
  * @throws \Sabre\DAV\Exception\BadRequest
  */
 function dolical_caldav_read(string $calendarData, string $email): array
@@ -363,16 +363,26 @@ function dolical_caldav_read(string $calendarData, string $email): array
     }
     [$startTs, $endTs, $fullday] = dolical_caldav_dates($vevent);
 
-    // The answer of the person, and every address with its answer
+    // The answer of the person, and every address with its answer and the name shown with it
     $answers = ['ACCEPTED' => 1, 'TENTATIVE' => 2, 'DECLINED' => -1, 'NEEDS-ACTION' => 0];
     $emails  = [];
+    $names   = [];
     $answer  = null;
     foreach ($vevent->select('ATTENDEE') as $attendee) {
         $address = dol_strtolower(preg_replace('/^mailto:/i', '', (string) $attendee->getValue()));
         $status  = isset($attendee['PARTSTAT']) ? strtoupper((string) $attendee['PARTSTAT']) : 'NEEDS-ACTION';
         $emails[$address] = $answers[$status] ?? 0;
+        $names[$address]  = isset($attendee['CN']) ? trim((string) $attendee['CN']) : '';
         if ($email !== '' && $address === dol_strtolower($email)) {
             $answer = $answers[$status] ?? 0;
+        }
+    }
+    // The organizer takes part too, even when the agenda did not list him among the attendees
+    if (isset($vevent->ORGANIZER)) {
+        $address = dol_strtolower(preg_replace('/^mailto:/i', '', (string) $vevent->ORGANIZER->getValue()));
+        if (!isset($emails[$address])) {
+            $emails[$address] = 1;
+            $names[$address]  = isset($vevent->ORGANIZER['CN']) ? trim((string) $vevent->ORGANIZER['CN']) : '';
         }
     }
 
@@ -408,6 +418,7 @@ function dolical_caldav_read(string $calendarData, string $email): array
         'answer'    => $answer,
         'alarm'     => $alarm,
         'emails'    => $emails,
+        'names'     => $names,
     ];
 }
 
@@ -447,42 +458,263 @@ function dolical_caldav_dates(\Sabre\VObject\Component\VEvent $vevent): array
 }
 
 /**
- * Users and contacts of the instance behind the addresses of a phone event
+ * Users, contacts and third party of the instance behind the people of an iCalendar event, with the answer each one
+ * gave. A person is found by his address (the professional or the personal one of a user), else by his name : the
+ * one the agenda shows with the address, or the "firstname.lastname" of the address, when only one person bears it.
+ * The third party is the one with that address, else the one of a contact found, else the only one of the domain the
+ * outside addresses share : neither the mail providers of everyone nor the domains of the users of the instance
  *
- * @param  string[] $emails Addresses
- * @param  User     $user   The one synchronizing, left out ; the contacts are the ones he may see
- * @return array            ['users' => int[], 'contacts' => int[]]
+ * @param  array $emails       [address => answer 1, 2, -1 or 0], as dolical_caldav_read() gives them
+ * @param  User  $user         The one acting : the contacts and third parties are the ones he may see
+ * @param  int   $exceptUserId Owner of the event, left out ; the one acting when 0
+ * @param  array $names        [address => name shown], as dolical_caldav_read() gives them
+ * @return array               ['users' => int[], 'contacts' => int[], 'socid' => int, 'unknown' => string[] addresses of nobody,
+ *                             'answers' => ['user' => [id => answer], 'socpeople' => [id => answer]]]
  */
-function dolical_caldav_people(array $emails, User $user): array
+function dolical_caldav_people(array $emails, User $user, int $exceptUserId = 0, array $names = []): array
 {
     global $db;
 
-    $exceptUserId = (int) $user->id;
+    $exceptUserId = $exceptUserId > 0 ? $exceptUserId : (int) $user->id;
 
-    $found  = ['users' => [], 'contacts' => []];
-    $emails = array_values(array_filter(array_map('dol_strtolower', $emails), 'isValidEmail'));
-    if (empty($emails)) {
+    $found   = ['users' => [], 'contacts' => [], 'socid' => 0, 'unknown' => [], 'answers' => ['user' => [], 'socpeople' => []]];
+    $answers = [];
+    foreach ($emails as $email => $answer) {
+        $email = dol_strtolower((string) $email);
+        if (isValidEmail($email)) {
+            $answers[$email] = (int) $answer;
+        }
+    }
+    if (empty($answers)) {
         return $found;
     }
-    $list = "'" . implode("', '", array_map([$db, 'escape'], $emails)) . "'";
+    $list = "'" . implode("', '", array_map([$db, 'escape'], array_keys($answers))) . "'";
 
-    $resql = $db->query('SELECT rowid FROM ' . MAIN_DB_PREFIX . 'user WHERE statut = 1 AND entity IN (0, ' . getEntity('user') . ') AND LOWER(email) IN (' . $list . ')');
-    while ($resql && ($obj = $db->fetch_object($resql))) {
-        if ((int) $obj->rowid !== $exceptUserId) {
-            $found['users'][] = (int) $obj->rowid;
+    $people = [];
+    $addUser = function (int $userId, string $email) use (&$found, &$people, $answers, $exceptUserId) {
+        $people[$email] = true;
+        if ($userId !== $exceptUserId && !isset($found['answers']['user'][$userId])) {
+            $found['users'][]                   = $userId;
+            $found['answers']['user'][$userId] = $answers[$email] ?? 0;
         }
+    };
+    $companies = [];
+    $addContact = function (int $contactId, int $socid, string $email) use (&$found, &$people, &$companies, $answers) {
+        $people[$email] = true;
+        if (!isset($found['answers']['socpeople'][$contactId])) {
+            $found['contacts'][]                         = $contactId;
+            $found['answers']['socpeople'][$contactId] = $answers[$email] ?? 0;
+            if ($socid > 0) {
+                $companies['contact'][] = $socid;
+            }
+        }
+    };
+
+    $sql   = 'SELECT rowid, LOWER(email) as email, LOWER(personal_email) as personal FROM ' . MAIN_DB_PREFIX . 'user';
+    $sql  .= ' WHERE statut = 1 AND entity IN (0, ' . getEntity('user') . ') AND (LOWER(email) IN (' . $list . ') OR LOWER(personal_email) IN (' . $list . '))';
+    $resql = $db->query($sql);
+    while ($resql && ($obj = $db->fetch_object($resql))) {
+        $addUser((int) $obj->rowid, isset($answers[$obj->email]) ? $obj->email : $obj->personal);
     }
     // One contact per address, the oldest the user may see
     $seen  = [];
-    $resql = $db->query('SELECT rowid, LOWER(email) as email FROM ' . MAIN_DB_PREFIX . 'socpeople WHERE entity IN (' . getEntity('contact') . ') AND statut = 1 AND LOWER(email) IN (' . $list . ') ORDER BY rowid');
+    $resql = $db->query('SELECT rowid, fk_soc, LOWER(email) as email FROM ' . MAIN_DB_PREFIX . 'socpeople WHERE entity IN (' . getEntity('contact') . ') AND statut = 1 AND LOWER(email) IN (' . $list . ') ORDER BY rowid');
     while ($resql && ($obj = $db->fetch_object($resql))) {
         if (!isset($seen[$obj->email]) && dolical_can_see_object($user, 'contact', (int) $obj->rowid)) {
-            $seen[$obj->email]   = true;
-            $found['contacts'][] = (int) $obj->rowid;
+            $seen[$obj->email] = true;
+            $addContact((int) $obj->rowid, (int) $obj->fk_soc, $obj->email);
+        }
+    }
+
+    // The others by their name, when only one person bears it
+    foreach (array_keys($answers) as $email) {
+        if (isset($people[$email])) {
+            continue;
+        }
+        $guesses = dolical_caldav_name_guesses($email, (string) ($names[$email] ?? ''));
+        if (empty($guesses)) {
+            continue;
+        }
+        $match = dolical_caldav_find_by_name('user', $guesses);
+        if ($match !== null) {
+            $addUser($match['id'], $email);
+            continue;
+        }
+        $match = dolical_caldav_find_by_name('socpeople', $guesses);
+        if ($match !== null && dolical_can_see_object($user, 'contact', $match['id'])) {
+            $addContact($match['id'], $match['socid'], $email);
+        }
+    }
+
+    // The third party : the one with the address, else the one of a contact, else the only one of a domain
+    $resql = $db->query('SELECT rowid FROM ' . MAIN_DB_PREFIX . 'societe WHERE entity IN (' . getEntity('societe') . ') AND status = 1 AND LOWER(email) IN (' . $list . ') ORDER BY rowid');
+    while ($resql && ($obj = $db->fetch_object($resql))) {
+        $companies['email'][] = (int) $obj->rowid;
+    }
+    // A domain tells the company only when every outside address of the event leads to the same one : a meeting with
+    // a company not in the instance, where someone of another one takes part, is not the meeting of the latter
+    $internal = dolical_caldav_internal_domains();
+    $domains  = [];
+    foreach (array_keys($answers) as $email) {
+        $domain = substr((string) strrchr($email, '@'), 1);
+        if ($domain !== '' && !isset($internal[$domain])) {
+            $domains[$domain] = dolical_caldav_find_company_by_domain($domain);
+        }
+    }
+    if (!empty($domains) && count(array_unique($domains)) === 1 && reset($domains) > 0) {
+        $companies['domain'][] = reset($domains);
+    }
+    foreach (['email', 'contact', 'domain'] as $source) {
+        foreach ($companies[$source] ?? [] as $socid) {
+            if (dolical_can_see_object($user, 'societe', $socid)) {
+                $found['socid'] = $socid;
+                break 2;
+            }
+        }
+    }
+
+    foreach (array_keys($answers) as $email) {
+        if (!isset($people[$email])) {
+            $found['unknown'][] = $email;
         }
     }
 
     return $found;
+}
+
+/**
+ * A name as it is compared : no accent, no case, words of letters only
+ *
+ * @param  string $name Name
+ * @return string
+ */
+function dolical_caldav_name_key(string $name): string
+{
+    return trim(preg_replace('/[^a-z]+/', ' ', dol_strtolower(dol_string_unaccent($name))));
+}
+
+/**
+ * Names a person behind an address may bear : the one the agenda shows, and the "firstname.lastname" of the address.
+ * A single word (a login, a lastname alone) names nobody for sure
+ *
+ * @param  string $email Address
+ * @param  string $name  Name shown with it
+ * @return array         Names, as dolical_caldav_name_key() gives them
+ */
+function dolical_caldav_name_guesses(string $email, string $name): array
+{
+    $guesses = [];
+    if ($name !== '' && strpos($name, '@') === false) {
+        $guesses[] = dolical_caldav_name_key($name);
+    }
+    $local = (string) strstr($email, '@', true);
+    if (preg_match('/^[^._\-+]+[._\-][^._\-+]+$/', $local)) {
+        $guesses[] = dolical_caldav_name_key($local);
+    }
+
+    return array_values(array_unique(array_filter($guesses, function ($guess) {
+        return strpos($guess, ' ') !== false;
+    })));
+}
+
+/**
+ * The only active user, or the only active contact, bearing one of some names, firstname or lastname first
+ *
+ * @param  string $table   'user' or 'socpeople'
+ * @param  array  $guesses Names, as dolical_caldav_name_key() gives them
+ * @return array|null      ['id', 'socid'] ; null when nobody or several people bear them
+ */
+function dolical_caldav_find_by_name(string $table, array $guesses): ?array
+{
+    global $db;
+
+    $words = [];
+    foreach ($guesses as $guess) {
+        foreach (explode(' ', $guess) as $word) {
+            $words[$word] = "'" . $db->escape($word) . "'";
+        }
+    }
+
+    $sql = 'SELECT rowid, firstname, lastname' . ($table === 'socpeople' ? ', fk_soc' : '') . ' FROM ' . MAIN_DB_PREFIX . $table;
+    if ($table === 'user') {
+        $sql .= ' WHERE statut = 1 AND entity IN (0, ' . getEntity('user') . ')';
+    } else {
+        $sql .= ' WHERE statut = 1 AND entity IN (' . getEntity('contact') . ')';
+    }
+    // The database narrows on the lastname, its collation ignores case and accents ; the name is checked whole below
+    $sql .= ' AND lastname IN (' . implode(', ', $words) . ')';
+
+    $matches = [];
+    $resql   = $db->query($sql);
+    while ($resql && ($obj = $db->fetch_object($resql))) {
+        $first = dolical_caldav_name_key((string) $obj->firstname);
+        $last  = dolical_caldav_name_key((string) $obj->lastname);
+        if ($first !== '' && $last !== '' && array_intersect($guesses, [$first . ' ' . $last, $last . ' ' . $first])) {
+            $matches[(int) $obj->rowid] = ['id' => (int) $obj->rowid, 'socid' => (int) ($obj->fk_soc ?? 0)];
+        }
+    }
+
+    return count($matches) === 1 ? reset($matches) : null;
+}
+
+/**
+ * Mail domains that say nothing of the company of a person : the providers of everyone, and the domains of the users
+ * of the instance and of its own company
+ *
+ * @return array [domain => true]
+ */
+function dolical_caldav_internal_domains(): array
+{
+    global $db, $mysoc;
+
+    static $domains = null;
+    if ($domains !== null) {
+        return $domains;
+    }
+
+    $domains = array_fill_keys(['gmail.com', 'googlemail.com', 'outlook.com', 'outlook.fr', 'hotmail.com', 'hotmail.fr', 'live.com', 'live.fr', 'msn.com',
+        'yahoo.com', 'yahoo.fr', 'icloud.com', 'me.com', 'aol.com', 'orange.fr', 'wanadoo.fr', 'free.fr', 'sfr.fr', 'neuf.fr', 'laposte.net', 'bbox.fr',
+        'gmx.fr', 'gmx.com', 'protonmail.com', 'proton.me'], true);
+    $resql = $db->query('SELECT DISTINCT LOWER(SUBSTRING_INDEX(email, \'@\', -1)) as domain FROM ' . MAIN_DB_PREFIX . "user WHERE statut = 1 AND email LIKE '%@%'");
+    while ($resql && ($obj = $db->fetch_object($resql))) {
+        $domains[$obj->domain] = true;
+    }
+    if (!empty($mysoc->email) && strpos($mysoc->email, '@') !== false) {
+        $domains[dol_strtolower(substr(strrchr($mysoc->email, '@'), 1))] = true;
+    }
+
+    return $domains;
+}
+
+/**
+ * The only active third party whose address or website is on a domain
+ *
+ * @param  string $domain Domain, lower case
+ * @return int            Id, 0 when none or several
+ */
+function dolical_caldav_find_company_by_domain(string $domain): int
+{
+    global $db;
+
+    static $cache = [];
+    if (isset($cache[$domain])) {
+        return $cache[$domain];
+    }
+
+    $like  = $db->escape($db->escapeforlike($domain));
+    $sql   = 'SELECT rowid, LOWER(email) as email, LOWER(url) as url FROM ' . MAIN_DB_PREFIX . 'societe';
+    $sql  .= ' WHERE entity IN (' . getEntity('societe') . ") AND status = 1 AND (LOWER(email) LIKE '%@" . $like . "' OR LOWER(url) LIKE '%" . $like . "%')";
+    $found = [];
+    $resql = $db->query($sql);
+    while ($resql && ($obj = $db->fetch_object($resql))) {
+        $host = (string) parse_url(preg_match('#^[a-z]+://#', (string) $obj->url) ? (string) $obj->url : 'http://' . $obj->url, PHP_URL_HOST);
+        $host = preg_replace('/^www\./', '', $host);
+        if (substr((string) $obj->email, -strlen('@' . $domain)) === '@' . $domain || $host === $domain) {
+            $found[(int) $obj->rowid] = true;
+        }
+    }
+
+    return $cache[$domain] = count($found) === 1 ? (int) array_key_first($found) : 0;
 }
 
 /**
@@ -531,37 +763,79 @@ function dolical_caldav_set_answer(ActionComm $event, int $userId, int $status):
 }
 
 /**
- * Create the events of a phone : one, or a series with the dates the phone computes from its rule
+ * Dates of a series as its rule, its exceptions and its moved dates give them, the cancelled ones left out : the
+ * last ones up to a date, as many as a series of the agenda holds
  *
- * @param  User   $user Person synchronizing
- * @param  string $uri  File name chosen by the phone
- * @param  array  $read From dolical_caldav_read()
- * @return int          Id of the event, < 0 on error
+ * @param  array $read  From dolical_caldav_read()
+ * @param  int   $until Last start to take
+ * @return array        [[start, end]] in order, the first one being the event the series starts with ; empty on error
  */
-function dolical_caldav_create(User $user, string $uri, array $read): int
+function dolical_caldav_occurrences(array $read, int $until): array
+{
+    try {
+        $zone = new DateTimeZone(dolical_reference_timezone());
+    } catch (Exception $exception) {
+        $zone = new DateTimeZone('UTC');
+    }
+
+    $occurrences = [];
+    $end         = new DateTimeImmutable('@' . $until);
+    // The dates before the ones kept are walked through too : the library would stop on its own count of them
+    $limit = \Sabre\VObject\Settings::$maxRecurrences;
+    \Sabre\VObject\Settings::$maxRecurrences = -1;
+    try {
+        $iterator = new \Sabre\VObject\Recur\EventIterator($read['vcalendar']->select('VEVENT'), null, $zone);
+        // A rule more frequent than the agenda handles (every minute...) stops there
+        for ($steps = 0; $iterator->valid() && $iterator->getDtStart() <= $end && $steps < 50000; $steps++) {
+            $occurrence = $iterator->getEventObject();
+            if (!isset($occurrence->STATUS) || strtoupper((string) $occurrence->STATUS) !== 'CANCELLED') {
+                $occurrences[] = array_slice(dolical_caldav_dates($occurrence), 0, 2);
+                if (count($occurrences) > DOLICAL_RECURRENCE_MAX + 1) {
+                    array_shift($occurrences);
+                }
+            }
+            $iterator->next();
+        }
+    } catch (Exception $exception) {
+        dol_syslog(__FUNCTION__ . ' ' . $exception->getMessage(), LOG_WARNING);
+        $occurrences = [];
+    } finally {
+        \Sabre\VObject\Settings::$maxRecurrences = $limit;
+    }
+
+    return $occurrences;
+}
+
+/**
+ * Create the events of an iCalendar object, sent by a phone or read from an imported file : one, or a series with
+ * the dates its rule gives, the answers already given and the alarm of the owner
+ *
+ * @param  User      $user  Person acting : the one synchronizing, or the one importing
+ * @param  string    $uri   File name of the event in the calendar
+ * @param  array     $read  From dolical_caldav_read(), read with the address of the owner
+ * @param  User|null  $owner  Person whose agenda gets the event, the one acting when null
+ * @param  int        $until  Last start of a series ; a year after its first date when 0
+ * @param  array|null $people From dolical_caldav_people(), when already found
+ * @return int                Id of the event, < 0 on error
+ */
+function dolical_caldav_create(User $user, string $uri, array $read, ?User $owner = null, int $until = 0, ?array $people = null): int
 {
     global $db, $langs;
 
-    // A series : the dates as the phone computes them, its exceptions included, a year ahead at most. Read before
-    // anything is written : a phone sends again what failed, it must not leave half a series behind
+    $owner = $owner ?? $user;
+
+    // A series : the dates as the rule computes them, its exceptions included. Read before anything is written : a
+    // phone sends again what failed, it must not leave half a series behind
     $occurrences = [];
     if ($read['rrule'] !== '') {
-        try {
-            $from     = new DateTimeImmutable('@' . $read['start']);
-            $expanded = $read['vcalendar']->expand($from, $from->modify('+1 year'));
-            foreach ($expanded->select('VEVENT') as $occurrence) {
-                $dates = dolical_caldav_dates($occurrence);
-                if ($dates[0] > $read['start'] && count($occurrences) < DOLICAL_RECURRENCE_MAX) {
-                    $occurrences[] = [$dates[0], $dates[1]];
-                }
-            }
-        } catch (Exception $exception) {
-            dol_syslog(__FUNCTION__ . ' ' . $exception->getMessage(), LOG_WARNING);
-            $occurrences = [];
+        $occurrences = dolical_caldav_occurrences($read, $until > 0 ? $until : (new DateTimeImmutable('@' . $read['start']))->modify('+1 year')->getTimestamp());
+        if (!empty($occurrences)) {
+            // The series starts with the first date kept : the first one of the rule may be cancelled, or too old
+            [$read['start'], $read['end']] = array_shift($occurrences);
         }
     }
 
-    $people = dolical_caldav_people(array_keys($read['emails']), $user);
+    $people = $people ?? dolical_caldav_people($read['emails'], $user, (int) $owner->id, $read['names'] ?? []);
     $types  = getDolGlobalString('AGENDA_USE_EVENT_TYPE') ? dolical_get_event_types() : [];
     $type   = getDolGlobalString('AGENDA_USE_EVENT_TYPE_DEFAULT', 'AC_RDV');
 
@@ -576,9 +850,9 @@ function dolical_caldav_create(User $user, string $uri, array $read): int
         'location'     => $read['location'],
         'percent'      => 0,
         'busy'         => $read['busy'] ? 1 : 0,
-        'owner_id'     => (int) $user->id,
+        'owner_id'     => (int) $owner->id,
         'user_ids'     => $people['users'],
-        'socid'        => 0,
+        'socid'        => $people['socid'],
         'contact_ids'  => $people['contacts'],
         'project_id'   => 0,
         'elements'     => [],
@@ -589,9 +863,25 @@ function dolical_caldav_create(User $user, string $uri, array $read): int
     if ($id <= 0) {
         return -1;
     }
+
+    // The answers already given, the owner's included : before the dates of the series, which copy them
+    if (!empty($read['answer'])) {
+        dolical_caldav_set_answer($event, (int) $owner->id, (int) $read['answer']);
+    }
+    foreach ($people['answers']['user'] as $userId => $answer) {
+        if ($answer !== 0) {
+            dolical_caldav_set_answer($event, (int) $userId, $answer);
+        }
+    }
+    foreach ($people['answers']['socpeople'] as $contactId => $answer) {
+        if ($answer !== 0 && isset($event->socpeopleassigned[$contactId])) {
+            $db->query('UPDATE ' . MAIN_DB_PREFIX . 'actioncomm_resources SET answer_status = ' . ((int) $answer) . ' WHERE fk_actioncomm = ' . ((int) $id) . " AND element_type = 'socpeople' AND fk_element = " . ((int) $contactId));
+        }
+    }
+
     $event->fetch($id);
     if ($read['alarm'] !== null) {
-        dolical_caldav_set_alarm($event, $read['alarm'], $user);
+        dolical_caldav_set_alarm($event, $read['alarm'], $owner);
     }
 
     if (!empty($occurrences)) {
@@ -601,7 +891,7 @@ function dolical_caldav_create(User $user, string $uri, array $read): int
         foreach (dolical_create_occurrences($event, $occurrences, $user) as $occurrenceId) {
             $copy = new ActionComm($db);
             if ($read['alarm'] !== null && $copy->fetch($occurrenceId) > 0) {
-                dolical_caldav_set_alarm($copy, $read['alarm'], $user);
+                dolical_caldav_set_alarm($copy, $read['alarm'], $owner);
             }
         }
     }
