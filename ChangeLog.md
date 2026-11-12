@@ -18,6 +18,8 @@
   suivante.
 - Le lieu d'un événement est coupé à 128 caractères, la taille du champ natif : au-delà, une base stricte refusait
   l'enregistrement.
+- Calendrier : créer un rendez-vous en faisant glisser la souris sur des créneaux vides (horaires au quart d'heure en
+  vues Jour et Semaine, plusieurs jours en vue Mois et dans la bande « Toute la journée ») ; le clic garde son effet.
 - Nouvelle entrée de menu : réactiver le module pour la voir.
 
 ## 1.1.0

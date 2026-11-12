@@ -15,7 +15,9 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
   - *Mois* et *Liste* (deux semaines, pratique sur téléphone).
 - **Glisser-déposer** : déplacer un événement dans le temps, l'étirer par le bas, ou le faire passer de la colonne d'une
   personne à celle d'une autre (vues Jour et Équipe).
-- **Création en un clic** sur un créneau vide, et bouton « Planifier dans l'agenda » sur les fiches devis, commande,
+- **Création en un clic** sur un créneau vide, ou en faisant glisser la souris pour choisir les horaires (vues Jour et
+  Semaine, au quart d'heure) ou plusieurs jours (vue Mois, bande « Toute la journée »), et bouton « Planifier dans
+  l'agenda » sur les fiches devis, commande,
   facture, contrat, intervention, ticket, expédition, documents fournisseurs, tiers, projet et contact : le formulaire
   s'ouvre déjà rempli.
 - **Formulaire complet** : organisateur, collègues invités, contacts externes, tiers, projet, plusieurs documents liés
