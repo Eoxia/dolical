@@ -1293,7 +1293,8 @@ function dolical_save_event(ActionComm $event, array $data, User $user): int
     $event->fulldayevent = !empty($data['fullday']) ? 1 : 0;
     $event->datep        = (int) $data['start'];
     $event->datef        = max((int) $data['start'], (int) ($data['end'] ?: $data['start']));
-    $event->location     = dol_trunc($location, 255, 'right', 'UTF-8', 1);
+    // The native field holds 128 characters : more is refused by a strict database, cut by the others
+    $event->location     = dol_trunc($location, 128, 'right', 'UTF-8', 1);
     $event->percentage   = max(-1, min(100, (int) $data['percent']));
     $event->transparency = !empty($data['busy']) ? 1 : 0;
     $event->socid        = $socid;
