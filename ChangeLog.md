@@ -1,5 +1,19 @@
 # ChangeLog
 
+## 1.2.0
+
+- Import d'un agenda depuis son fichier `.ics` (Nextcloud, Google Agenda, Outlook, Thunderbird…) : page « Importer un
+  agenda », dans son propre agenda ou, avec le droit sur les événements des autres, dans celui d'un collègue. Les
+  participants (organisateur compris) sont retrouvés par leur e-mail, ou à défaut par leur nom, avec leur réponse, et
+  le tiers est relié ; les répétitions deviennent des séries, les rendez-vous annulés sont laissés de côté, aucun
+  e-mail n'est envoyé. Un fichier réimporté ne crée pas de doublon et complète les rendez-vous déjà importés des
+  participants et du tiers retrouvés depuis ; le bilan liste les personnes introuvables. Les imports précédents sont
+  listés (clé native `import_key` sur leurs événements) et chacun se supprime d'un coup en cas d'erreur.
+- Synchronisation : un rendez-vous créé sur le téléphone garde les réponses déjà données par les participants,
+  retrouve participants et tiers de la même façon, et une série dont la première date est annulée commence à la
+  suivante.
+- Nouvelle entrée de menu : réactiver le module pour la voir.
+
 ## 1.1.0
 
 - Plus aucune dépendance à Saturne ni à un autre module externe : le module ne demande que Agenda et Tiers, pour

@@ -336,6 +336,57 @@ DoliCalCalDavMyCalendar          = Mon agenda Dolibarr
 DoliCalCalDavCalendarOf          = Agenda de %s
 
 #
+# Import - Import d'un agenda
+#
+DoliCalImport                    = Importer un agenda
+DoliCalImportIntro               = Récupérez les rendez-vous d'un autre agenda (Nextcloud, Google Agenda, Outlook, Thunderbird…) depuis son fichier .ics : ils deviennent des événements Dolibarr.
+DoliCalImportFile                = Fichier .ics
+DoliCalImportOwner               = Dans l'agenda de
+DoliCalImportSubmit              = Importer
+DoliCalImportRunning             = Import en cours…
+DoliCalImportNextcloud           = Nextcloud
+DoliCalImportNextcloud1          = Ouvrez l'application Agenda.
+DoliCalImportNextcloud2          = Dans la colonne de gauche, survolez l'agenda à importer, cliquez sur « ⋯ » puis sur « Modifier et partager l'agenda ».
+DoliCalImportNextcloud3          = En bas de la fenêtre qui s'ouvre, cliquez sur « Exporter » : le fichier .ics se télécharge.
+DoliCalImportGoogle              = Google Agenda
+DoliCalImportGoogle1             = Paramètres › Importation et exportation › Exporter.
+DoliCalImportGoogle2             = Décompressez le fichier .zip téléchargé : il contient un fichier .ics par agenda.
+DoliCalImportOutlook             = Outlook
+DoliCalImportOutlook1            = Dans le calendrier : Fichier › Enregistrer le calendrier.
+DoliCalImportOutlook2            = Sous « Plus d'options », choisissez « Calendrier entier » et « Détails complets ».
+DoliCalImportWhat                = Ce que fait l'import
+DoliCalImportWhat1               = Chaque rendez-vous devient un événement de l'agenda choisi. Les participants sont retrouvés parmi les utilisateurs et les contacts, par leur adresse e-mail ou à défaut par leur nom, avec leur réponse. Le tiers est celui du contact, ou celui dont l'adresse ou le site correspond.
+DoliCalImportWhat2               = Une répétition devient une série, jusqu'à un an après aujourd'hui et au plus %s dates par série : les plus récentes sont gardées.
+DoliCalImportWhat3               = Les rendez-vous annulés sont laissés de côté, et aucun e-mail n'est envoyé aux participants.
+DoliCalImportWhat4               = Un rendez-vous déjà importé ne l'est pas une seconde fois : réimporter le même fichier ne crée pas de doublon, et ajoute les participants et tiers retrouvés depuis.
+DoliCalImportDone                = Import de « %s » terminé
+DoliCalImportCreated             = Rendez-vous importés dans l'agenda de %s : %s
+DoliCalImportSeries              = , dont %s en série (%s dates en tout)
+DoliCalImportDuplicates          = Déjà dans l'agenda : %s
+DoliCalImportLinked              = Déjà dans l'agenda, complétés de participants ou d'un tiers : %s
+DoliCalImportIgnored             = Laissés de côté (annulés, sans date ou illisibles) : %s
+DoliCalImportFailed              = Non importés : %s
+DoliCalImportUnknown             = Personnes introuvables dans Dolibarr (%s), entre parenthèses le nombre de rendez-vous. Renseignez leur adresse sur leur fiche d'utilisateur ou de contact, puis réimportez le fichier pour les relier :
+DoliCalImportHistory             = Imports précédents
+DoliCalImportHistoryHelp         = Supprimer un import efface d'un coup tous les rendez-vous qu'il a créés, séries comprises, sans prévenir les participants. Les participants ajoutés par une réimportation à des rendez-vous déjà présents restent.
+DoliCalImportHistoryAgenda       = agenda de %s
+DoliCalImportHistoryCount        = %s rendez-vous (%s dates), du %s au %s
+DoliCalImportHistoryBy           = importé par %s
+DoliCalImportUndo                = Supprimer cet import
+DoliCalImportUndoTitle           = Supprimer cet import ?
+DoliCalImportUndoHeading         = Import du %s
+DoliCalImportUndoText            = Les %s dates de rendez-vous (%s rendez-vous) créées dans l'agenda de %s, du %s au %s, seront effacées.
+DoliCalImportUndoWarning         = Les modifications faites depuis sur ces rendez-vous seront perdues, et les participants ne sont pas prévenus.
+DoliCalImportUndoButton          = Supprimer les %s dates
+DoliCalImportUndone              = Import du %s supprimé : %s dates de rendez-vous effacées.
+DoliCalImportUndoRefused         = %s dates n'ont pas été effacées : vous n'avez pas le droit de les supprimer.
+DoliCalImportUndoFailed          = %s dates n'ont pas pu être effacées.
+DoliCalImportNothing             = Ce fichier ne contient aucun rendez-vous.
+DoliCalImportBadFile             = Ce fichier n'est pas un agenda au format iCalendar (.ics).
+DoliCalImportFileTooLarge        = Ce fichier dépasse la taille maximale acceptée par le serveur (%s).
+DoliCalImportSeeCalendar         = Voir l'agenda
+
+#
 # Setup - Configuration (rappels, comptes-rendus, synchronisation)
 #
 DoliCalSetupReminderByDefault     = Rappel activé par défaut

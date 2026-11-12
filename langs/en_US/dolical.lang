@@ -336,6 +336,57 @@ DoliCalCalDavMyCalendar          = My Dolibarr agenda
 DoliCalCalDavCalendarOf          = Agenda of %s
 
 #
+# Import - Import d'un agenda
+#
+DoliCalImport                    = Import an agenda
+DoliCalImportIntro               = Bring the meetings of another agenda (Nextcloud, Google Calendar, Outlook, Thunderbird…) from its .ics file: they become Dolibarr events.
+DoliCalImportFile                = .ics file
+DoliCalImportOwner               = Into the agenda of
+DoliCalImportSubmit              = Import
+DoliCalImportRunning             = Importing…
+DoliCalImportNextcloud           = Nextcloud
+DoliCalImportNextcloud1          = Open the Calendar app.
+DoliCalImportNextcloud2          = In the left column, hover the calendar to import, click « ⋯ » then « Edit and share calendar ».
+DoliCalImportNextcloud3          = At the bottom of the window that opens, click « Export »: the .ics file is downloaded.
+DoliCalImportGoogle              = Google Calendar
+DoliCalImportGoogle1             = Settings › Import & export › Export.
+DoliCalImportGoogle2             = Unzip the downloaded .zip file: it holds one .ics file per calendar.
+DoliCalImportOutlook             = Outlook
+DoliCalImportOutlook1            = In the calendar: File › Save Calendar.
+DoliCalImportOutlook2            = Under « More Options », choose « Whole calendar » and « Full details ».
+DoliCalImportWhat                = What the import does
+DoliCalImportWhat1               = Each meeting becomes an event of the chosen agenda. The people taking part are found among the users and the contacts, by their email address or else by their name, with their answer. The third party is the one of the contact, or the one whose address or website matches.
+DoliCalImportWhat2               = A repetition becomes a series, up to a year after today and %s dates per series at most: the most recent ones are kept.
+DoliCalImportWhat3               = Cancelled meetings are left out, and no email is sent to the people taking part.
+DoliCalImportWhat4               = A meeting already imported is not imported twice: importing the same file again creates no duplicate, and adds the people and third parties found since.
+DoliCalImportDone                = Import of « %s » done
+DoliCalImportCreated             = Meetings imported into the agenda of %s: %s
+DoliCalImportSeries              = , %s of them as series (%s dates in all)
+DoliCalImportDuplicates          = Already in the agenda: %s
+DoliCalImportLinked              = Already in the agenda, completed with people or a third party: %s
+DoliCalImportIgnored             = Left out (cancelled, without a date or unreadable): %s
+DoliCalImportFailed              = Not imported: %s
+DoliCalImportUnknown             = People not found in Dolibarr (%s), in brackets the number of meetings. Fill in their address on their user or contact card, then import the file again to link them:
+DoliCalImportHistory             = Previous imports
+DoliCalImportHistoryHelp         = Deleting an import removes at once every meeting it created, series included, without telling the people taking part. The people added by a new import to meetings already there stay.
+DoliCalImportHistoryAgenda       = agenda of %s
+DoliCalImportHistoryCount        = %s meetings (%s dates), from %s to %s
+DoliCalImportHistoryBy           = imported by %s
+DoliCalImportUndo                = Delete this import
+DoliCalImportUndoTitle           = Delete this import?
+DoliCalImportUndoHeading         = Import of %s
+DoliCalImportUndoText            = The %s meeting dates (%s meetings) created in the agenda of %s, from %s to %s, will be removed.
+DoliCalImportUndoWarning         = The changes made to these meetings since will be lost, and the people taking part are not told.
+DoliCalImportUndoButton          = Delete the %s dates
+DoliCalImportUndone              = Import of %s deleted: %s meeting dates removed.
+DoliCalImportUndoRefused         = %s dates were not removed: you may not delete them.
+DoliCalImportUndoFailed          = %s dates could not be removed.
+DoliCalImportNothing             = This file holds no meeting.
+DoliCalImportBadFile             = This file is not an agenda in the iCalendar format (.ics).
+DoliCalImportFileTooLarge        = This file is bigger than the server accepts (%s).
+DoliCalImportSeeCalendar         = See the agenda
+
+#
 # Setup - Configuration (rappels, comptes-rendus, synchronisation)
 #
 DoliCalSetupReminderByDefault     = Reminder on by default

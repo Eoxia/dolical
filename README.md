@@ -92,6 +92,31 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
 - Les rendez-vous des 180 derniers jours et tous ceux à venir. HTTPS indispensable en production (l'iPhone refuse un
   compte en http).
 
+## Import d'un agenda (.ics)
+
+- Menu *Importer un agenda* (et lien sous la liste des agendas du calendrier) : on envoie le fichier `.ics` exporté
+  de **Nextcloud**, **Google Agenda**, **Outlook** ou **Thunderbird** ; la page rappelle où le trouver dans chacun.
+- Les rendez-vous vont dans son propre agenda, ou dans celui d'un collègue avec le droit natif « créer les événements
+  des autres ». Il faut le droit de créer des événements.
+- Chaque rendez-vous est créé comme ceux d'un téléphone : alarme reprise en rappel, répétition transformée en série
+  jusqu'à un an après aujourd'hui (au plus 366 dates, les plus récentes). Les rendez-vous annulés sont laissés de côté
+  et aucun e-mail n'est envoyé.
+- Participants (organisateur compris), parmi les utilisateurs actifs et les contacts visibles, avec leur réponse :
+  par leur e-mail (pour un utilisateur, le professionnel ou le personnel), sinon par leur nom — celui affiché par
+  l'agenda, ou le « prenom.nom » de l'adresse — quand une seule personne le porte. Un nom d'un seul mot ne suffit pas.
+- Tiers : celui qui a l'adresse d'un participant, sinon celui du premier contact retrouvé, sinon le seul tiers (e-mail
+  ou site) du domaine des adresses extérieures, quand elles mènent toutes à lui. Les domaines des messageries grand
+  public et ceux des utilisateurs de l'instance ne comptent pas.
+- L'identifiant d'origine est gardé dans `ref_ext` (`dav:import-<personne>-<empreinte>.ics|<uid>`) : réimporter le
+  même fichier ne recrée pas les rendez-vous déjà présents dans l'agenda de la personne, comme organisatrice ou
+  participante, mais leur ajoute (à toute la série) les participants et le tiers retrouvés depuis ; rien n'est retiré.
+- Le bilan liste les adresses de personnes introuvables : renseigner l'adresse sur la fiche puis réimporter les relie.
+- Chaque import marque les événements qu'il crée (séries comprises) d'une même clé, dans le champ natif `import_key`.
+  La page liste les 20 derniers imports dont il reste des événements (les siens et ceux faits dans son agenda ; tous
+  avec le droit de supprimer les événements des autres) : *Supprimer cet import* efface d'un coup ses événements,
+  comme la suppression native et sans prévenir les participants. Les participants ajoutés par une réimportation à des
+  rendez-vous déjà présents ne sont pas retirés.
+
 ## Où sont stockées les données
 
 | Donnée | Stockage natif |
@@ -105,6 +130,7 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
 | Série | `llx_actioncomm.recurid`, `recurrule`, `recurdateend` |
 | Compte-rendu | champ complémentaire `dolical_report` de l'événement |
 | Événement créé sur un téléphone | `llx_actioncomm.ref_ext` : `dav:` + nom du fichier + `\|` + identifiant |
+| Import d'un agenda (.ics) | `llx_actioncomm.import_key` : même clé pour tous les événements d'un import |
 | Agendas de collègues synchronisés | paramètre utilisateur `DOLICAL_CALDAV_SHARED` |
 
 ## Droits
