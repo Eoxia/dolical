@@ -22,6 +22,8 @@
   vues Jour et Semaine, plusieurs jours en vue Mois et dans la bande « Toute la journée ») ; le clic garde son effet.
 - Fiche d'un événement : le statut d'une facture liée est celui de sa fiche (une facture sans règlement n'est plus
   « Commencée » mais « Impayée »).
+- Vue Semaine avec plusieurs agendas : un rendez-vous de plusieurs personnes affichées apparaît une fois pour chacune,
+  côte à côte et à sa couleur ; le déplacer garde tous les participants.
 - Nouvelle entrée de menu : réactiver le module pour la voir.
 
 ## 1.1.0

@@ -10,7 +10,8 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
   gauche, chacune avec sa couleur (celle de sa fiche utilisateur, sinon une couleur stable).
 - **Cinq vues** :
   - *Jour* : une colonne par personne, côte à côte ;
-  - *Semaine* : les sept jours, tous les agendas superposés ;
+  - *Semaine* : les sept jours, tous les agendas superposés ; un rendez-vous de plusieurs personnes affichées y
+    apparaît une fois pour chacune (sauf celles qui l'ont refusé), côte à côte, à sa couleur ;
   - *Équipe* : une ligne par personne, les jours de la semaine en colonnes ;
   - *Mois* et *Liste* (deux semaines, pratique sur téléphone).
 - **Glisser-déposer** : déplacer un événement dans le temps, l'étirer par le bas, ou le faire passer de la colonne d'une
