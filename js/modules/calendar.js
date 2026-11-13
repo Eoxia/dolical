@@ -582,20 +582,20 @@ window.dolical.calendar.renderGrid = function($calendar, columns, mode) {
     head += '<div class="ra-tg__colhead' + (column.today ? ' is-today' : '') + '">' + column.head + '</div>';
 
     allday += '<div class="ra-tg__allday-col ra-droppable" data-date="' + key + '" data-user="' + userId + '">';
-    events.filter(function(event) {
+    C.drawingsOf(events.filter(function(event) {
       return event.band;
-    }).forEach(function(event) {
-      allday += C.chipHtml(event, userId, false);
+    }), userId).forEach(function(drawing) {
+      allday += C.chipHtml(drawing.event, drawing.user, false);
     });
     allday += '</div>';
 
     body += '<div class="ra-tg__col' + (column.today ? ' is-today' : '') + (weekend ? ' is-weekend' : '') + '" data-date="' + key + '" data-user="' + userId + '">';
     body += '<div class="ra-tg__off" style="--ra-top:0px;--ra-height:' + (config.dayStart * H) + 'px"></div>';
     body += '<div class="ra-tg__off" style="--ra-top:' + (config.dayEnd * H) + 'px;--ra-height:' + ((24 - config.dayEnd) * H) + 'px"></div>';
-    C.layout(events.filter(function(event) {
+    C.layout(C.drawingsOf(events.filter(function(event) {
       return !event.band;
-    }), column.day).forEach(function(item) {
-      body += C.blockHtml(item, userId);
+    }), userId), column.day).forEach(function(item) {
+      body += C.blockHtml(item, item.user);
     });
     if (column.today) {
       body += '<div class="ra-tg__now" style="--ra-top:' + ((now.getHours() * 60 + now.getMinutes()) * H / 60) + 'px"></div>';
@@ -646,18 +646,45 @@ window.dolical.calendar.minuteOf = function(date, day) {
 };
 
 /**
+ * What a column draws : each event once, or in a week of several people, a meeting once for each of them taking part
+ * (the ones who declined left out), side by side in their colors, as the agendas of Nextcloud or Google show it.
+ *
+ * @param   {Object[]} events Events of the column
+ * @param   {Number}   userId Person of the column, 0 when the column is a day
+ * @returns {Object[]}        [{event, user}], user being the person whose agenda the drawing stands for
+ */
+window.dolical.calendar.drawingsOf = function(events, userId) {
+  const C        = window.dolical.calendar;
+  const drawings = [];
+  events.forEach(function(event) {
+    const people = userId || C.state.users.length < 2 ? [] : [event.ownerId].concat(event.userIds).filter(function(id, index, all) {
+      return all.indexOf(id) === index && C.state.users.indexOf(id) !== -1 && C.answerOf(event, id) !== -1;
+    });
+    if (people.length < 2) {
+      drawings.push({event: event, user: userId});
+      return;
+    }
+    people.forEach(function(id) {
+      drawings.push({event: event, user: id});
+    });
+  });
+  return drawings;
+};
+
+/**
  * Place the events of a day column : overlapping events share the width in lanes.
  *
- * @param   {Object[]} events Events of the column, not bands
- * @param   {Date}     day    Midnight of the day
- * @returns {Object[]}        [{event, top, bottom, lane, lanes}] in minutes
+ * @param   {Object[]} drawings Drawings of the column, not bands, from drawingsOf()
+ * @param   {Date}     day      Midnight of the day
+ * @returns {Object[]}          [{event, user, top, bottom, lane, lanes}] in minutes
  */
-window.dolical.calendar.layout = function(events, day) {
+window.dolical.calendar.layout = function(drawings, day) {
   const C     = window.dolical.calendar;
-  const items = events.map(function(event) {
+  const items = drawings.map(function(drawing) {
+    const event  = drawing.event;
     const top    = C.minuteOf(event.s, day);
     const bottom = Math.max(C.minuteOf(event.e, day), top + 20);
-    return {event: event, top: top, bottom: Math.min(bottom, 1440)};
+    return {event: event, user: drawing.user, top: top, bottom: Math.min(bottom, 1440)};
   }).sort(function(a, b) {
     return (a.top - b.top) || (b.bottom - a.bottom);
   });
@@ -1500,6 +1527,10 @@ window.dolical.calendar.dragStart = function(event) {
     grab = (event.clientY - column[0].getBoundingClientRect().top) * 60 / C.HOUR_HEIGHT - C.minuteOf(calendarEvent.s, day);
   }
 
+  // The person of the column or of the cell : in a week, a drawing stands for someone in a column of everybody, and
+  // moving it in time must not take the event away from that person
+  const fromUser = parseInt($element.parent().closest('[data-user]').attr('data-user'), 10) || 0;
+
   C.drag = {
     event: calendarEvent,
     $element: $element,
@@ -1508,8 +1539,8 @@ window.dolical.calendar.dragStart = function(event) {
     startX: event.clientX,
     startY: event.clientY,
     grab: grab,
-    fromUser: parseInt($element.attr('data-user'), 10) || 0,
-    toUser: parseInt($element.attr('data-user'), 10) || 0,
+    fromUser: fromUser,
+    toUser: fromUser,
     start: calendarEvent.s,
     end: calendarEvent.e,
     active: false,
