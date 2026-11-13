@@ -7,7 +7,9 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
 ## Ce que fait le module
 
 - **Plusieurs agendas en même temps** : on coche les personnes (ou un groupe d'utilisateurs entier) dans la colonne de
-  gauche, chacune avec sa couleur (celle de sa fiche utilisateur, sinon une couleur stable).
+  gauche, chacune avec sa couleur (celle de sa fiche utilisateur, sinon une couleur stable). La palette au bout de la
+  ligne change la couleur d'une personne pour soi seulement : les autres gardent les leurs, et le téléphone synchronisé
+  la reprend.
 - **Cinq vues** :
   - *Jour* : une colonne par personne, côte à côte ;
   - *Semaine* : les sept jours, tous les agendas superposés ; un rendez-vous de plusieurs personnes affichées y
@@ -139,6 +141,7 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
 | Événement créé sur un téléphone | `llx_actioncomm.ref_ext` : `dav:` + nom du fichier + `\|` + identifiant |
 | Import d'un agenda (.ics) | `llx_actioncomm.import_key` : même clé pour tous les événements d'un import |
 | Agendas de collègues synchronisés | paramètre utilisateur `DOLICAL_CALDAV_SHARED` |
+| Couleurs choisies pour les autres | paramètre utilisateur `DOLICAL_COLORS` (`{"id": "rrggbb"}`) |
 
 ## Droits
 

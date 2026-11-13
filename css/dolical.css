@@ -1511,19 +1511,137 @@ button.ra-minical__day.is-today {
   list-style: none;
 }
 
+.dolical-picker__item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
 .dolical-picker__item.is-hidden {
   display: none;
 }
 .dolical-picker__item label {
   display: flex;
+  flex: 1;
   align-items: center;
   gap: 9px;
+  min-width: 0;
   padding: 5px 6px;
   border-radius: 6px;
   cursor: pointer;
 }
 .dolical-picker__item label:hover {
   background: #f5f8fa;
+}
+
+/* The color of a person, for oneself : a palette at the end of the line, shown on hover */
+button.dolical-picker__paint {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 12px;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+.dolical-picker__item:hover button.dolical-picker__paint,
+button.dolical-picker__paint:focus-visible,
+button.dolical-picker__paint.is-active {
+  opacity: 1;
+}
+button.dolical-picker__paint:hover,
+button.dolical-picker__paint.is-active {
+  background: #eef6fa;
+  color: #3d8cab;
+}
+@media (hover: none) {
+  button.dolical-picker__paint {
+    opacity: 0.7;
+  }
+}
+
+.dolical-colorpop {
+  position: fixed;
+  z-index: 1020;
+  display: none;
+  box-sizing: border-box;
+  width: 214px;
+  padding: 12px;
+  border: 1px solid #e7edf2;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(15, 35, 52, 0.16);
+}
+.dolical-colorpop.is-open {
+  display: block;
+}
+.dolical-colorpop__name {
+  margin-bottom: 10px;
+  overflow: hidden;
+  color: #2d3748;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.dolical-colorpop__swatches {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+button.dolical-colorpop__swatch {
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ra-color);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+button.dolical-colorpop__swatch:hover {
+  transform: scale(1.12);
+}
+button.dolical-colorpop__swatch.is-current {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--ra-color);
+}
+.dolical-colorpop__other {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: #4a5568;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+input.dolical-colorpop__input {
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #d5dde5;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+.dolical-colorpop__reset {
+  font-size: 12.5px;
+}
+.dolical-colorpop__help {
+  margin: 8px 0 0;
+  color: #718096;
+  font-size: 11.5px;
+  line-height: 1.4;
 }
 
 input.dolical-picker__check {

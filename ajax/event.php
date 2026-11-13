@@ -299,6 +299,26 @@ if (!dolical_valid_post()) {
     dolical_json_exit(['success' => false, 'error' => $langs->trans('SecurityTokenHasExpiredSoActionHasBeenCanceledPleaseRetry')], 403);
 }
 
+if ($action === 'color') {
+    // The color of a person in the calendar of the current user : a preference of his, the others keep theirs. An
+    // empty color goes back to the one everybody sees
+    $people   = dolical_get_calendar_users($user);
+    $personId = GETPOSTINT('person');
+    $color    = strtolower(ltrim(GETPOST('color', 'alphanohtml'), '#'));
+    if (!isset($people[$personId]) || ($color !== '' && !preg_match('/^[0-9a-f]{6}$/', $color))) {
+        dolical_json_exit(['success' => false, 'error' => $langs->trans('ErrorBadValueForParameter', $color, 'color')], 400);
+    }
+    $colors = dolical_my_colors();
+    unset($colors[$personId]);
+    if ($color !== '' && '#' . $color !== $people[$personId]['baseColor']) {
+        $colors[$personId] = $color;
+    }
+    if (dol_set_user_param($db, $conf, $user, ['DOLICAL_COLORS' => empty($colors) ? '' : json_encode($colors)]) < 0) {
+        dolical_json_exit(['success' => false, 'error' => $langs->trans('Error')], 500);
+    }
+    dolical_json_exit(['success' => true, 'color' => isset($colors[$personId]) ? '#' . $colors[$personId] : $people[$personId]['baseColor']]);
+}
+
 if ($action === 'save') {
     if ($event !== null ? !dolical_can_edit_event($user, $event) : !dolical_can_create($user)) {
         dolical_json_exit(['success' => false, 'error' => $langs->trans('NotEnoughPermissions')], 403);
