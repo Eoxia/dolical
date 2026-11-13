@@ -24,6 +24,8 @@
   « Commencée » mais « Impayée »).
 - Vue Semaine avec plusieurs agendas : un rendez-vous de plusieurs personnes affichées apparaît une fois pour chacune,
   côte à côte et à sa couleur ; le déplacer garde tous les participants.
+- Couleur des personnes pour soi : la palette au bout de chaque ligne de la liste des agendas change la couleur d'un
+  collègue (ou la sienne) pour soi seulement, sans toucher à celle des autres ; retour possible à la couleur par défaut.
 - Nouvelle entrée de menu : réactiver le module pour la voir.
 
 ## 1.1.0

@@ -152,6 +152,30 @@ window.dolical.calendar.event = function() {
   $(document).on('input', '.dolical-picker__search', C.searchPeople);
   $(document).on('click', '.dolical-picker [data-pick]', C.pickShortcut);
   $(document).on('change', '.dolical-picker__group', C.pickGroup);
+  // The sticky side bar is a layer of its own, under the calendar : the colors open from the page itself
+  $('.dolical-colorpop').appendTo(document.body);
+  $(document).on('click', '.dolical-picker__paint', C.openColors);
+  $(document).on('click', '.dolical-colorpop__swatch', function() {
+    C.saveColor(this.getAttribute('data-pick-color'));
+  });
+  $(document).on('change', '.dolical-colorpop__input', function() {
+    C.saveColor(this.value);
+  });
+  $(document).on('click', '.dolical-colorpop__reset', function() {
+    C.saveColor('');
+  });
+  // The colors close on a click beside them, on Escape and when the list scrolls away
+  $(document).on('click', function(event) {
+    if (!$(event.target).closest('.dolical-colorpop, .dolical-picker__paint').length) {
+      C.closeColors();
+    }
+  });
+  $(document).on('keydown', function(event) {
+    if (event.key === 'Escape') {
+      C.closeColors();
+    }
+  });
+  $('.dolical-picker__list').on('scroll', C.closeColors);
   $(document).on('change', '.dolical-filter', C.changeFilter);
   $(document).on('input', '.dolical-filter[data-filter="search"]', C.changeSearch);
 
@@ -1162,6 +1186,88 @@ window.dolical.calendar.syncSidebar = function() {
   $('.dolical-filter[data-filter="hideauto"]').prop('checked', !!state.filters.hideauto);
   $('.dolical-filter[data-filter="status"]').val(state.filters.status);
   $('.dolical-filter[data-filter="types"]').val(state.filters.types);
+};
+
+/**
+ * Open the colors of a person, beside the palette of his line : the choice is the current user's only.
+ *
+ * @param   {Event} event Click
+ * @returns {void}
+ */
+window.dolical.calendar.openColors = function(event) {
+  const C      = window.dolical.calendar;
+  const $btn   = $(this);
+  const $pop   = $('.dolical-colorpop');
+  const person = C.usersById[parseInt($btn.attr('data-person'), 10)];
+  event.preventDefault();
+  event.stopPropagation();
+  if (!person) {
+    return;
+  }
+  if ($pop.hasClass('is-open') && $pop.attr('data-person') === String(person.id)) {
+    C.closeColors();
+    return;
+  }
+
+  $('.dolical-picker__paint.is-active').removeClass('is-active');
+  $btn.addClass('is-active');
+  $pop.attr('data-person', person.id);
+  $pop.find('.dolical-colorpop__name').text(person.name);
+  $pop.find('.dolical-colorpop__swatch').each(function() {
+    $(this).toggleClass('is-current', this.getAttribute('data-pick-color') === person.color);
+  });
+  $pop.find('.dolical-colorpop__input').val(person.color);
+  $pop.find('.dolical-colorpop__reset').toggle(person.color !== person.baseColor);
+  window.dolical.util.applyColors($pop);
+
+  // Beside the button, inside the window
+  const rect = this.getBoundingClientRect();
+  $pop.addClass('is-open');
+  const width  = $pop.outerWidth();
+  const height = $pop.outerHeight();
+  const left   = Math.min(rect.right + 8, window.innerWidth - width - 8);
+  const top    = Math.max(8, Math.min(rect.top - 10, window.innerHeight - height - 8));
+  $pop.css({left: Math.max(8, left), top: top});
+};
+
+/**
+ * Close the colors.
+ *
+ * @returns {void}
+ */
+window.dolical.calendar.closeColors = function() {
+  $('.dolical-colorpop').removeClass('is-open').removeAttr('data-person');
+  $('.dolical-picker__paint.is-active').removeClass('is-active');
+};
+
+/**
+ * Keep the color chosen for a person : the calendar takes it at once, the server keeps it for the current user.
+ *
+ * @param   {String} color Hexadecimal color with #, empty to go back to the one everybody sees
+ * @returns {void}
+ */
+window.dolical.calendar.saveColor = function(color) {
+  const C      = window.dolical.calendar;
+  const U      = window.dolical.util;
+  const $pop   = $('.dolical-colorpop');
+  const person = C.usersById[parseInt($pop.attr('data-person'), 10)];
+  if (!person) {
+    return;
+  }
+  C.closeColors();
+  U.post({action: 'color', person: person.id, color: color}).done(function(response) {
+    if (!response.success) {
+      U.toast(response.error || U.t('error'), 'error');
+      return;
+    }
+    person.color = response.color;
+    $('.dolical-picker__check[value="' + person.id + '"]').siblings('.dolical-picker__swatch').attr('data-color', person.color).each(function() {
+      this.style.setProperty('--ra-color', person.color);
+    });
+    C.render();
+  }).fail(function(xhr) {
+    U.toast(U.xhrError(xhr), 'error');
+  });
 };
 
 /**

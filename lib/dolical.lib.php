@@ -179,14 +179,58 @@ function dolical_can_delete_event(User $user, ActionComm $event): bool
  */
 function dolical_user_color(int $userId, string $userColor = ''): string
 {
+    // The color the current user chose for that person, for himself only
+    $mine = dolical_my_colors();
+
+    return isset($mine[$userId]) ? '#' . $mine[$userId] : dolical_base_color($userId, $userColor);
+}
+
+/**
+ * Color of a person as everybody sees it : the one set on the user card, else a stable color of the palette
+ *
+ * @param  int    $userId    Id of the user
+ * @param  string $userColor Color stored on the user card, hexadecimal without #
+ * @return string            Hexadecimal color with #
+ */
+function dolical_base_color(int $userId, string $userColor = ''): string
+{
     if (preg_match('/^#?([0-9a-f]{6})$/i', $userColor, $matches)) {
         return '#' . strtolower($matches[1]);
     }
-
-    // Distinct enough side by side, dark enough to carry a white label
-    $palette = ['#63acc9', '#e07a5f', '#81b29a', '#9b5de5', '#f2a541', '#3d5a80', '#d64f7a', '#2a9d8f', '#8d6e63', '#5c7cfa', '#c0a020', '#65a30d'];
+    $palette = dolical_palette();
 
     return $palette[abs($userId) % count($palette)];
+}
+
+/**
+ * Colors of the calendar : distinct enough side by side, dark enough to carry a white label
+ *
+ * @return string[] Hexadecimal colors with #
+ */
+function dolical_palette(): array
+{
+    return ['#63acc9', '#e07a5f', '#81b29a', '#9b5de5', '#f2a541', '#3d5a80', '#d64f7a', '#2a9d8f', '#8d6e63', '#5c7cfa', '#c0a020', '#65a30d'];
+}
+
+/**
+ * Colors the current user gave to people in his calendar : a preference of his (user parameter DOLICAL_COLORS), the
+ * others keep theirs
+ *
+ * @return array [user id => 'rrggbb']
+ */
+function dolical_my_colors(): array
+{
+    global $user;
+
+    $colors = json_decode((string) (is_object($user) && isset($user->conf->DOLICAL_COLORS) ? $user->conf->DOLICAL_COLORS : ''), true);
+    $clean  = [];
+    foreach (is_array($colors) ? $colors : [] as $personId => $color) {
+        if ((int) $personId > 0 && preg_match('/^[0-9a-f]{6}$/i', (string) $color)) {
+            $clean[(int) $personId] = strtolower((string) $color);
+        }
+    }
+
+    return $clean;
 }
 
 /**
@@ -230,7 +274,8 @@ function dolical_initials(string $name): string
  * events, only himself otherwise. The current user keeps his own agenda even when he is not an employee
  *
  * @param  User  $user Current user
- * @return array       [id => ['id', 'name', 'login', 'email', 'color', 'initials']], current user first
+ * @return array       [id => ['id', 'name', 'login', 'email', 'color' (the one the current user chose, else
+ *                     'baseColor'), 'baseColor' (the one everybody sees), 'initials']], current user first
  */
 function dolical_get_calendar_users(User $user): array
 {
@@ -256,12 +301,13 @@ function dolical_get_calendar_users(User $user): array
                 $name = $obj->login;
             }
             $users[(int) $obj->rowid] = [
-                'id'       => (int) $obj->rowid,
-                'name'     => $name,
-                'login'    => $obj->login,
-                'email'    => (string) $obj->email,
-                'color'    => dolical_user_color((int) $obj->rowid, (string) $obj->color),
-                'initials' => dolical_initials($name),
+                'id'        => (int) $obj->rowid,
+                'name'      => $name,
+                'login'     => $obj->login,
+                'email'     => (string) $obj->email,
+                'color'     => dolical_user_color((int) $obj->rowid, (string) $obj->color),
+                'baseColor' => dolical_base_color((int) $obj->rowid, (string) $obj->color),
+                'initials'  => dolical_initials($name),
             ];
         }
         $db->free($resql);
