@@ -46,7 +46,10 @@ global $conf, $db, $langs, $user;
 // commercial carries the labels of the progress of an event (StatusActionToDo...)
 $langs->loadLangs(['dolical@dolical', 'agenda', 'commercial', 'companies', 'projects', 'other', 'errors']);
 
+// What is read goes by 'view', in GET, without token : main.inc.php asks one for any GET 'action' when CSRF level 3
+// is set, and a token in a URL ends up in the access logs. What changes goes by 'action', in POST, with the token
 $action = GETPOST('action', 'aZ09');
+$view   = GETPOST('view', 'aZ09');
 $id     = GETPOSTINT('id');
 
 /**
@@ -91,15 +94,16 @@ if ($id > 0) {
  * Views : HTML fragments drawn by the templates
  */
 
-if ($action === 'card' && $event !== null) {
+if ($view === 'card' && $event !== null) {
     $card = dolical_get_event_card($event, $user);
 
-    // When each one was invited, and who can still be : the organizer is not, nor a person without email
+    // When each one was invited, and who can still be : the organizer is not, nor a person without email. The address
+    // is read where the card may not show it : the invitation goes to it all the same
     $history = dolical_invitation_history($event);
     foreach ($card['participants']['people'] as $index => $person) {
-        $email = dol_strtolower($person['email']);
+        $email = dol_strtolower($person['address']);
         $card['participants']['people'][$index]['invitedAt'] = isset($history[$email]) ? dol_print_date($history[$email], '%d/%m %H:%M', 'tzuserrel') : '';
-        $card['participants']['people'][$index]['canInvite'] = $card['canEdit'] && !$person['owner'] && $person['email'] !== '' && isValidEmail($person['email']);
+        $card['participants']['people'][$index]['canInvite'] = $card['canEdit'] && !$person['owner'] && $person['address'] !== '' && isValidEmail($person['address']);
     }
     $card['canInviteAll'] = !empty(array_filter(array_column($card['participants']['people'], 'canInvite')));
     // Who to remind, and who would be told of a cancellation
@@ -110,7 +114,7 @@ if ($action === 'card' && $event !== null) {
     exit;
 }
 
-if ($action === 'form') {
+if ($view === 'form') {
     $cloneId = GETPOSTINT('clone');
     $source  = $event;
     if ($event === null && $cloneId > 0) {
@@ -265,7 +269,7 @@ if ($action === 'form') {
     exit;
 }
 
-if ($action === 'report' && $event !== null) {
+if ($view === 'report' && $event !== null) {
     // Report of a meeting : its text
     $card = dolical_get_event_card($event, $user);
     if (!$card['canReport']) {
@@ -277,7 +281,7 @@ if ($action === 'report' && $event !== null) {
     exit;
 }
 
-if ($action === 'availability') {
+if ($view === 'availability') {
     // Read only : who among the people of the form is already taken during the slot
     if (!dolical_can_create($user)) {
         dolical_json_exit(['success' => false, 'conflicts' => []], 403);
@@ -430,6 +434,11 @@ if ($action === 'save') {
         }));
 
         foreach (['update' => $toUpdate, 'invitation' => $toInvite, 'cancel' => $toCancel] as $mode => $recipients) {
+            // The people typed in the form are written to within the hourly limits ; a cancellation only goes to
+            // people already invited, it always leaves
+            if ($mode !== 'cancel') {
+                $recipients = dolical_throttle_recipients($mailEvent, $user, $recipients, false, $mail['errors']);
+            }
             $sending           = dolical_send_invitations($mailEvent, $user, $recipients, $mode, $mailOptions);
             $mail[$mode === 'cancel' ? 'cancelled' : 'sent'] += $sending['sent'];
             $mail['errors']    = array_merge($mail['errors'], $sending['errors']);
@@ -493,8 +502,11 @@ switch ($action) {
         if (empty($recipients)) {
             dolical_json_exit(['success' => false, 'error' => $langs->trans('DoliCalNobodyToInvite')]);
         }
-        $mail = dolical_send_invitations($event, $user, $recipients, 'invitation');
-        dolical_json_exit(['success' => $mail['sent'] > 0, 'sent' => $mail['sent'], 'error' => implode(' ', $mail['errors'])]);
+        // Not twice in a row to the same person, and not in mass
+        $throttled  = [];
+        $recipients = dolical_throttle_recipients($event, $user, $recipients, true, $throttled);
+        $mail       = dolical_send_invitations($event, $user, $recipients, 'invitation');
+        dolical_json_exit(['success' => $mail['sent'] > 0, 'sent' => $mail['sent'], 'error' => implode(' ', array_merge($throttled, $mail['errors']))]);
         break;
 
     case 'remind':
@@ -506,8 +518,10 @@ switch ($action) {
         if (empty($recipients)) {
             dolical_json_exit(['success' => false, 'error' => $langs->trans('DoliCalNobodyToRemind')]);
         }
-        $mail = dolical_send_invitations($event, $user, $recipients, 'reminder');
-        dolical_json_exit(['success' => $mail['sent'] > 0, 'sent' => $mail['sent'], 'error' => implode(' ', $mail['errors'])]);
+        $throttled  = [];
+        $recipients = dolical_throttle_recipients($event, $user, $recipients, true, $throttled);
+        $mail       = dolical_send_invitations($event, $user, $recipients, 'reminder');
+        dolical_json_exit(['success' => $mail['sent'] > 0, 'sent' => $mail['sent'], 'error' => implode(' ', array_merge($throttled, $mail['errors']))]);
         break;
 
     case 'setpercent':

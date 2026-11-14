@@ -85,7 +85,7 @@ window.dolical.report.open = function(id) {
   $box.html('<div class="dolical-form__loading"><i class="fas fa-circle-notch fa-spin"></i></div>');
   $modal.addClass('modal-active');
 
-  $.get(U.config().urls.event, {action: 'report', id: id, token: U.config().token}, null, 'html').done(function(html) {
+  $.get(U.config().urls.event, {view: 'report', id: id}, null, 'html').done(function(html) {
     $box.html(html);
     setTimeout(function() {
       $box.find('textarea[name="report"]').trigger('focus');

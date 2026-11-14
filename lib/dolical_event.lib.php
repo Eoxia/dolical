@@ -812,6 +812,37 @@ function dolical_get_event_participants(ActionComm $event): array
 }
 
 /**
+ * The participants as the card shows them : the email and the phones of a contact for whoever may read the contact,
+ * the ones of a user for whoever may read the users, as on their native cards. The address stays known to the server
+ * under 'address', for the invitations, and is never printed
+ *
+ * @param  array $participants From dolical_get_event_participants()
+ * @param  User  $user         Current user
+ * @return array               Same, 'email' and 'phone' emptied where the user may not read them, 'emails' as well
+ */
+function dolical_mask_participants(array $participants, User $user): array
+{
+    $readUsers = (bool) $user->hasRight('user', 'user', 'lire');
+    $emails    = [];
+    foreach ($participants['people'] as $index => $person) {
+        $visible = $person['kind'] === 'user'
+            ? ($readUsers || $person['id'] === (int) $user->id)
+            : dolical_can_see_object($user, 'contact', (int) $person['id']);
+
+        $participants['people'][$index]['address'] = $person['email'];
+        if (!$visible) {
+            $participants['people'][$index]['email'] = '';
+            $participants['people'][$index]['phone'] = '';
+        } elseif ($person['email'] !== '') {
+            $emails[] = $person['email'];
+        }
+    }
+    $participants['emails'] = array_values(array_unique($emails));
+
+    return $participants;
+}
+
+/**
  * Directory of the documents of an event, the one the native card uses
  *
  * @param  ActionComm $event Event
@@ -969,7 +1000,7 @@ function dolical_get_event_card(ActionComm $event, User $user): array
         }
     }
 
-    $card['participants'] = dolical_get_event_participants($event);
+    $card['participants'] = dolical_mask_participants(dolical_get_event_participants($event), $user);
     $card['objects']      = dolical_get_linked_objects($event, $user);
     $card['billing']      = dolical_get_billing_summary($event, $card['objects'], $user);
     $card['files']        = dolical_get_event_files($event);
