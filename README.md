@@ -126,6 +126,20 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
   comme la suppression native et sans prévenir les participants. Les participants ajoutés par une réimportation à des
   rendez-vous déjà présents ne sont pas retirés.
 
+## Un événement seul, dans une fenêtre
+
+`view/dolical_event.php` montre un événement sans le calendrier : son formulaire (`action=create` avec les mêmes
+paramètres que le calendrier : `socid`, `projectid`, `contactids`, `elements`, `start`, `end`, `allday` ; ou
+`action=edit&id=`) ou sa fiche (`id=`). Seule, la page revient au calendrier après l'enregistrement ou à la fermeture.
+
+Ouverte dans la fenêtre d'une autre page du même site (iframe), elle la prévient par `postMessage` (même origine) :
+`{source: 'inbox-panel', action}` avec `title` (titre de la fenêtre), `dirty` (saisie non enregistrée, `on` et
+`text`), `done` (enregistré ou supprimé, `message` à afficher) ou `close`.
+
+**Volet agenda d'une messagerie** : une application qui offre le hook `inboxAgendaProvider` (contexte `inbox`) reçoit
+de DoliCal les adresses de cette page pour créer un rendez-vous (tiers, contacts, projet et documents reconnus sur le
+mail ouvert) et ouvrir un rendez-vous, et celle du calendrier pour tout voir. Rien n'est appelé sans cette application.
+
 ## Où sont stockées les données
 
 | Donnée | Stockage natif |

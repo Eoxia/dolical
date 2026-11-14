@@ -1,5 +1,14 @@
 # ChangeLog
 
+## 1.3.0
+
+- Page d'un événement seul (`view/dolical_event.php`) : le formulaire d'un nouveau rendez-vous, ou la fiche d'un
+  rendez-vous, sans le calendrier derrière. Faite pour une petite fenêtre : ouverte dans la fenêtre d'une autre
+  application, elle lui dit son titre, la saisie non enregistrée, puis l'enregistrement ou la suppression.
+- Volet agenda d'une messagerie qui offre le hook `inboxAgendaProvider` : créer et ouvrir un rendez-vous passent par
+  DoliCal, avec le tiers, les contacts, le projet et les documents reconnus sur le mail ouvert.
+- Réactiver le module pour le volet agenda (nouveau contexte de hooks).
+
 ## 1.2.0
 
 - Import d'un agenda depuis son fichier `.ics` (Nextcloud, Google Agenda, Outlook, Thunderbird…) : page « Importer un

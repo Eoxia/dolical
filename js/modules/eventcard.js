@@ -223,7 +223,8 @@ window.dolical.eventcard.position = function() {
  */
 window.dolical.eventcard.clickOutside = function(event) {
   const E = window.dolical.eventcard;
-  if (!E.isOpen()) {
+  // The page of one event shows nothing else : the card stays
+  if (!E.isOpen() || window.dolical.util.config().single) {
     return;
   }
   const $target = $(event.target);

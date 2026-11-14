@@ -161,4 +161,41 @@ class ActionsDoliCal
 
         return 0;
     }
+
+    /**
+     * Agenda panel of a mail application (context « inbox ») : its clicks open the pages of DoliCal in its windows.
+     * The application fills the markers {id}, {socid}, {contactids}, {projectid} and {elements} (type:id separated by
+     * commas, the format of the calendar) from the event clicked or the mail open
+     *
+     * @param  array $parameters ['user' => User]
+     * @return int               0
+     */
+    public function inboxAgendaProvider(array $parameters): int
+    {
+        global $langs;
+
+        $user = $parameters['user'] ?? null;
+        if (!($user instanceof User) || !isModEnabled('dolical') || $user->socid > 0
+            || !$user->hasRight('dolical', 'read') || !$user->hasRight('agenda', 'myactions', 'read')) {
+            return 0;
+        }
+
+        require_once __DIR__ . '/../lib/dolical.lib.php';
+        $langs->load('dolical@dolical');
+
+        // Pages in a window : without the menus of Dolibarr
+        $hide  = 'dol_hide_topmenu=1&dol_hide_leftmenu=1';
+        $event = dol_buildpath('/dolical/view/dolical_event.php', 1);
+        $urls  = [
+            'open'    => $event . '?id={id}&' . $hide,
+            'openAll' => dol_buildpath('/dolical/dolicalindex.php', 1) . '?' . $hide,
+        ];
+        if (dolical_can_create($user)) {
+            $urls['create'] = $event . '?action=create&socid={socid}&contactids={contactids}&projectid={projectid}&elements={elements}&' . $hide;
+        }
+
+        $this->results['provider'] = ['label' => $langs->trans('DoliCalCalendar'), 'source' => 'dolical', 'urls' => $urls];
+
+        return 0;
+    }
 }

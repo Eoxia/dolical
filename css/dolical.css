@@ -3036,3 +3036,58 @@ button.dolical-btn.dolical-btn--destructive:hover {
 .dolical-sidebar__import:hover {
   color: #4f9ab8;
 }
+
+/* Page of one event (view/dolical_event.php) : the form or the card fill the page, no calendar behind them. The
+   other modals (report, dates of a series) stay modals above them */
+.dolical-page--single #dolical-event-modal.modal-active {
+  position: static;
+  width: auto;
+  height: auto;
+  background: none;
+  transition: none;
+}
+.dolical-page--single #dolical-event-modal.modal-active .modal-container {
+  position: static;
+  max-width: 780px;
+  max-height: none;
+  margin: 0 auto;
+  border-radius: 0;
+  transform: none;
+  transition: none;
+}
+.dolical-page--single .dolical-popover,
+.dolical-page--single .dolical-popover.is-sheet {
+  position: static;
+  width: auto;
+  max-width: 780px;
+  max-height: none;
+  margin: 0 auto;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  animation: none;
+}
+.dolical-single__back {
+  display: block;
+  max-width: 780px;
+  margin: 12px auto;
+}
+.dolical-embedded .dolical-single__back {
+  display: none;
+}
+.dolical-single__missing {
+  max-width: 780px;
+  margin: 40px auto;
+  color: #4a5568;
+  text-align: center;
+}
+.dolical-single__missing i {
+  color: #a0aec0;
+  font-size: 32px;
+}
+/* Embedded in a window that has its own title and close : the head of the form and the close of the card would
+   say it twice */
+.dolical-embedded #dolical-event-modal .modal-header,
+.dolical-embedded .dolical-popover .dolical-card__close {
+  display: none;
+}

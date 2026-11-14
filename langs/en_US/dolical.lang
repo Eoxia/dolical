@@ -402,3 +402,10 @@ DoliCalSetupReminderByDefault     = Reminder on by default
 DoliCalSetupReminderByDefaultHelp = A new event offers a reminder, with the delay set in the setup of the agenda. Everyone can turn it off in the form.
 DoliCalSetupCalDav                = Phone synchronization (CalDAV)
 DoliCalSetupCalDavHelp            = Everyone can sync his agenda with DAVx⁵, an iPhone, a Mac or Thunderbird, with his Dolibarr login and password.
+
+#
+# Page of one event alone (window of another application, link « Plan »)
+#
+DoliCalUnsavedChanges = The changes of this event are not saved.
+DoliCalEventGone      = This event no longer exists, or you are not allowed to see it.
+DoliCalBackToCalendar = Back to the calendar
