@@ -1079,11 +1079,19 @@ function dolical_record_answer(ActionComm $event, string $kind, int $personId, i
  * @param  int    $socid  Third party of the event
  * @param  User   $user   Current user
  * @param  array  $errors Errors, filled
+ * @param  array  $created Ids of the contacts created by this call, filled : the caller removes them when the event is
+ *                         refused in the end
  * @return int[]          Ids of contacts
  */
-function dolical_resolve_contacts(array $values, int $socid, User $user, array &$errors): array
+function dolical_resolve_contacts(array $values, int $socid, User $user, array &$errors, array &$created = []): array
 {
     global $db, $langs;
+
+    // A contact created here goes to the third party of the event only when the user may see it : never to a third
+    // party of another entity, or one hidden from him
+    if ($socid > 0 && !dolical_can_see_object($user, 'societe', $socid)) {
+        $socid = 0;
+    }
 
     $ids = [];
     foreach ($values as $value) {
@@ -1151,11 +1159,32 @@ function dolical_resolve_contacts(array $values, int $socid, User $user, array &
         $contact->priv      = 0;
         $contactId          = $contact->create($user);
         if ($contactId > 0) {
-            $ids[] = (int) $contactId;
+            $ids[]     = (int) $contactId;
+            $created[] = (int) $contactId;
         } else {
             $errors[] = $email . ' : ' . ($contact->error ?: implode(', ', $contact->errors));
         }
     }
 
     return array_values(array_unique(array_filter($ids)));
+}
+
+/**
+ * Remove the contacts dolical_resolve_contacts() just created for an event that was refused : nothing of a refused
+ * form stays in the instance
+ *
+ * @param  int[] $contactIds Ids from the $created argument of dolical_resolve_contacts()
+ * @param  User  $user       Current user
+ * @return void
+ */
+function dolical_delete_new_contacts(array $contactIds, User $user): void
+{
+    global $db;
+
+    foreach (array_unique(array_map('intval', $contactIds)) as $contactId) {
+        $contact = new Contact($db);
+        if ($contactId > 0 && $contact->fetch($contactId) > 0 && $contact->delete($user) < 0) {
+            dol_syslog(__FUNCTION__ . ' contact ' . $contactId . ': ' . $contact->error, LOG_WARNING);
+        }
+    }
 }

@@ -36,6 +36,9 @@
   reste un seul rendez-vous. Jeton comparé en temps constant, et plus envoyé dans l'adresse des lectures. La page de
   configuration signale que les éléments liés sur la fiche native sont un réglage du module Agenda. Toutes les
   limites sont réglables (voir le README).
+- Contact créé depuis une adresse e-mail (#28) : rattaché au tiers de l'événement seulement si l'utilisateur peut voir
+  ce tiers, sinon sans tiers ; le tiers et le projet sont contrôlés avant toute écriture, et un contact créé pour un
+  événement finalement refusé est supprimé.
 - Nouvelle entrée de menu : réactiver le module pour la voir.
 
 ## 1.1.0
