@@ -42,6 +42,11 @@
 - Import et synchronisation (#27) : un rendez-vous déjà présent n'est complété (participants, tiers) que par qui peut
   le modifier ; seule la réponse de la personne qui importe ou synchronise est reprise pour les utilisateurs, les
   collègues gardent la leur (« en attente » s'ils n'ont pas répondu), et un contact retrouvé par son seul nom aussi.
+- Synchronisation CalDAV (#26) : fermée par défaut ; chacun crée sur « Synchroniser mon téléphone » un mot de passe de
+  synchronisation, affiché une fois et révocable, le mot de passe Dolibarr ne l'ouvre plus (les appareils déjà
+  connectés doivent recevoir ce nouveau mot de passe) ; hooks de la page de connexion appelés (double
+  authentification, bannissement…), au plus 5 échecs par identifiant et 20 par adresse en 15 minutes ; refusée en
+  http, sauf option pour une installation de test.
 - Nouvelle entrée de menu : réactiver le module pour la voir.
 
 ## 1.1.0

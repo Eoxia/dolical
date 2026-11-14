@@ -70,7 +70,7 @@ if ($action == 'update' && $permissionToWrite && dolical_valid_post()) {
     dolibarr_set_const($db, 'DOLICAL_NOTIFY_ORGANIZER', GETPOSTINT('DOLICAL_NOTIFY_ORGANIZER') ? 1 : 0, 'integer', 0, '', $conf->entity);
     dolibarr_set_const($db, 'DOLICAL_AUTO_REMIND', GETPOSTINT('DOLICAL_AUTO_REMIND') ? 1 : 0, 'integer', 0, '', $conf->entity);
     dolibarr_set_const($db, 'DOLICAL_AUTO_REMIND_DAYS', min(30, max(1, GETPOSTINT('DOLICAL_AUTO_REMIND_DAYS'))), 'integer', 0, '', $conf->entity);
-    foreach (['DOLICAL_REMINDER_BY_DEFAULT', 'DOLICAL_CALDAV'] as $constName) {
+    foreach (['DOLICAL_REMINDER_BY_DEFAULT', 'DOLICAL_CALDAV', 'DOLICAL_CALDAV_ALLOW_HTTP'] as $constName) {
         dolibarr_set_const($db, $constName, GETPOSTINT($constName) ? 1 : 0, 'integer', 0, '', $conf->entity);
     }
     $timezone = GETPOST('DOLICAL_TIMEZONE', 'alphanohtml');
@@ -135,7 +135,8 @@ $toggles = [
     'DOLICAL_NOTIFY_ORGANIZER'   => ['DoliCalNotifyOrganizer', 'DoliCalNotifyOrganizerHelp', 1],
     'DOLICAL_AUTO_REMIND'        => ['DoliCalAutoRemind', 'DoliCalAutoRemindHelp', 0],
     'DOLICAL_REMINDER_BY_DEFAULT' => ['DoliCalSetupReminderByDefault', 'DoliCalSetupReminderByDefaultHelp', 1],
-    'DOLICAL_CALDAV'             => ['DoliCalSetupCalDav', 'DoliCalSetupCalDavHelp', 1],
+    'DOLICAL_CALDAV'             => ['DoliCalSetupCalDav', 'DoliCalSetupCalDavHelp', 0],
+    'DOLICAL_CALDAV_ALLOW_HTTP'  => ['DoliCalSetupCalDavHttp', 'DoliCalSetupCalDavHttpHelp', 0],
 ];
 foreach ($toggles as $constName => $toggle) {
     print '<tr class="oddeven"><td>' . $langs->trans($toggle[0]) . '</td><td>' . $langs->trans($toggle[1]);

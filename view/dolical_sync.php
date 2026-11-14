@@ -50,6 +50,25 @@ $action = GETPOST('action', 'aZ09');
  * Actions
  */
 
+// The synchronization password : made for the devices of the person, shown once, never his Dolibarr password
+if (in_array($action, ['caldavpassword', 'caldavrevoke'], true) && dolical_caldav_enabled() && dolical_valid_post()) {
+    if ($action === 'caldavpassword') {
+        $password = dolical_caldav_new_password($user);
+        if ($password !== '') {
+            // Kept for the next page only : the redirection must not show it again on a reload
+            $_SESSION['dolical_caldav_password'] = $password;
+        } else {
+            setEventMessages($langs->trans('Error'), null, 'errors');
+        }
+    } elseif (dolical_caldav_revoke_password($user)) {
+        setEventMessages($langs->trans('DoliCalSyncPasswordRevoked'), null);
+    } else {
+        setEventMessages($langs->trans('Error'), null, 'errors');
+    }
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
+}
+
 if ($action === 'saveshared' && dolical_can_read_all($user) && dolical_valid_post()) {
     // Only colleagues whose agenda the user may display
     $shared = array_values(array_intersect(GETPOST('shared', 'array:int'), array_keys(dolical_get_calendar_users($user))));
@@ -70,9 +89,14 @@ if ($action === 'saveshared' && dolical_can_read_all($user) && dolical_valid_pos
 $syncUrl       = dolical_caldav_url();
 $calendarUrl   = $syncUrl . 'calendars/' . rawurlencode($user->login) . '/agenda/';
 $isSecure      = strpos($syncUrl, 'https://') === 0;
+$httpAllowed   = getDolGlobalInt('DOLICAL_CALDAV_ALLOW_HTTP') > 0;
 $canShare      = dolical_can_read_all($user);
 $calendarUsers = $canShare ? dolical_get_calendar_users($user) : [];
 $shared        = dolical_caldav_calendar_users($user);
+// The password just made, shown this once
+$newPassword   = (string) ($_SESSION['dolical_caldav_password'] ?? '');
+unset($_SESSION['dolical_caldav_password']);
+$syncPassword  = dolical_caldav_password($user);
 
 $title = $langs->trans('DoliCalSyncPhone');
 

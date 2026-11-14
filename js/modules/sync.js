@@ -37,4 +37,10 @@ window.dolical.sync.init = function() {
   $(document).on('click', '.dolical-sync .dolical-copy', function() {
     window.dolical.util.copy($(this).attr('data-copy'));
   });
+  // A new password stops the devices already set up, removing it too : asked first
+  $(document).on('submit', '.dolical-sync form[data-confirm]', function(event) {
+    if (!window.confirm($(this).attr('data-confirm'))) {
+      event.preventDefault();
+    }
+  });
 };

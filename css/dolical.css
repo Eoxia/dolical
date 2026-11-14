@@ -2898,6 +2898,25 @@ code.dolical-sync__value {
   background: #fdf3e1;
   color: #b7791f;
 }
+.dolical-sync__notice.dolical-sync__notice--success {
+  background: #f3faf5;
+  color: #2f855a;
+}
+
+/* Synchronization password : shown once, large enough to be typed on a phone */
+.dolical-sync__secret {
+  font-size: 1.15em;
+  letter-spacing: 0.05em;
+  user-select: all;
+}
+.dolical-sync__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dolical-sync__actions form {
+  margin: 0;
+}
 
 /* Import of an agenda : the result of the last import, the file and the agenda it goes to */
 .dolical-import__result {
