@@ -85,17 +85,24 @@ function dolical_import_known_uids(User $owner): array
 
 /**
  * Add to an event already imported, and to the dates of its series, the people and the third party found since :
- * nothing is removed, nothing else changes, no mail is sent
+ * nothing is removed, nothing else changes, no mail is sent. Only by whoever may change the event : a guest who
+ * imports a meeting he was invited to finds it already there, and leaves it as it is
  *
  * @param  int   $id     Event
  * @param  array $people From dolical_caldav_people()
+ * @param  User  $user   Person importing
  * @return bool          Whether something was added
  */
-function dolical_import_complete(int $id, array $people): bool
+function dolical_import_complete(int $id, array $people, User $user): bool
 {
     global $db;
 
     if (empty($people['users']) && empty($people['contacts']) && empty($people['socid'])) {
+        return false;
+    }
+
+    $event = new ActionComm($db);
+    if ($event->fetch($id) <= 0 || !dolical_can_edit_event($user, $event)) {
         return false;
     }
 
@@ -233,7 +240,7 @@ function dolical_import_ics(string $file, User $owner, User $user): array
 
         if ($uid !== '' && isset($known[$uid])) {
             $result['duplicates']++;
-            if (dolical_import_complete($known[$uid], $people)) {
+            if (dolical_import_complete($known[$uid], $people, $user)) {
                 $result['linked']++;
             }
             continue;

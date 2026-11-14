@@ -466,8 +466,9 @@ function dolical_caldav_dates(\Sabre\VObject\Component\VEvent $vevent): array
 }
 
 /**
- * Users, contacts and third party of the instance behind the people of an iCalendar event, with the answer each one
- * gave. A person is found by his address (the professional or the personal one of a user), else by his name : the
+ * Users, contacts and third party of the instance behind the people of an iCalendar event, with their answer : the
+ * one of the person acting, and the one a contact gave with his address ; the other users and the contacts found by
+ * their name only stay to answer (0). A person is found by his address (the professional or the personal one of a user), else by his name : the
  * one the agenda shows with the address, or the "firstname.lastname" of the address, when only one person bears it.
  * The third party is the one with that address, else the one of a contact found, else the only one of the domain the
  * outside addresses share : neither the mail providers of everyone nor the domains of the users of the instance
@@ -499,19 +500,21 @@ function dolical_caldav_people(array $emails, User $user, int $exceptUserId = 0,
     $list = "'" . implode("', '", array_map([$db, 'escape'], array_keys($answers))) . "'";
 
     $people = [];
-    $addUser = function (int $userId, string $email) use (&$found, &$people, $answers, $exceptUserId) {
+    // Only the person acting answers for himself : the answer another agenda shows for a colleague is not his, he
+    // stays to answer. A contact keeps the answer given with his address, not one guessed from a name
+    $addUser = function (int $userId, string $email) use (&$found, &$people, $answers, $exceptUserId, $user) {
         $people[$email] = true;
         if ($userId !== $exceptUserId && !isset($found['answers']['user'][$userId])) {
             $found['users'][]                   = $userId;
-            $found['answers']['user'][$userId] = $answers[$email] ?? 0;
+            $found['answers']['user'][$userId] = $userId === (int) $user->id ? ($answers[$email] ?? 0) : 0;
         }
     };
     $companies = [];
-    $addContact = function (int $contactId, int $socid, string $email) use (&$found, &$people, &$companies, $answers) {
+    $addContact = function (int $contactId, int $socid, string $email, bool $byName = false) use (&$found, &$people, &$companies, $answers) {
         $people[$email] = true;
         if (!isset($found['answers']['socpeople'][$contactId])) {
             $found['contacts'][]                         = $contactId;
-            $found['answers']['socpeople'][$contactId] = $answers[$email] ?? 0;
+            $found['answers']['socpeople'][$contactId] = $byName ? 0 : ($answers[$email] ?? 0);
             if ($socid > 0) {
                 $companies['contact'][] = $socid;
             }
@@ -550,7 +553,7 @@ function dolical_caldav_people(array $emails, User $user, int $exceptUserId = 0,
         }
         $match = dolical_caldav_find_by_name('socpeople', $guesses);
         if ($match !== null && dolical_can_see_object($user, 'contact', $match['id'])) {
-            $addContact($match['id'], $match['socid'], $email);
+            $addContact($match['id'], $match['socid'], $email, true);
         }
     }
 
@@ -912,8 +915,9 @@ function dolical_caldav_create(User $user, string $uri, array $read, ?User $owne
         return -1;
     }
 
-    // The answers already given, the owner's included : before the dates of the series, which copy them
-    if (!empty($read['answer'])) {
+    // The answers already given, before the dates of the series, which copy them : the owner's when he is the one
+    // acting (a colleague's agenda imported does not answer for him), the others as dolical_caldav_people() kept them
+    if (!empty($read['answer']) && (int) $owner->id === (int) $user->id) {
         dolical_caldav_set_answer($event, (int) $owner->id, (int) $read['answer']);
     }
     foreach ($people['answers']['user'] as $userId => $answer) {

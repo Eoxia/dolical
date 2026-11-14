@@ -116,15 +116,19 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
 - Ce que l'événement n'a pas de champ pour garder est ajouté sous sa description : titre ou lieu complet au-delà de
   128 caractères (`ActionComm::create()` les coupe), personnes introuvables ou sans adresse avec leur réponse,
   catégories, lien de visio absent de la description.
-- Participants (organisateur compris), parmi les utilisateurs actifs et les contacts visibles, avec leur réponse :
-  par leur e-mail (pour un utilisateur, le professionnel ou le personnel), sinon par leur nom — celui affiché par
-  l'agenda, ou le « prenom.nom » de l'adresse — quand une seule personne le porte. Un nom d'un seul mot ne suffit pas.
+- Participants (organisateur compris), parmi les utilisateurs actifs et les contacts visibles : par leur e-mail (pour
+  un utilisateur, le professionnel ou le personnel), sinon par leur nom — celui affiché par l'agenda, ou le
+  « prenom.nom » de l'adresse — quand une seule personne le porte. Un nom d'un seul mot ne suffit pas.
+- Réponses reprises : celle de la personne qui importe ou synchronise, et celle qu'un contact a donnée avec son
+  adresse. Un collègue garde sa propre réponse (« en attente » s'il n'a pas répondu) : l'autre agenda ne répond pas
+  pour lui, pas plus qu'un contact retrouvé par son seul nom.
 - Tiers : celui qui a l'adresse d'un participant, sinon celui du premier contact retrouvé, sinon le seul tiers (e-mail
   ou site) du domaine des adresses extérieures, quand elles mènent toutes à lui. Les domaines des messageries grand
   public et ceux des utilisateurs de l'instance ne comptent pas.
 - L'identifiant d'origine est gardé dans `ref_ext` (`dav:import-<personne>-<empreinte>.ics|<uid>`) : réimporter le
   même fichier ne recrée pas les rendez-vous déjà présents dans l'agenda de la personne, comme organisatrice ou
-  participante, mais leur ajoute (à toute la série) les participants et le tiers retrouvés depuis ; rien n'est retiré.
+  participante. Qui peut modifier le rendez-vous lui ajoute (à toute la série) les participants et le tiers retrouvés
+  depuis ; rien n'est retiré. Un simple invité le laisse tel quel.
 - Le bilan liste les adresses de personnes introuvables : renseigner l'adresse sur la fiche puis réimporter les relie.
 - Chaque import marque les événements qu'il crée (séries comprises) d'une même clé, dans le champ natif `import_key`.
   La page liste les 20 derniers imports dont il reste des événements (les siens et ceux faits dans son agenda ; tous
