@@ -1276,6 +1276,25 @@ function dolical_search_projects(User $user, string $search, int $socid = 0): ar
 }
 
 /**
+ * Whether the third party and the project chosen for an event may be given to it : ones the user may see, or the
+ * ones the event already has. Checked before anything is written, the contacts typed in the form included
+ *
+ * @param  ActionComm $event     Event, new or loaded
+ * @param  int        $socid     Third party chosen, 0 for none
+ * @param  int        $projectId Project chosen, 0 for none
+ * @param  User       $user      Current user
+ * @return bool
+ */
+function dolical_can_link_event(ActionComm $event, int $socid, int $projectId, User $user): bool
+{
+    if ($socid > 0 && $socid !== (int) $event->socid && !dolical_can_see_object($user, 'societe', $socid)) {
+        return false;
+    }
+
+    return !($projectId > 0 && $projectId !== (int) $event->fk_project && !dolical_can_see_object($user, 'project', $projectId));
+}
+
+/**
  * Create or update an event from the form of the calendar, with its people and its linked elements
  *
  * @param  ActionComm $event Event, new or loaded with its resources
@@ -1328,8 +1347,7 @@ function dolical_save_event(ActionComm $event, array $data, User $user): int
     // A third party or a project chosen for the event must be one the user may see ; the ones already there stay
     $socid     = max(0, (int) $data['socid']);
     $projectId = max(0, (int) $data['project_id']);
-    if (($socid > 0 && $socid !== (int) $event->socid && !dolical_can_see_object($user, 'societe', $socid))
-        || ($projectId > 0 && $projectId !== (int) $event->fk_project && !dolical_can_see_object($user, 'project', $projectId))) {
+    if (!dolical_can_link_event($event, $socid, $projectId, $user)) {
         $event->error = $langs->trans('NotEnoughPermissions');
         return -1;
     }

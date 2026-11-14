@@ -331,10 +331,18 @@ if ($action === 'save') {
         $event = new ActionComm($db);
     }
 
-    // People typed as an email become contacts, found or created
-    $contactErrors = [];
-    $contactIds    = dolical_resolve_contacts(GETPOST('contact_ids', 'array:alphanohtml'), GETPOSTINT('socid'), $user, $contactErrors);
+    // The third party and the project are checked first : a refused event must leave no contact behind
+    if (!dolical_can_link_event($event, max(0, GETPOSTINT('socid')), max(0, GETPOSTINT('project_id')), $user)) {
+        dolical_json_exit(['success' => false, 'error' => $langs->trans('NotEnoughPermissions')], 403);
+    }
+
+    // People typed as an email become contacts, found or created ; the ones created here go again if the event is
+    // refused in the end
+    $contactErrors   = [];
+    $createdContacts = [];
+    $contactIds      = dolical_resolve_contacts(GETPOST('contact_ids', 'array:alphanohtml'), GETPOSTINT('socid'), $user, $contactErrors, $createdContacts);
     if (!empty($contactErrors)) {
+        dolical_delete_new_contacts($createdContacts, $user);
         dolical_json_exit(['success' => false, 'error' => implode(' ', $contactErrors)]);
     }
 
@@ -385,6 +393,7 @@ if ($action === 'save') {
     $saved  = dolical_save_event_series($event, $data, $user);
     $result = $saved['id'];
     if ($result <= 0) {
+        dolical_delete_new_contacts($createdContacts, $user);
         dolical_json_exit(['success' => false, 'error' => $saved['error'] ?: $langs->trans('Error')]);
     }
 
