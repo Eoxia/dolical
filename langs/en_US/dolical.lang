@@ -23,6 +23,7 @@ DoliCalDescription = Team calendar on the native events of Dolibarr: several cal
 DoliCal            = DoliCal
 ReadModule         = Read %s
 ReadAdminPage      = Access the module configuration %s
+DoliCalRightReport = Write the report of the meetings one takes part in and attach files to them, without changing the event
 ModuleSettings     = Settings
 
 #
@@ -156,6 +157,7 @@ DoliCalShowWeekendsHelp         = Saturday and Sunday in the Week, Team and Mont
 DoliCalHideAutoEventsHelp       = The events created by Dolibarr (validation of a proposal, email sent…) are hidden by default; everyone can show them again
 DoliCalNativeLinkedElements     = Linked elements on the native card
 DoliCalNativeLinkedElementsHelp = Native option of the agenda: the Dolibarr card of an event also shows the elements linked from the calendar
+DoliCalSharedAgendaSetting      = Setting of the Agenda module (constant %s), not of DoliCal: it applies to the Dolibarr card of every event.
 DoliCalEventTypes               = Event types
 DoliCalEventTypesHelp           = The types (meeting, call…) are offered when the agenda uses them
 DoliCalAgendaSetup              = Agenda setup
@@ -194,6 +196,8 @@ DoliCalTemplateCancel            = DoliCal – Cancellation of an event
 DoliCalRemind                    = Remind (%s)
 DoliCalRemindHelp                = Send a reminder to the guests who have not answered yet
 DoliCalNobodyToRemind            = Every guest has already answered
+DoliCalMailTooSoon               = %s already got an email for this event less than %s minutes ago.
+DoliCalMailHourlyLimit           = Limit of emails per hour reached: %s email(s) not sent, try again later.
 DoliCalCancellationsSent         = %s cancellation(s) sent
 DoliCalConfirmDeleteInvited      = Delete this event for good? A cancellation will go to the people invited by email (%s).
 DoliCalRemindersSent             = %s reminder(s) sent
@@ -226,7 +230,7 @@ DoliCalTemplateInvitation        = DoliCal – Invitation to an event
 DoliCalTemplateUpdate            = DoliCal – Change of an event
 DoliCalTemplateAnswer            = DoliCal – Answer received (organizer)
 DoliCalInvitationInvalid         = This invitation link is no longer valid
-DoliCalInvitationInvalidHelp     = The event may have been deleted, or you are no longer one of the participants. Contact the organizer.
+DoliCalInvitationInvalidHelp     = The event may have been deleted or be long over, or you are no longer one of the participants. Contact the organizer.
 DoliCalInvitationFor             = Invitation for %s
 DoliCalOrganizedBy               = Organized by %s
 DoliCalInvitationThanks          = Thank you, your answer was sent to the organizer.
@@ -393,6 +397,7 @@ DoliCalImportUndoFailed          = %s dates could not be removed.
 DoliCalImportNothing             = This file holds no meeting.
 DoliCalImportBadFile             = This file is not an agenda in the iCalendar format (.ics).
 DoliCalImportFileTooLarge        = This file is bigger than the server accepts (%s).
+DoliCalImportTruncated           = The file holds more than %s appointments: the next ones were not read. Split the file to import the rest.
 DoliCalImportSeeCalendar         = See the agenda
 
 #
