@@ -6,6 +6,23 @@
   la période sont lus (réglage caché `DOLICAL_LONGEST_EVENT_DAYS`), au lieu de tout l'historique (plusieurs secondes
   pour 800 000 événements).
 
+## 1.3.0
+
+- Page d'un événement seul (`view/dolical_event.php`) : le formulaire d'un nouveau rendez-vous, ou la fiche d'un
+  rendez-vous, sans le calendrier derrière. Faite pour une petite fenêtre : ouverte dans la fenêtre d'une autre
+  application, elle lui dit son titre, la saisie non enregistrée, puis l'enregistrement ou la suppression.
+- Volet agenda d'une messagerie qui offre le hook `inboxAgendaProvider` : créer et ouvrir un rendez-vous passent par
+  DoliCal, avec le tiers, les contacts, le projet et les documents reconnus sur le mail ouvert.
+- « Planifier un rendez-vous » sur un mail (hook `inboxMailActions`) : la page d'un nouveau rendez-vous dans une
+  fenêtre, avec le sujet du mail en titre, ses correspondants en contacts (le contact connu, sinon un nouveau contact
+  proposé) et le lien vers le mail (`email_msgid`).
+- Invitation de DoliCal lue dans une messagerie qui offre le hook `inboxInviteEvent` : « Déjà dans votre agenda »
+  au lieu d'un ajout en double, et la réponse (Accepter, Peut-être, Refuser) enregistrée comme par le lien de
+  l'invitation (réponse native, trace, organisateur prévenu).
+- Bloc « Rendez-vous » dans le bandeau d'un mail (hook `inboxMailPanels`) : le prochain et le dernier rendez-vous avec
+  le tiers du mail, un compte-rendu attendu à écrire ; rien quand il n'y en a aucun.
+- Réactiver le module pour le volet agenda (nouveau contexte de hooks).
+
 ## 1.2.0
 
 - Import d'un agenda depuis son fichier `.ics` (Nextcloud, Google Agenda, Outlook, Thunderbird…) : page « Importer un
@@ -53,6 +70,10 @@
   connectés doivent recevoir ce nouveau mot de passe) ; hooks de la page de connexion appelés (double
   authentification, bannissement…), au plus 5 échecs par identifiant et 20 par adresse en 15 minutes ; refusée en
   http, sauf option pour une installation de test.
+- Séries (#25) : « Cette date et les suivantes » et « Toute la série » vérifient les droits sur chaque date ; une date
+  d'une autre personne que l'on ne peut pas modifier ou supprimer reste intacte et le bilan l'indique. Une série est
+  limitée à son auteur, aussi pour les séries créées par DoliCal : un événement d'un autre auteur portant le même
+  `recurid` n'en fait plus partie.
 - Nouvelle entrée de menu : réactiver le module pour la voir.
 
 ## 1.1.0

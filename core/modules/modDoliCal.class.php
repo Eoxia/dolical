@@ -74,7 +74,7 @@ class modDoliCal extends DolibarrModules
         $this->editor_url  = 'https://www.eoxia.com';
 
         // Possible values for version are: 'development', 'experimental', 'dolibarr', 'dolibarr_deprecated' or a version string like 'x.y.z'
-        $this->version = '1.2.0';
+        $this->version = '1.3.0';
 
         // Key used in llx_const table to save module status enabled/disabled (where DOLICAL is value of property name of module in uppercase)
         $this->const_name = 'MAIN_MODULE_' . strtoupper($this->name);
@@ -124,7 +124,9 @@ class modDoliCal extends DolibarrModules
                 'projectcard',
                 'contactcard',
                 // The setup of the email templates lists the types of the module
-                'emailtemplates'
+                'emailtemplates',
+                // A mail application that offers its agenda panel to an agenda module (hook inboxAgendaProvider)
+                'inbox'
             ],
             // Set this to 1 if features of module are opened to external users
             'moduleforexternal' => 0,

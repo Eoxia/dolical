@@ -43,7 +43,7 @@ window.dolical.util.init = function() {
  */
 window.dolical.util.config = function() {
   if (!window.dolical.util.configCache) {
-    const raw = $('.dolical-app, .dolical-sync').first().attr('data-config');
+    const raw = $('.dolical-app, .dolical-sync, .dolical-single').first().attr('data-config');
     window.dolical.util.configCache = raw ? JSON.parse(raw) : {i18n: {}, urls: {}, users: [], groups: []};
   }
   return window.dolical.util.configCache;

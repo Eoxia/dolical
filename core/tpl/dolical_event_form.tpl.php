@@ -166,7 +166,7 @@ $title = $isNew ? $langs->trans('DoliCalNewEvent') : $langs->trans('DoliCalEditE
                 <label for="dolical-contacts"><i class="far fa-address-book pictofixedwidth"></i><?php echo $langs->trans('DoliCalContacts'); ?></label>
                 <select id="dolical-contacts" name="contact_ids[]" class="dolical-select2" data-ajax-type="contact" data-tags="email" multiple data-placeholder="<?php echo dol_escape_htmltag($langs->trans('DoliCalSearchContacts')); ?>" data-new-label="<?php echo dol_escape_htmltag($langs->trans('DoliCalNewContactByEmail', '%EMAIL%')); ?>">
                     <?php foreach ($selectedContacts as $contactId => $text) : ?>
-                        <option value="<?php echo (int) $contactId; ?>" selected><?php echo dol_escape_htmltag($text); ?></option>
+                        <option value="<?php echo dol_escape_htmltag((string) $contactId); ?>" selected><?php echo dol_escape_htmltag($text); ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -251,6 +251,9 @@ $title = $isNew ? $langs->trans('DoliCalNewEvent') : $langs->trans('DoliCalEditE
             </div>
         </div>
         <input type="hidden" name="note_changed" value="0">
+        <?php if (!empty($formValues['email_msgid'])) : ?>
+            <input type="hidden" name="email_msgid" value="<?php echo dol_escape_htmltag($formValues['email_msgid']); ?>">
+        <?php endif; ?>
     </form>
 </div>
 <div class="modal-footer">

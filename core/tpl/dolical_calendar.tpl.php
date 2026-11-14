@@ -159,23 +159,4 @@
     <div class="modal-container"></div>
 </div>
 
-<div class="dolical-modal dolical-scope-modal" id="dolical-scope-modal">
-    <div class="modal-container">
-        <div class="modal-header">
-            <h2 class="modal-title"><i class="fas fa-redo-alt pictofixedwidth"></i><span class="dolical-scope__title" data-edit="<?php echo dol_escape_htmltag($langs->trans('DoliCalScopeEditTitle')); ?>" data-delete="<?php echo dol_escape_htmltag($langs->trans('DoliCalScopeDeleteTitle')); ?>"></span></h2>
-            <div class="modal-close"><i class="fas fa-times"></i></div>
-        </div>
-        <div class="modal-content">
-            <?php foreach (['one' => 'DoliCalScopeOne', 'following' => 'DoliCalScopeFollowing', 'all' => 'DoliCalScopeAll'] as $scope => $labelKey) : ?>
-                <label class="dolical-scope__choice" data-scope="<?php echo $scope; ?>">
-                    <input type="radio" name="dolical_scope" value="<?php echo $scope; ?>"<?php echo $scope === 'one' ? ' checked' : ''; ?>>
-                    <span><?php echo $langs->trans($labelKey); ?></span>
-                </label>
-            <?php endforeach; ?>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="dolical-btn modal-close"><?php echo $langs->trans('Cancel'); ?></button>
-            <button type="button" class="dolical-btn dolical-btn--primary dolical-scope__confirm"><i class="fas fa-check"></i><?php echo $langs->trans('Validate'); ?></button>
-        </div>
-    </div>
-</div>
+<?php require __DIR__ . '/dolical_scope_modal.tpl.php'; ?>

@@ -275,6 +275,7 @@ DoliCalScopeDeleteTitle          = Supprimer l'événement récurrent
 DoliCalScopeOne                  = Cet événement
 DoliCalScopeFollowing            = Cet événement et les suivants
 DoliCalScopeAll                  = Tous les événements de la série
+DoliCalSeriesRefused = %s date(s) de la série, attribuée(s) à d'autres personnes, n'ont pas été touchées : vous n'avez pas le droit de les modifier ou de les supprimer.
 
 #
 # Reminder - Rappel
@@ -421,3 +422,18 @@ DoliCalSetupCalDav                = Synchronisation des téléphones (CalDAV)
 DoliCalSetupCalDavHelp            = Fermée par défaut. Ouverte, chacun crée sur la page « Synchroniser mon téléphone » un mot de passe de synchronisation pour DAVx⁵, un iPhone, un Mac ou Thunderbird : le mot de passe Dolibarr n'ouvre pas la synchronisation. Les tentatives ratées sont limitées par identifiant et par adresse, et les modules de sécurité de la page de connexion s'appliquent.
 DoliCalSetupCalDavHttp = Synchronisation en http (installation de test)
 DoliCalSetupCalDavHttpHelp = À ne jamais cocher en production : sans HTTPS, le mot de passe de synchronisation passe en clair. Par défaut, une connexion en http est refusée.
+
+#
+# Page d'un événement seul (fenêtre d'une autre application, lien « Planifier »)
+#
+DoliCalUnsavedChanges = Les modifications de ce rendez-vous ne sont pas enregistrées.
+DoliCalPlanMeeting = Planifier un rendez-vous
+DoliCalMeetingsPanel = Rendez-vous
+DoliCalMeetingsNext = Prochain : %s, %s
+DoliCalMeetingsLast = Dernier : %s, %s
+DoliCalMeetingsReportDue = Compte-rendu attendu
+DoliCalMeetingsWriteReport = Écrire le compte-rendu
+DoliCalMeetingsOpenNext = Ouvrir le prochain
+DoliCalMeetingsNone = Aucun rendez-vous
+DoliCalEventGone      = Ce rendez-vous n'existe plus, ou vous n'avez pas le droit de le voir.
+DoliCalBackToCalendar = Retour au calendrier

@@ -74,6 +74,10 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
 - Modifier ou supprimer une date d'une série demande « Cet événement / Cet événement et les suivants / Tous les
   événements ». Changer la règle reconstruit les dates à venir, jamais celles déjà passées ; « et les suivants » coupe
   la série en deux. Glisser-déposer une date ne déplace qu'elle.
+- Une série est l'œuvre d'un seul auteur : un événement d'un autre auteur portant le même `recurid` n'en fait pas
+  partie, et les dates ajoutées par un collègue qui reconstruit la série restent de son auteur. Les droits sont
+  vérifiés sur chaque date : une date attribuée à une autre personne, que l'on ne peut pas modifier ou supprimer,
+  reste telle quelle et le bilan le signale.
 - Les invités reçoivent **un seul e-mail pour toute la série** (`.ics` avec `RRULE` et fuseau horaire), une
   exception (`RECURRENCE-ID`) quand une seule date change, et leur réponse vaut pour toutes les dates à venir.
 
@@ -142,6 +146,38 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
   avec le droit de supprimer les événements des autres) : *Supprimer cet import* efface d'un coup ses événements,
   comme la suppression native et sans prévenir les participants. Les participants ajoutés par une réimportation à des
   rendez-vous déjà présents ne sont pas retirés.
+
+## Un événement seul, dans une fenêtre
+
+`view/dolical_event.php` montre un événement sans le calendrier : son formulaire (`action=create` avec les mêmes
+paramètres que le calendrier : `socid`, `projectid`, `contactids`, `elements`, `start`, `end`, `allday` ; ou
+`action=edit&id=`) ou sa fiche (`id=`). Seule, la page revient au calendrier après l'enregistrement ou à la fermeture.
+
+Ouverte dans la fenêtre d'une autre page du même site (iframe), elle la prévient par `postMessage` (même origine) :
+`{source: 'inbox-panel', action}` avec `title` (titre de la fenêtre), `dirty` (saisie non enregistrée, `on` et
+`text`), `done` (enregistré ou supprimé, `message` à afficher) ou `close`.
+
+**Volet agenda d'une messagerie** : une application qui offre le hook `inboxAgendaProvider` (contexte `inbox`) reçoit
+de DoliCal les adresses de cette page pour créer un rendez-vous (tiers, contacts, projet et documents reconnus sur le
+mail ouvert) et ouvrir un rendez-vous, et celle du calendrier pour tout voir. Rien n'est appelé sans cette application.
+
+**Planifier un rendez-vous depuis un mail** : avec le hook `inboxMailActions`, le mail ouvert reçoit l'action
+« Planifier un rendez-vous ». Elle ouvre cette page avec le sujet du mail en titre (sans « Re: », « TR: »…), ses
+correspondants en contacts (le contact de l'adresse s'il existe et qu'on peut le voir, sinon un nouveau contact
+proposé, créé à l'enregistrement) et le Message-ID du mail gardé sur l'événement (`email_msgid`). Le sujet, les
+adresses et le Message-ID arrivent après le `#` de l'adresse, que le navigateur n'envoie jamais au serveur, puis
+partent au formulaire par POST : ils ne sont écrits dans aucun journal du serveur web.
+
+**Invitations lues dans la messagerie** : avec le hook `inboxInviteEvent`, une invitation envoyée par DoliCal à un
+utilisateur déjà participant est reconnue par son identifiant (`dolical-<entité>-<id>@<hôte>`, une série, ou
+l'identifiant choisi par un téléphone) et par son organisateur. La messagerie affiche « Déjà dans votre agenda » au
+lieu de proposer un ajout en double ; la réponse donnée depuis le mail est enregistrée comme par le lien de
+l'invitation (réponse native, trace, organisateur prévenu).
+
+**Rendez-vous avec le tiers du mail** : avec le hook `inboxMailPanels`, le bandeau du mail montre un bloc
+« Rendez-vous » quand le tiers reconnu en a : le prochain, le dernier, et « Compte-rendu attendu » quand le dernier,
+fini depuis moins de 30 jours, n'en a pas (le bouton ouvre sa fiche pour l'écrire). Seulement les rendez-vous que
+l'utilisateur peut lire ; aucun bloc sans rendez-vous. Résumé lu par `ajax/meetings.php` (lecture seule).
 
 ## Où sont stockées les données
 
