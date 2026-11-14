@@ -184,6 +184,13 @@ if ($view === 'form') {
             'elements'   => array_filter(explode(',', GETPOST('elements', 'alphanohtml'))),
             'note'       => '',
         ];
+        // From a mail (sent by POST, never in an address) : its subject as title, its correspondents as contacts,
+        // its Message-ID kept on the event
+        $formValues['label'] = dol_trunc(trim(preg_replace('/\s+/', ' ', GETPOST('label', 'alphanohtml'))), 255, 'right', 'UTF-8', 1);
+        $formValues['email_msgid'] = dolical_clean_msgid(GETPOST('email_msgid', 'alphanohtml'));
+        $formValues['emails']      = array_slice(array_values(array_unique(array_filter(array_map(function ($email) {
+            return dol_strtolower(trim($email));
+        }, explode(',', GETPOST('emails', 'alphanohtml'))), 'isValidEmail'))), 0, 20);
     }
 
     // What comes from the browser or from a cloned event is kept only when the user may see it
@@ -208,6 +215,22 @@ if ($view === 'form') {
                 $text .= ' — ' . $contact->thirdparty->name;
             }
             $selectedContacts[$contactId] = $text . (!empty($contact->email) ? ' <' . $contact->email . '>' : '');
+        }
+    }
+    // Addresses of a mail : the contact of this address when the user may see it, else a new contact proposed
+    foreach ($formValues['emails'] ?? [] as $email) {
+        $contactId = dolical_find_contact_by_email($email, (int) $formValues['socid'], $user);
+        if ($contactId > 0 && !isset($selectedContacts[$contactId])) {
+            $contact = new Contact($db);
+            if ($contact->fetch($contactId) > 0) {
+                $text = $contact->getFullName($langs);
+                if ($contact->socid > 0 && $contact->fetch_thirdparty() > 0) {
+                    $text .= ' - ' . $contact->thirdparty->name;
+                }
+                $selectedContacts[$contactId] = $text . ' <' . $email . '>';
+            }
+        } elseif ($contactId <= 0) {
+            $selectedContacts['new:' . rawurlencode($email)] = $langs->transnoentities('DoliCalNewContactByEmail', $email);
         }
     }
     $selectedThirdparty = '';
@@ -377,6 +400,7 @@ if ($action === 'save') {
         'elements'     => GETPOST('elements', 'array:alphanohtml'),
         'note'         => GETPOST('note', 'restricthtml'),
         'note_changed' => GETPOSTINT('note_changed'),
+        'email_msgid'  => dolical_clean_msgid(GETPOST('email_msgid', 'alphanohtml')),
         'recurrence'   => GETPOST('recurrence', 'aZ09'),
         'recur_until'  => GETPOSTINT('recur_until'),
         'recur_scope'  => GETPOST('recur_scope', 'aZ09'),

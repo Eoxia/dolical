@@ -309,7 +309,15 @@ window.dolical.eventform.open = function(params) {
   $box.html('<div class="dolical-form__loading"><i class="fas fa-circle-notch fa-spin"></i></div>');
   $modal.addClass('modal-active');
 
-  $.get(config.urls.event, $.extend({view: 'form'}, params || {}), null, 'html').done(function(html) {
+  // What comes from a mail (title, addresses, Message-ID) goes by POST, the token in the body : never in an
+  // address, so never in a log. Else a read in GET without token, as the other views
+  const fromMail = !!(params && (params.label || params.emails || params.email_msgid));
+  $.ajax({
+    url: config.urls.event,
+    method: fromMail ? 'POST' : 'GET',
+    data: $.extend({view: 'form'}, fromMail ? {token: config.token} : {}, params || {}),
+    dataType: 'html'
+  }).done(function(html) {
     $box.html(html);
     F.setup($box);
   }).fail(function(xhr) {
@@ -665,10 +673,12 @@ window.dolical.eventform.send = function(data, id) {
     }
     $modal.removeClass('modal-active');
     $modal.find('.modal-container').empty();
+    let message = '';
     if (response.warnings && response.warnings.length) {
-      U.toast(response.warnings.join(' '), 'error');
+      message = response.warnings.join(' ');
+      U.toast(message, 'error');
     } else {
-      let message = U.t('saved');
+      message = U.t('saved');
       if (response.created > 0) {
         message += ' · ' + U.t(response.truncated ? 'occurrencesTruncated' : 'occurrencesCreated', response.created + 1);
       }
@@ -680,7 +690,8 @@ window.dolical.eventform.send = function(data, id) {
       }
       U.toast(message);
     }
-    $(document).trigger('dolical:changed', [response.id]);
+    // The message goes with the change : the page of one event gives it to the window that embeds it
+    $(document).trigger('dolical:changed', [response.id, message]);
     // A new event shows its card at once : the people and documents can be checked there
     if (!id && window.dolical.calendar.state) {
       window.dolical.eventcard.open(response.id, null);

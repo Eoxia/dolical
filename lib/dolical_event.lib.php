@@ -1365,6 +1365,10 @@ function dolical_save_event(ActionComm $event, array $data, User $user): int
     if ($isNew || !empty($data['note_changed'])) {
         $event->note_private = sanitizeVal((string) $data['note'], 'restricthtml');
     }
+    // A new event planned from a mail keeps the Message-ID of the mail : the mail application finds it back
+    if ($isNew && !empty($data['email_msgid'])) {
+        $event->email_msgid = (string) $data['email_msgid'];
+    }
 
     // People : the owner first, the answers already given are kept
     $ownerId = (int) $data['owner_id'] > 0 && dolical_filter_active_users([(int) $data['owner_id']]) ? (int) $data['owner_id'] : (int) $user->id;
@@ -1537,4 +1541,166 @@ function dolical_move_event(ActionComm $event, int $start, int $end, bool $allDa
     }
 
     return $event->update($user);
+}
+
+/**
+ * Views of the calendar and the key of their label
+ *
+ * @return array<string,string>
+ */
+function dolical_calendar_views(): array
+{
+    return ['day' => 'DoliCalViewDay', 'week' => 'DoliCalViewWeek', 'team' => 'DoliCalViewTeam', 'month' => 'DoliCalViewMonth', 'list' => 'DoliCalViewList'];
+}
+
+/**
+ * Everything the JavaScript of the calendar, of the card and of the form needs, in one data attribute : no inline
+ * script. Used by the calendar page and by the page of one event (view/dolical_event.php)
+ *
+ * @param  User  $user           Current user
+ * @param  array $calendarUsers  People the user may show (dolical_get_calendar_users)
+ * @param  array $calendarGroups Their groups (dolical_get_calendar_groups)
+ * @return array
+ */
+function dolical_calendar_config(User $user, array $calendarUsers, array $calendarGroups): array
+{
+    global $langs;
+
+    $defaultView = getDolGlobalString('DOLICAL_DEFAULT_VIEW', 'week');
+    $views       = dolical_calendar_views();
+
+    // Everything the JavaScript needs travels in one data attribute : no inline script
+    return [
+        'urls' => [
+            'events' => dol_buildpath('/dolical/ajax/events.php', 1),
+            'event'  => dol_buildpath('/dolical/ajax/event.php', 1),
+            'search' => dol_buildpath('/dolical/ajax/search.php', 1),
+        ],
+        // The endpoints keep the token of the session (NOTOKENRENEWAL) : the one to send them is the current one
+        'token'           => currentToken(),
+        'currentUser'     => (int) $user->id,
+        'canReadAll'      => dolical_can_read_all($user),
+        'canCreate'       => dolical_can_create($user),
+        'defaultView'     => isset($views[$defaultView]) ? $defaultView : 'week',
+        'dayStart'        => min(23, max(0, getDolGlobalInt('DOLICAL_DAY_START_HOUR', 8))),
+        'dayEnd'          => min(24, max(1, getDolGlobalInt('DOLICAL_DAY_END_HOUR', 19))),
+        'showWeekends'    => getDolGlobalInt('DOLICAL_SHOW_WEEKENDS', 1),
+        'hideAuto'        => getDolGlobalInt('DOLICAL_HIDE_AUTO_EVENTS', 1),
+        'defaultDuration' => max(5, getDolGlobalInt('DOLICAL_DEFAULT_DURATION', 60)),
+        'locale'          => str_replace('_', '-', $langs->defaultlang),
+        'users'           => array_values($calendarUsers),
+        'groups'          => $calendarGroups,
+        'openEvent'       => GETPOSTINT('event'),
+        'openCreate'      => GETPOST('action', 'aZ09') === 'create',
+        'createParams'    => [
+            'socid'      => GETPOSTINT('socid'),
+            'projectid'  => GETPOSTINT('projectid'),
+            'contactids' => GETPOST('contactids', 'intcomma'),
+            'elements'   => GETPOST('elements', 'alphanohtml'),
+        ],
+        'i18n' => [
+            'today'          => $langs->transnoentities('Today'),
+            'allDay'         => $langs->transnoentities('DoliCalAllDay'),
+            'noEvent'        => $langs->transnoentities('DoliCalNoEvent'),
+            'noPeople'       => $langs->transnoentities('DoliCalNoPeopleSelected'),
+            'more'           => $langs->transnoentities('DoliCalMoreEvents', '%COUNT%'),
+            'week'           => $langs->transnoentities('DoliCalWeekShort'),
+            'confirmDelete'  => $langs->transnoentities('DoliCalConfirmDelete'),
+            'confirmFile'    => $langs->transnoentities('DoliCalConfirmDeleteFile'),
+            'copied'         => $langs->transnoentities('DoliCalCopied'),
+            'saved'          => $langs->transnoentities('DoliCalSaved'),
+            'error'          => $langs->transnoentities('Error'),
+            'loadError'      => $langs->transnoentities('DoliCalLoadError'),
+            'labelRequired'  => $langs->transnoentities('ErrorFieldRequired', $langs->transnoentities('Title')),
+            'datesInvalid'   => $langs->transnoentities('DoliCalDatesInvalid'),
+            'filesSelected'  => $langs->transnoentities('DoliCalFilesSelected', '%COUNT%'),
+            'untitled'       => $langs->transnoentities('DoliCalUntitled'),
+            'searching'      => $langs->transnoentities('DoliCalSearching'),
+            'noResults'      => $langs->transnoentities('NoResults'),
+            'inputTooShort'  => $langs->transnoentities('DoliCalTypeToSearch'),
+            'contacts'       => $langs->transnoentities('DoliCalContactsCount', '%COUNT%'),
+            'moved'          => $langs->transnoentities('DoliCalMoved'),
+            'cannotEdit'     => $langs->transnoentities('DoliCalCannotEdit'),
+            'tooMany'        => $langs->transnoentities('DoliCalTooManyPeople'),
+            'invitationsSent' => $langs->transnoentities('DoliCalInvitationsSent', '%COUNT%'),
+            'cancelledSent'   => $langs->transnoentities('DoliCalCancellationsSent', '%COUNT%'),
+            'remindersSent'   => $langs->transnoentities('DoliCalRemindersSent', '%COUNT%'),
+            'confirmDeleteInvited' => $langs->transnoentities('DoliCalConfirmDeleteInvited', '%COUNT%'),
+            'busyWarning'     => $langs->transnoentities('DoliCalBusyWarning'),
+            'busyOther'       => $langs->transnoentities('DoliCalBusyOther'),
+            'answerYes'       => $langs->transnoentities('DoliCalAnswerAccepted'),
+            'answerMaybe'     => $langs->transnoentities('DoliCalAnswerTentative'),
+            'answerNo'        => $langs->transnoentities('DoliCalAnswerDeclined'),
+            'answerPending'   => $langs->transnoentities('DoliCalAnswerPending'),
+            // Repetition : the choices are worded again from the day chosen
+            'repeatNone'           => $langs->transnoentities('DoliCalRepeatNone'),
+            'repeatDaily'          => $langs->transnoentities('DoliCalRepeatDaily'),
+            'repeatWeekdays'       => $langs->transnoentities('DoliCalRepeatWeekdays'),
+            'repeatWeekly'         => $langs->transnoentities('DoliCalRepeatWeekly', '%DAY%'),
+            'repeatBiweekly'       => $langs->transnoentities('DoliCalRepeatBiweekly', '%DAY%'),
+            'repeatMonthlyDay'     => $langs->transnoentities('DoliCalRepeatMonthlyDay', '%DATE%'),
+            'repeatMonthlyWeekday' => $langs->transnoentities('DoliCalRepeatMonthlyWeekday', '%NTH%', '%DAY%'),
+            'repeatYearly'         => $langs->transnoentities('DoliCalRepeatYearly', '%DATE%'),
+            'nth1'                 => $langs->transnoentities('DoliCalNth1'),
+            'nth2'                 => $langs->transnoentities('DoliCalNth2'),
+            'nth3'                 => $langs->transnoentities('DoliCalNth3'),
+            'nth4'                 => $langs->transnoentities('DoliCalNth4'),
+            'nthLast'              => $langs->transnoentities('DoliCalNthLast'),
+            'repeating'            => $langs->transnoentities('DoliCalRepeating'),
+            'occurrencesCreated'   => $langs->transnoentities('DoliCalOccurrencesCreated', '%COUNT%'),
+            'occurrencesTruncated' => $langs->transnoentities('DoliCalOccurrencesTruncated', '%COUNT%'),
+            'movedOccurrence'      => $langs->transnoentities('DoliCalMovedOccurrence'),
+            'deletedOccurrences'   => $langs->transnoentities('DoliCalDeletedOccurrences', '%COUNT%'),
+            'untilInvalid'         => $langs->transnoentities('DoliCalRepeatUntilInvalid'),
+            // Reminders and reports
+            'notifBlocked'         => $langs->transnoentities('DoliCalReminderBlocked'),
+            'reportSaved'          => $langs->transnoentities('DoliCalReportSaved'),
+            'reportNudgeText'      => $langs->transnoentities('DoliCalReportNudgeText', '%LABEL%'),
+            'hasReport'            => $langs->transnoentities('DoliCalReport'),
+            // Page of one event
+            'deleted'              => $langs->transnoentities('RecordDeleted'),
+            'unsavedChanges'       => $langs->transnoentities('DoliCalUnsavedChanges'),
+        ],
+    ];
+}
+
+/**
+ * Meetings with a third party, for the block of a mail application : the next one, the last one, and whether the
+ * report of the last one is awaited from the user. Only the events the user may read, no automatic event nor record
+ * of a mail
+ *
+ * @param  int  $socid Third party
+ * @param  User $user  Current user
+ * @return array       ['next' => ActionComm|null, 'last' => ActionComm|null, 'reportDue' => bool]
+ */
+function dolical_thirdparty_meetings(int $socid, User $user): array
+{
+    global $db;
+
+    require_once __DIR__ . '/dolical_report.lib.php';
+
+    $found = ['next' => null, 'last' => null, 'reportDue' => false];
+    if ($socid <= 0) {
+        return $found;
+    }
+    $now  = $db->idate(dol_now());
+    $base = 'SELECT a.id FROM ' . MAIN_DB_PREFIX . 'actioncomm as a LEFT JOIN ' . MAIN_DB_PREFIX . 'c_actioncomm as c ON c.id = a.fk_action';
+    $base .= ' WHERE a.fk_soc = ' . ((int) $socid) . ' AND a.entity IN (' . getEntity('agenda') . ')';
+    $base .= " AND (c.type IS NULL OR c.type <> 'systemauto') AND a.code NOT IN ('AC_EMAIL', 'AC_EMAIL_IN', 'AC_FAX', 'AC_OTH_AUTO')";
+    $queries = [
+        'next' => $base . " AND a.datep >= '" . $now . "' AND a.percent < 100 ORDER BY a.datep ASC",
+        'last' => $base . " AND a.datep < '" . $now . "' ORDER BY a.datep DESC",
+    ];
+    foreach ($queries as $key => $sql) {
+        // The first one the user may read among the nearest ones
+        $resql = $db->query($sql . $db->plimit(10));
+        while ($resql && $found[$key] === null && ($obj = $db->fetch_object($resql))) {
+            $found[$key] = dolical_load_event((int) $obj->id, $user);
+        }
+    }
+    if ($found['last'] !== null) {
+        $found['reportDue'] = dolical_report_due($found['last'], $user) && dolical_can_report($user, $found['last']);
+    }
+
+    return $found;
 }

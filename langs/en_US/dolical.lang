@@ -422,3 +422,18 @@ DoliCalSetupCalDav                = Synchronization of the phones (CalDAV)
 DoliCalSetupCalDavHelp            = Closed by default. Once open, everyone creates on the page "Sync my phone" a synchronization password for DAVx⁵, an iPhone, a Mac or Thunderbird: the Dolibarr password does not open the synchronization. Failed attempts are limited per login and per address, and the security modules of the login page apply.
 DoliCalSetupCalDavHttp = Synchronization over http (test installation)
 DoliCalSetupCalDavHttpHelp = Never tick it in production: without HTTPS, the synchronization password travels in clear. By default, an http connection is refused.
+
+#
+# Page of one event alone (window of another application, link « Plan »)
+#
+DoliCalUnsavedChanges = The changes of this event are not saved.
+DoliCalPlanMeeting = Plan a meeting
+DoliCalMeetingsPanel = Meetings
+DoliCalMeetingsNext = Next: %s, %s
+DoliCalMeetingsLast = Last: %s, %s
+DoliCalMeetingsReportDue = Report awaited
+DoliCalMeetingsWriteReport = Write the report
+DoliCalMeetingsOpenNext = Open the next one
+DoliCalMeetingsNone = No meeting
+DoliCalEventGone      = This event no longer exists, or you are not allowed to see it.
+DoliCalBackToCalendar = Back to the calendar
