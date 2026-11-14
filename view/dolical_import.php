@@ -69,6 +69,9 @@ if ($action === 'import' && dolical_valid_post()) {
         setEventMessages($langs->trans('ErrorFieldRequired', $langs->transnoentities('DoliCalImportFile')), null, 'errors');
     } elseif ($status !== UPLOAD_ERR_OK || !is_uploaded_file((string) $upload['tmp_name'])) {
         setEventMessages($langs->trans('ErrorFileSizeTooLarge'), null, 'errors');
+    } elseif ((int) $upload['size'] > dolical_import_max_size() * 1024) {
+        // Checked here too : the browser only warns
+        setEventMessages($langs->trans('DoliCalImportFileTooLarge', price(round(dolical_import_max_size() / 1024, 1), 0, $langs, 0, 0) . ' ' . $langs->transnoentities('Mb')), null, 'errors');
     } else {
         $ownerId = GETPOSTINT('owner_id');
         $owner   = $user;
@@ -77,8 +80,8 @@ if ($action === 'import' && dolical_valid_post()) {
             $owner->fetch($ownerId);
         }
 
-        // A whole agenda takes a while : the import must not stop half way
-        @set_time_limit(0);
+        // A whole agenda takes a while : longer than a page, never without end
+        dolical_import_time_limit();
         $result = dolical_import_ics((string) $upload['tmp_name'], $owner, $user);
         if (isset($result['error'])) {
             setEventMessages($result['error'], null, 'errors');
@@ -99,7 +102,7 @@ if ($action === 'undo' && $canUndo && dolical_valid_post()) {
     if (empty($import)) {
         setEventMessages($langs->trans('ErrorRecordNotFound'), null, 'errors');
     } else {
-        @set_time_limit(0);
+        dolical_import_time_limit();
         $undone = dolical_import_undo($key, $author, $user);
         setEventMessages($langs->trans('DoliCalImportUndone', dol_print_date($import[0]['date'], 'dayhour', 'tzuser'), $undone['deleted']), null, $undone['deleted'] > 0 ? 'mesgs' : 'warnings');
         if ($undone['refused'] > 0) {
@@ -121,7 +124,7 @@ if ($action === 'undo' && $canUndo && dolical_valid_post()) {
 $result = $_SESSION['dolical_import'] ?? null;
 unset($_SESSION['dolical_import']);
 
-$maxSize = (int) getMaxFileSizeArray()['maxmin'];
+$maxSize = dolical_import_max_size();
 
 // The imports whose events are still there, with the names of the people
 $imports = $canUndo ? dolical_import_list($user) : [];

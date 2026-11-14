@@ -810,6 +810,82 @@ function dolical_pending_recipients(ActionComm $event): array
 }
 
 /**
+ * Number of mails left by a person in the last hour, read from the traces of the sendings : on one event (its series
+ * included), or on all the events when none is given
+ *
+ * @param  User            $sender Who sent
+ * @param  ActionComm|null $event  Event, all of them when null
+ * @return int
+ */
+function dolical_mails_sent_last_hour(User $sender, ?ActionComm $event = null): int
+{
+    global $db;
+
+    $sql  = 'SELECT COUNT(*) as nb FROM ' . MAIN_DB_PREFIX . 'actioncomm';
+    $sql .= ' WHERE fk_user_author = ' . ((int) $sender->id) . " AND elementtype = 'action'";
+    $sql .= " AND code IN ('" . DOLICAL_CODE_INVITE . "', '" . DOLICAL_CODE_UPDATE . "', '" . DOLICAL_CODE_REMIND . "')";
+    $sql .= " AND datep >= '" . $db->idate(dol_now() - 3600) . "'";
+    if ($event !== null) {
+        $sql .= ' AND fk_element IN (' . $db->sanitize(implode(',', dolical_invitation_scope($event))) . ')';
+    }
+    $resql = $db->query($sql);
+    $obj   = $resql ? $db->fetch_object($resql) : null;
+
+    return $obj ? (int) $obj->nb : 0;
+}
+
+/**
+ * The recipients a person may still write to from the calendar, so that the invitations cannot be sent in mass : a
+ * person who got a mail of the event a few minutes ago does not get it again (DOLICAL_MAIL_RESEND_DELAY, in minutes),
+ * and a sender leaves at most so many mails an hour on one event (DOLICAL_MAIL_MAX_PER_EVENT) and on all of them
+ * (DOLICAL_MAIL_MAX_PER_USER). 0 lifts a limit. The scheduled reminder is not concerned : it reminds each guest once
+ *
+ * @param  ActionComm $event      Event
+ * @param  User       $sender     Who sends
+ * @param  array      $recipients From dolical_invitation_recipients()
+ * @param  bool       $resend     Whether the mail is sent again on purpose (invitation, reminder) : the delay applies
+ * @param  string[]   $errors     Why some recipients were left out, filled
+ * @return array                  The recipients kept
+ */
+function dolical_throttle_recipients(ActionComm $event, User $sender, array $recipients, bool $resend, array &$errors): array
+{
+    global $langs;
+
+    if (empty($recipients)) {
+        return [];
+    }
+    $langs->load('dolical@dolical');
+
+    $delay = getDolGlobalInt('DOLICAL_MAIL_RESEND_DELAY', 10);
+    if ($resend && $delay > 0) {
+        $history = dolical_invitation_history($event);
+        $since   = dol_now() - 60 * $delay;
+        $recipients = array_values(array_filter($recipients, function ($recipient) use ($history, $since, $delay, $langs, &$errors) {
+            $last = $history[dol_strtolower($recipient['email'])] ?? 0;
+            if ($last > $since) {
+                $errors[] = $langs->trans('DoliCalMailTooSoon', $recipient['name'], $delay);
+                return false;
+            }
+            return true;
+        }));
+    }
+
+    $left = PHP_INT_MAX;
+    foreach (['DOLICAL_MAIL_MAX_PER_EVENT' => [50, $event], 'DOLICAL_MAIL_MAX_PER_USER' => [200, null]] as $constName => [$default, $scope]) {
+        $max = getDolGlobalInt($constName, $default);
+        if ($max > 0) {
+            $left = min($left, max(0, $max - dolical_mails_sent_last_hour($sender, $scope)));
+        }
+    }
+    if (count($recipients) > $left) {
+        $errors[]   = $langs->trans('DoliCalMailHourlyLimit', count($recipients) - $left);
+        $recipients = array_slice($recipients, 0, $left);
+    }
+
+    return $recipients;
+}
+
+/**
  * Remind once the guests who have not answered, for the events starting within some days. Run by the scheduled
  * job of the module ; each organizer sends in his own language
  *
@@ -894,9 +970,10 @@ function dolical_is_participant(ActionComm $event, string $kind, int $personId):
  * @param  int        $personId Id of the user or of the contact
  * @param  int        $status   1 accepted, 2 maybe, -1 declined
  * @param  string     $name     Name of the person
+ * @param  string     $email    Address of the person : the trace keeps it, to tell the organizer once in a while
  * @return bool
  */
-function dolical_record_answer(ActionComm $event, string $kind, int $personId, int $status, string $name): bool
+function dolical_record_answer(ActionComm $event, string $kind, int $personId, int $status, string $name, string $email = ''): bool
 {
     global $conf, $db, $langs;
 
@@ -951,9 +1028,15 @@ function dolical_record_answer(ActionComm $event, string $kind, int $personId, i
     $answerText = $outputLangs->transnoentities($answerKeys[$status]);
     $label      = dol_html_entity_decode((string) $event->label, ENT_QUOTES | ENT_HTML5);
 
-    dolical_log_invitation($event, $organizer, DOLICAL_CODE_ANSWER, $outputLangs->transnoentities('DoliCalTraceAnswer', $name, $answerText, $label), '', '', $kind === 'c' ? $personId : 0);
+    // An answer changed again and again from the link would send as many mails : the organizer is told once in a few
+    // minutes (DOLICAL_ANSWER_MAIL_DELAY), every answer keeps its trace on the event
+    $delay    = getDolGlobalInt('DOLICAL_ANSWER_MAIL_DELAY', 10);
+    $answered = $email !== '' ? dolical_invitation_history($event, [DOLICAL_CODE_ANSWER]) : [];
+    $tooSoon  = $delay > 0 && ($answered[dol_strtolower(trim($email))] ?? 0) > dol_now() - 60 * $delay;
 
-    if (!getDolGlobalInt('DOLICAL_NOTIFY_ORGANIZER', 1) || empty($organizer->email) || ($kind === 'u' && $personId === (int) $organizer->id)) {
+    dolical_log_invitation($event, $organizer, DOLICAL_CODE_ANSWER, $outputLangs->transnoentities('DoliCalTraceAnswer', $name, $answerText, $label), $email, '', $kind === 'c' ? $personId : 0);
+
+    if ($tooSoon || !getDolGlobalInt('DOLICAL_NOTIFY_ORGANIZER', 1) || empty($organizer->email) || ($kind === 'u' && $personId === (int) $organizer->id)) {
         return true;
     }
 

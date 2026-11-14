@@ -36,11 +36,14 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
   le contact est retrouvé, ou créé et rattaché au tiers de l'événement.
 - Case « Envoyer les invitations par e-mail » (cochée d'office dès qu'on ajoute quelqu'un ou qu'on change la date ou
   le lieu) : les nouveaux participants reçoivent l'invitation, et tous reçoivent une « Modification » si la date ou
-  le lieu change. Bouton « Inviter » et envoi par personne sur la carte.
+  le lieu change. Bouton « Inviter » et envoi par personne sur la carte. Une même personne ne reçoit pas deux fois
+  l'invitation ou la relance d'un événement en 10 minutes, et les envois sont limités par heure (voir *Limites*).
 - L'e-mail contient un bouton vers une **page publique sans compte** (Oui / Peut-être / Non) et un fichier `.ics`
   pour l'ajouter à Outlook, Gmail ou Apple Calendrier. Le lien est signé avec la clé de l'instance, pour une personne
-  et un événement : rien à stocker, impossible à deviner.
-- La réponse s'enregistre dans le champ natif `answer_status`, l'organisateur reçoit un e-mail (réglable).
+  et un événement : rien à stocker, impossible à deviner. Une fois l'événement passé, le `.ics` n'est plus proposé ;
+  30 jours après (réglable), le lien n'est plus valable.
+- La réponse s'enregistre dans le champ natif `answer_status`, l'organisateur reçoit un e-mail (réglable), au plus un
+  toutes les 10 minutes pour une même personne qui changerait sa réponse.
 - **Annulation** : supprimer l'événement, ou en retirer quelqu'un avec la case cochée, envoie un e-mail « Annulé » et
   un `.ics` d'annulation qui retire l'événement de l'agenda des personnes invitées.
 - **Relance** : bouton « Relancer (N) » sur la carte pour les invités sans réponse, et relance automatique optionnelle
@@ -80,7 +83,8 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
   encart le jour même : **Écrire le compte-rendu**.
 - Le texte est le champ complémentaire « Compte-rendu » de l'événement natif (visible aussi dans l'agenda de
   Dolibarr) ; l'événement peut être marqué réalisé au passage. Les photos et documents du rendez-vous sont ses
-  pièces jointes, ajoutées depuis le formulaire ou la carte.
+  pièces jointes, ajoutées depuis le formulaire ou la carte. L'écrivent ceux qui peuvent modifier l'événement, et les
+  participants qui ont le droit « Écrire le compte-rendu ».
 
 ## Synchronisation avec les téléphones (CalDAV)
 
@@ -107,6 +111,8 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
   jusqu'à un an après aujourd'hui (au plus 366 dates, les plus récentes), dates supplémentaires (`RDATE`) comprises ;
   une date modifiée seule garde son titre, son lieu et sa description. Les rendez-vous annulés sont laissés de côté
   et aucun e-mail n'est envoyé. Statut « Non applicable » : un rendez-vous importé n'est ni à faire ni en retard.
+- Une répétition plus fréquente que le jour (toutes les heures, plusieurs heures par jour…) n'est pas une série de
+  l'agenda : le rendez-vous est gardé seul. Le fichier fait au plus 10 Mo et 5 000 rendez-vous (réglables).
 - Ce que l'événement n'a pas de champ pour garder est ajouté sous sa description : titre ou lieu complet au-delà de
   128 caractères (`ActionComm::create()` les coupe), personnes introuvables ou sans adresse avec leur réponse,
   catégories, lien de visio absent de la description.
@@ -145,8 +151,28 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
 
 ## Droits
 
-Ceux du module Agenda : lire / créer / supprimer *mes* événements ou *ceux de tous*. Le module ajoute seulement
-« Consulter DoliCal » et l'accès à sa page de configuration.
+Ceux du module Agenda : lire / créer / supprimer *mes* événements ou *ceux de tous*. Le module ajoute « Consulter
+DoliCal », l'accès à sa page de configuration, et « Écrire le compte-rendu » : un participant qui ne peut pas modifier
+l'événement écrit son compte-rendu et y joint des fichiers avec ce droit (donné d'office aux nouveaux utilisateurs ;
+réactiver le module pour le voir, puis l'accorder aux utilisateurs existants qui en ont besoin).
+
+Sur la carte d'un événement, l'e-mail et le téléphone d'un contact ne s'affichent qu'avec le droit de lire ce contact,
+ceux d'un utilisateur avec le droit de lire les utilisateurs, comme sur leurs fiches natives.
+
+## Limites
+
+Constantes facultatives (*Configuration > Divers*), 0 pour lever une limite :
+
+| Constante | Par défaut | Rôle |
+| --- | --- | --- |
+| `DOLICAL_MAIL_RESEND_DELAY` | 10 | Minutes avant de renvoyer une invitation ou une relance à la même personne |
+| `DOLICAL_MAIL_MAX_PER_EVENT` | 50 | E-mails par heure qu'une personne envoie pour un même événement |
+| `DOLICAL_MAIL_MAX_PER_USER` | 200 | E-mails par heure qu'une personne envoie depuis le calendrier, tous événements confondus |
+| `DOLICAL_ANSWER_MAIL_DELAY` | 10 | Minutes entre deux e-mails à l'organisateur pour les réponses d'une même personne |
+| `DOLICAL_INVITATION_VALIDITY` | 30 | Jours pendant lesquels le lien d'invitation reste lisible après l'événement |
+| `DOLICAL_IMPORT_MAX_SIZE` | 10240 | Taille maximale d'un fichier importé, en Ko (dans la limite du serveur) |
+| `DOLICAL_IMPORT_MAX_EVENTS` | 5000 | Rendez-vous lus au plus dans un fichier importé |
+| `DOLICAL_IMPORT_TIME_LIMIT` | 600 | Durée maximale d'un import ou de sa suppression, en secondes |
 
 ## Prérequis
 

@@ -26,6 +26,16 @@
   côte à côte et à sa couleur ; le déplacer garde tous les participants.
 - Couleur des personnes pour soi : la palette au bout de chaque ligne de la liste des agendas change la couleur d'un
   collègue (ou la sienne) pour soi seulement, sans toucher à celle des autres ; retour possible à la couleur par défaut.
+- Durcissement (#29) : une même personne ne reçoit pas deux fois l'invitation ou la relance d'un événement en 10
+  minutes, et les e-mails envoyés depuis le calendrier sont limités par heure, par événement et par personne ;
+  l'organisateur reçoit au plus un e-mail toutes les 10 minutes pour les réponses d'un même invité ; une fois
+  l'événement passé, le lien d'invitation ne propose plus le `.ics`, et ne vaut plus 30 jours après. Sur la carte,
+  l'e-mail et le téléphone d'un contact ou d'un utilisateur ne s'affichent qu'à qui peut lire sa fiche. Nouveau droit
+  « Écrire le compte-rendu » pour le participant qui ne peut pas modifier l'événement (réactiver le module, puis
+  l'accorder). Import limité à 10 Mo, 5 000 rendez-vous et 10 minutes ; une répétition plus fréquente que le jour
+  reste un seul rendez-vous. Jeton comparé en temps constant, et plus envoyé dans l'adresse des lectures. La page de
+  configuration signale que les éléments liés sur la fiche native sont un réglage du module Agenda. Toutes les
+  limites sont réglables (voir le README).
 - Nouvelle entrée de menu : réactiver le module pour la voir.
 
 ## 1.1.0

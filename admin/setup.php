@@ -77,7 +77,8 @@ if ($action == 'update' && $permissionToWrite && dolical_valid_post()) {
     if (in_array($timezone, timezone_identifiers_list(), true)) {
         dolibarr_set_const($db, 'DOLICAL_TIMEZONE', $timezone, 'chaine', 0, '', $conf->entity);
     }
-    // Native option : the elements linked from the calendar also show on the card of the event
+    // Hidden constant of the Agenda module, not of DoliCal (the page says so) : the elements linked from the calendar
+    // also show on the native card of every event
     dolibarr_set_const($db, 'AGENDA_ENABLE_LINKED_ELEMENTS', GETPOSTINT('AGENDA_ENABLE_LINKED_ELEMENTS') ? 1 : 0, 'chaine', 0, '', $conf->entity);
 
     setEventMessages($langs->trans('SetupSaved'), null);
@@ -137,7 +138,12 @@ $toggles = [
     'DOLICAL_CALDAV'             => ['DoliCalSetupCalDav', 'DoliCalSetupCalDavHelp', 1],
 ];
 foreach ($toggles as $constName => $toggle) {
-    print '<tr class="oddeven"><td>' . $langs->trans($toggle[0]) . '</td><td>' . $langs->trans($toggle[1]) . '</td><td class="center">';
+    print '<tr class="oddeven"><td>' . $langs->trans($toggle[0]) . '</td><td>' . $langs->trans($toggle[1]);
+    // An option of the Agenda module, not of DoliCal (a hidden constant of the core) : it acts on every event
+    if (strpos($constName, 'DOLICAL_') !== 0) {
+        print '<br><span class="opacitymedium">' . img_picto('', 'warning', 'class="pictofixedwidth"') . $langs->trans('DoliCalSharedAgendaSetting', $constName) . '</span>';
+    }
+    print '</td><td class="center">';
     print '<input type="checkbox" name="' . $constName . '" value="1"' . (getDolGlobalInt($constName, $toggle[2]) ? ' checked' : '') . '>';
     print '</td></tr>';
 }

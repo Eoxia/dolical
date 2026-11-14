@@ -32,6 +32,11 @@ require_once __DIR__ . '/dolical_series.lib.php';
 const DOLICAL_CALDAV_PAST_DAYS = 180;
 
 /**
+ * Dates of a series walked through at most, from a phone or an imported file, before the ones kept
+ */
+const DOLICAL_CALDAV_MAX_STEPS = 10000;
+
+/**
  * Whether the synchronization is open
  *
  * @return bool
@@ -777,6 +782,13 @@ function dolical_caldav_set_answer(ActionComm $event, int $userId, int $status):
  */
 function dolical_caldav_occurrences(array $read, int $until): array
 {
+    // A rule more frequent than a day (every hour, every minute, or several hours or minutes a day) is no series the
+    // agenda holds, and would be walked through date after date : the event is kept alone
+    if (preg_match('/(^|;)\s*(FREQ=(SECONDLY|MINUTELY|HOURLY)|BY(HOUR|MINUTE|SECOND)=[^;]*,)/i', (string) $read['rrule'])) {
+        dol_syslog(__FUNCTION__ . ' rule more frequent than a day, kept as one event: ' . $read['rrule'], LOG_INFO);
+        return [];
+    }
+
     try {
         $zone = new DateTimeZone(dolical_reference_timezone());
     } catch (Exception $exception) {
@@ -791,8 +803,9 @@ function dolical_caldav_occurrences(array $read, int $until): array
     \Sabre\VObject\Settings::$maxRecurrences = -1;
     try {
         $iterator = new \Sabre\VObject\Recur\EventIterator($read['vcalendar']->select('VEVENT'), null, $zone);
-        // A rule more frequent than the agenda handles (every minute...) stops there
-        for ($steps = 0; $iterator->valid() && $iterator->getDtStart() <= $end && $steps < 50000; $steps++) {
+        // At most DOLICAL_CALDAV_MAX_STEPS dates walked through : a daily series of more than 25 years, or a list of
+        // extra dates without end, stops there
+        for ($steps = 0; $iterator->valid() && $iterator->getDtStart() <= $end && $steps < DOLICAL_CALDAV_MAX_STEPS; $steps++) {
             $occurrence = $iterator->getEventObject();
             // The extra dates often repeat the first one : the same date twice is one date
             $startKey = $iterator->getDtStart()->getTimestamp();
