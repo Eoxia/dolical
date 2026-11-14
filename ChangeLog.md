@@ -13,6 +13,8 @@
 - Invitation de DoliCal lue dans une messagerie qui offre le hook `inboxInviteEvent` : « Déjà dans votre agenda »
   au lieu d'un ajout en double, et la réponse (Accepter, Peut-être, Refuser) enregistrée comme par le lien de
   l'invitation (réponse native, trace, organisateur prévenu).
+- Bloc « Rendez-vous » dans le bandeau d'un mail (hook `inboxMailPanels`) : le prochain et le dernier rendez-vous avec
+  le tiers du mail, un compte-rendu attendu à écrire ; rien quand il n'y en a aucun.
 - Réactiver le module pour le volet agenda (nouveau contexte de hooks).
 
 ## 1.2.0

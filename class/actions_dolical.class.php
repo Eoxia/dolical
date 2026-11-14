@@ -232,6 +232,41 @@ class ActionsDoliCal
     }
 
     /**
+     * Blocks of a mail in a mail application (hook inboxMailPanels, context inbox) : « Meetings » with the third party
+     * of the mail, the next one, the last one and a report awaited. Declared only when there is one : an empty block
+     * would only fill the panel. Its summary is read afterwards (ajax/meetings.php).
+     *
+     * @param  array $parameters Hook parameters (mail, socid recognized, 0 when none or not readable)
+     * @return int               0
+     */
+    public function inboxMailPanels(array $parameters): int
+    {
+        global $langs, $user;
+
+        $socid = (int) ($parameters['socid'] ?? 0);
+        if ($socid <= 0 || !($user instanceof User) || !isModEnabled('dolical') || $user->socid > 0
+            || !$user->hasRight('dolical', 'read') || !$user->hasRight('agenda', 'myactions', 'read')) {
+            return 0;
+        }
+
+        require_once __DIR__ . '/../lib/dolical_event.lib.php';
+        $meetings = dolical_thirdparty_meetings($socid, $user);
+        if ($meetings['next'] === null && $meetings['last'] === null) {
+            return 0;
+        }
+        $langs->load('dolical@dolical');
+
+        $this->results['panels'][] = [
+            'id'    => 'dolical_meetings',
+            'title' => $langs->trans('DoliCalMeetingsPanel'),
+            'icon'  => 'agenda',
+            'url'   => dol_buildpath('/dolical/ajax/meetings.php', 1) . '?socid=' . $socid,
+        ];
+
+        return 0;
+    }
+
+    /**
      * An invitation read in a mail application (hook inboxInviteEvent, context inbox) that DoliCal sent itself : the
      * user is already in the event, the application must not add it twice. Mode « find » gives the event, mode
      * « answer » records the answer of the user as the link of the invitation does (native answer_status, trace,

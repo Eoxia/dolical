@@ -153,6 +153,11 @@ l'identifiant choisi par un téléphone) et par son organisateur. La messagerie 
 lieu de proposer un ajout en double ; la réponse donnée depuis le mail est enregistrée comme par le lien de
 l'invitation (réponse native, trace, organisateur prévenu).
 
+**Rendez-vous avec le tiers du mail** : avec le hook `inboxMailPanels`, le bandeau du mail montre un bloc
+« Rendez-vous » quand le tiers reconnu en a : le prochain, le dernier, et « Compte-rendu attendu » quand le dernier,
+fini depuis moins de 30 jours, n'en a pas (le bouton ouvre sa fiche pour l'écrire). Seulement les rendez-vous que
+l'utilisateur peut lire ; aucun bloc sans rendez-vous. Résumé lu par `ajax/meetings.php` (lecture seule).
+
 ## Où sont stockées les données
 
 | Donnée | Stockage natif |

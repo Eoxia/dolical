@@ -408,5 +408,12 @@ DoliCalSetupCalDavHelp            = Chacun peut synchroniser son agenda avec DAV
 #
 DoliCalUnsavedChanges = Les modifications de ce rendez-vous ne sont pas enregistrées.
 DoliCalPlanMeeting = Planifier un rendez-vous
+DoliCalMeetingsPanel = Rendez-vous
+DoliCalMeetingsNext = Prochain : %s, %s
+DoliCalMeetingsLast = Dernier : %s, %s
+DoliCalMeetingsReportDue = Compte-rendu attendu
+DoliCalMeetingsWriteReport = Écrire le compte-rendu
+DoliCalMeetingsOpenNext = Ouvrir le prochain
+DoliCalMeetingsNone = Aucun rendez-vous
 DoliCalEventGone      = Ce rendez-vous n'existe plus, ou vous n'avez pas le droit de le voir.
 DoliCalBackToCalendar = Retour au calendrier

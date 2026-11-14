@@ -1614,3 +1614,44 @@ function dolical_calendar_config(User $user, array $calendarUsers, array $calend
         ],
     ];
 }
+
+/**
+ * Meetings with a third party, for the block of a mail application : the next one, the last one, and whether the
+ * report of the last one is awaited from the user. Only the events the user may read, no automatic event nor record
+ * of a mail
+ *
+ * @param  int  $socid Third party
+ * @param  User $user  Current user
+ * @return array       ['next' => ActionComm|null, 'last' => ActionComm|null, 'reportDue' => bool]
+ */
+function dolical_thirdparty_meetings(int $socid, User $user): array
+{
+    global $db;
+
+    require_once __DIR__ . '/dolical_report.lib.php';
+
+    $found = ['next' => null, 'last' => null, 'reportDue' => false];
+    if ($socid <= 0) {
+        return $found;
+    }
+    $now  = $db->idate(dol_now());
+    $base = 'SELECT a.id FROM ' . MAIN_DB_PREFIX . 'actioncomm as a LEFT JOIN ' . MAIN_DB_PREFIX . 'c_actioncomm as c ON c.id = a.fk_action';
+    $base .= ' WHERE a.fk_soc = ' . ((int) $socid) . ' AND a.entity IN (' . getEntity('agenda') . ')';
+    $base .= " AND (c.type IS NULL OR c.type <> 'systemauto') AND a.code NOT IN ('AC_EMAIL', 'AC_EMAIL_IN', 'AC_FAX', 'AC_OTH_AUTO')";
+    $queries = [
+        'next' => $base . " AND a.datep >= '" . $now . "' AND a.percent < 100 ORDER BY a.datep ASC",
+        'last' => $base . " AND a.datep < '" . $now . "' ORDER BY a.datep DESC",
+    ];
+    foreach ($queries as $key => $sql) {
+        // The first one the user may read among the nearest ones
+        $resql = $db->query($sql . $db->plimit(10));
+        while ($resql && $found[$key] === null && ($obj = $db->fetch_object($resql))) {
+            $found[$key] = dolical_load_event((int) $obj->id, $user);
+        }
+    }
+    if ($found['last'] !== null) {
+        $found['reportDue'] = dolical_report_due($found['last'], $user) && dolical_can_report($user, $found['last']);
+    }
+
+    return $found;
+}
