@@ -182,7 +182,8 @@ class modDoliCal extends DolibarrModules
 
             // CONST REMINDER, REPORT AND SYNCHRONIZATION
             $i++ => ['DOLICAL_REMINDER_BY_DEFAULT', 'integer', 1, '', 0, 'current'],
-            $i++ => ['DOLICAL_CALDAV', 'integer', 1, '', 0, 'current'],
+            // Closed until the administrator opens it : each person then makes his own synchronization password
+            $i++ => ['DOLICAL_CALDAV', 'integer', 0, '', 0, 'current'],
 
             // CONST MODULE
             $i++ => ['DOLICAL_VERSION', 'chaine', $this->version, '', 0, 'current'],

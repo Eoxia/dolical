@@ -19,7 +19,8 @@
  * \file    dav/caldav.php
  * \ingroup dolical
  * \brief   CalDAV server of DoliCal, on the SabreDAV library shipped with Dolibarr : DAVx⁵ on Android, the calendar of
- *          an iPhone or of a Mac, Thunderbird... read and write the agenda of the person, with his Dolibarr login.
+ *          an iPhone or of a Mac, Thunderbird... read and write the agenda of the person, with his Dolibarr login and
+ *          the synchronization password made on the page « Synchroniser mon téléphone ».
  *
  * Address given to the phone : https://<dolibarr>/custom/dolical/dav/caldav.php/
  */
@@ -74,25 +75,73 @@ if (!isModEnabled('dolical') || !isModEnabled('agenda') || !dolical_caldav_enabl
     exit;
 }
 
-// Login and password of Dolibarr, with the same checks as the login page and the native DAV server
-$authBackend = new \Sabre\DAV\Auth\Backend\BasicCallBack(static function ($login, $password) {
-    global $conf, $dolibarr_main_authentication, $langs, $user;
+// A password never travels in clear : HTTPS, or plain HTTP when the setup allows it for a test installation
+if (!dolical_caldav_transport_ok()) {
+    http_response_code(403);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'HTTPS required';
+    exit;
+}
 
-    if ($login === '' || $password === '') {
+/**
+ * Tell the security of Dolibarr that a login failed : the security events, and the hooks of the login page
+ *
+ * @param  string $login Login typed
+ * @return void
+ */
+function dolical_caldav_login_failed(string $login): void
+{
+    global $db, $hookmanager, $langs;
+
+    dol_syslog('DoliCal CalDAV: authentication failed for ' . $login, LOG_NOTICE);
+    dolical_caldav_record_failure($login);
+
+    $langs->load('errors');
+    $failed = new User($db);
+    $failed->context['audit'] = $langs->trans('ErrorBadLoginPassword') . ' - login=' . dol_trunc(sanitizeVal($login, 'alphanohtml'), 64) . ' (CalDAV)';
+    $failed->call_trigger('USER_LOGIN_FAILED', $failed);
+
+    $action     = '';
+    $parameters = ['username' => $login, 'dol_authmode' => ['dolical_caldav'], 'dol_loginmesg' => $langs->transnoentitiesnoconv('ErrorBadLoginPassword'), 'context' => 'dolical_caldav'];
+    $hookmanager->initHooks(['login']);
+    $hookmanager->executeHooks('afterLoginFailed', $parameters, $failed, $action);
+
+    // As the login page of Dolibarr : one second lost at each failure
+    sleep(1);
+}
+
+// Login of Dolibarr and the synchronization password of the person (never his Dolibarr password), with the hooks of
+// the login page, so that the security modules (two factors, bans, limits) apply, and a limit of failures per login and
+// per address
+$authBackend = new \Sabre\DAV\Auth\Backend\BasicCallBack(static function ($login, $password) {
+    global $db, $hookmanager, $langs, $user;
+
+    $login = (string) $login;
+    if ($login === '' || (string) $password === '') {
         return false;
     }
-    $authModes = explode(',', empty($dolibarr_main_authentication) || $dolibarr_main_authentication === 'openid_connect' ? 'dolibarr' : $dolibarr_main_authentication);
-    if (in_array('forceuser', $authModes, true) || checkLoginPassEntity($login, $password, (int) $conf->entity, $authModes, 'dav') !== $login) {
-        dol_syslog('DoliCal CalDAV: authentication failed for ' . $login, LOG_NOTICE);
-        // The security events of Dolibarr record it, as a failure on the login page
-        $langs->load('errors');
-        $user->context['audit'] = $langs->trans('ErrorBadLoginPassword') . ' - login=' . dol_trunc(sanitizeVal((string) $login, 'alphanohtml'), 64) . ' (CalDAV)';
-        $user->call_trigger('USER_LOGIN_FAILED', $user);
+    if (dolical_caldav_blocked($login)) {
+        dol_syslog('DoliCal CalDAV: too many failures for ' . $login . ' or ' . getUserRemoteIP(), LOG_WARNING);
         return false;
     }
-    if ($user->fetch(0, $login, '', 1) <= 0 || (int) $user->status !== User::STATUS_ENABLED || $user->socid > 0 || $user->isNotIntoValidityDateRange()) {
+
+    $action     = '';
+    $parameters = ['username' => $login, 'context' => 'dolical_caldav'];
+    $hookmanager->initHooks(['login']);
+    if ($hookmanager->executeHooks('beforeLoginAuthentication', $parameters, $user, $action) < 0) {
+        dolical_caldav_login_failed($login);
         return false;
     }
+
+    $candidate = new User($db);
+    $found     = $candidate->fetch(0, $login, '', 1) > 0 && (int) $candidate->status === User::STATUS_ENABLED && empty($candidate->socid) && !$candidate->isNotIntoValidityDateRange();
+    if (!dolical_caldav_check_password($found ? $candidate : new User($db), (string) $password) || !$found) {
+        dolical_caldav_login_failed($login);
+        return false;
+    }
+    dolical_caldav_clear_failures($login);
+
+    $user->fetch($candidate->id, '', '', 1);
     $user->loadRights();
     if (!$user->hasRight('dolical', 'read') || !$user->hasRight('agenda', 'myactions', 'read')) {
         dol_syslog('DoliCal CalDAV: ' . $login . ' may not read the agenda', LOG_NOTICE);
