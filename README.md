@@ -74,6 +74,10 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
 - Modifier ou supprimer une date d'une série demande « Cet événement / Cet événement et les suivants / Tous les
   événements ». Changer la règle reconstruit les dates à venir, jamais celles déjà passées ; « et les suivants » coupe
   la série en deux. Glisser-déposer une date ne déplace qu'elle.
+- Une série est l'œuvre d'un seul auteur : un événement d'un autre auteur portant le même `recurid` n'en fait pas
+  partie, et les dates ajoutées par un collègue qui reconstruit la série restent de son auteur. Les droits sont
+  vérifiés sur chaque date : une date attribuée à une autre personne, que l'on ne peut pas modifier ou supprimer,
+  reste telle quelle et le bilan le signale.
 - Les invités reçoivent **un seul e-mail pour toute la série** (`.ics` avec `RRULE` et fuseau horaire), une
   exception (`RECURRENCE-ID`) quand une seule date change, et leur réponse vaut pour toutes les dates à venir.
 

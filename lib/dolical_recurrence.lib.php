@@ -298,11 +298,9 @@ function dolical_series_occurrences(ActionComm $event): array
     $sql  = 'SELECT id, datep FROM ' . MAIN_DB_PREFIX . 'actioncomm';
     $sql .= " WHERE recurid = '" . $db->escape($event->recurid) . "'";
     $sql .= ' AND entity = ' . ((int) $event->entity);
-    // A series of the native agenda is named after the second it was made : its author tells it apart from another
-    // one made in the same second
-    if (!preg_match('/^ev\d+$/', (string) $event->recurid)) {
-        $sql .= ' AND fk_user_author = ' . ((int) $event->authorid);
-    }
+    // A series is the work of one author : the native agenda names its series after the second they were made, and
+    // the recurid can be written by anyone through the API ; the events of another author never join it
+    $sql .= ' AND fk_user_author = ' . ((int) $event->authorid);
     $sql .= ' ORDER BY datep ASC, id ASC';
 
     $occurrences = [];
@@ -398,6 +396,11 @@ function dolical_create_occurrences(ActionComm $model, array $occurrences, User 
         if ($id <= 0) {
             dol_syslog(__FUNCTION__ . ' ' . $copy->error, LOG_ERR);
             break;
+        }
+        // A date added by a colleague who rebuilds the series stays of the author of the series : a series is the
+        // work of one author (dolical_series_occurrences())
+        if ((int) $model->authorid > 0 && (int) $model->authorid !== (int) $user->id) {
+            $db->query('UPDATE ' . MAIN_DB_PREFIX . 'actioncomm SET fk_user_author = ' . ((int) $model->authorid) . ' WHERE id = ' . ((int) $id));
         }
         foreach ($links as $link) {
             $copy->add_object_linked($link['element'], $link['id']);

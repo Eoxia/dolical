@@ -275,6 +275,7 @@ DoliCalScopeDeleteTitle          = Delete recurring event
 DoliCalScopeOne                  = This event
 DoliCalScopeFollowing            = This and following events
 DoliCalScopeAll                  = All events of the series
+DoliCalSeriesRefused = %s date(s) of the series, given to other people, were left as they are: you may not change or delete them.
 
 #
 # Reminder - Rappel

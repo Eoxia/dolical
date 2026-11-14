@@ -99,6 +99,23 @@ function dolical_delete_occurrence(ActionComm $event, User $user, int $heirId = 
 }
 
 /**
+ * The events of a list the user may change : the others of a series are left as they are
+ *
+ * @param  int[] $ids  Events
+ * @param  User  $user Current user
+ * @return int[]
+ */
+function dolical_series_editable(array $ids, User $user): array
+{
+    global $db;
+
+    return array_values(array_filter($ids, function ($id) use ($db, $user) {
+        $event = new ActionComm($db);
+        return $event->fetch((int) $id) > 0 && dolical_can_edit_event($user, $event);
+    }));
+}
+
+/**
  * Save an event from the form, its series with it when it repeats, and the reminders of the people
  *
  * Beside the fields of dolical_save_event(), $data carries :
@@ -114,13 +131,14 @@ function dolical_delete_occurrence(ActionComm $event, User $user, int $heirId = 
  * @param  ActionComm $event Event, new or loaded with its resources
  * @param  array      $data  Values of the form
  * @param  User       $user  Current user
- * @return array             ['id', 'error', 'scope', 'created', 'updated', 'removed', 'truncated', 'oldStart', 'ruleChanged', 'oldSeriesFirst']
+ * @return array             ['id', 'error', 'scope', 'created', 'updated', 'removed', 'refused' (dates the user may not
+ *                           change, left as they are), 'truncated', 'oldStart', 'ruleChanged', 'oldSeriesFirst']
  */
 function dolical_save_event_series(ActionComm $event, array $data, User $user): array
 {
     global $db;
 
-    $result = ['id' => 0, 'error' => '', 'scope' => 'one', 'created' => 0, 'updated' => 0, 'removed' => 0, 'truncated' => false, 'oldStart' => (int) $event->datep, 'ruleChanged' => false, 'oldSeriesFirst' => 0];
+    $result = ['id' => 0, 'error' => '', 'scope' => 'one', 'created' => 0, 'updated' => 0, 'removed' => 0, 'refused' => 0, 'truncated' => false, 'oldStart' => (int) $event->datep, 'ruleChanged' => false, 'oldSeriesFirst' => 0];
 
     $isNew    = empty($event->id);
     $oldStart = (int) $event->datep;
@@ -204,14 +222,17 @@ function dolical_save_event_series(ActionComm $event, array $data, User $user): 
         $rebuild  = $ruleChanged || $dayChanged;
         $seriesId = $recurid;
 
-        // « This and the following » : the ones before keep the old series, ended the day before
+        // « This and the following » : the ones before keep the old series, ended the day before ; only the dates the
+        // user may change get the new end
         if ($scope === 'following' && !empty($earlier)) {
             $seriesId                 = dolical_new_recurid($id);
             $result['oldSeriesFirst'] = (int) array_key_first($earlier);
-            dolical_set_series(array_keys($earlier), $recurid, $oldRule, dolical_local_date($oldStart)->modify('-1 day')->setTime(12, 0)->getTimestamp());
+            dolical_set_series(dolical_series_editable(array_keys($earlier), $user), $recurid, $oldRule, dolical_local_date($oldStart)->modify('-1 day')->setTime(12, 0)->getTimestamp());
         }
 
-        // The other occurrences take the changes of the form, each one on its own date and with its own progress
+        // The other occurrences take the changes of the form, each one on its own date and with its own progress. Each
+        // one is checked as the edited one was : a date given to someone else stays as it is when the user may not
+        // change it, and is told in the result
         $kept = [];
         foreach ($targets as $targetId => $targetStart) {
             $target = new ActionComm($db);
@@ -220,9 +241,17 @@ function dolical_save_event_series(ActionComm $event, array $data, User $user): 
             }
             // Rebuilt from the edited one : the ones to come go, the ones already past stay as they were
             if ($rebuild && $targetStart >= $now) {
+                if (!dolical_can_delete_event($user, $target)) {
+                    $result['refused']++;
+                    continue;
+                }
                 if (dolical_delete_occurrence($target, $user, $id)) {
                     $result['removed']++;
                 }
+                continue;
+            }
+            if (!dolical_can_edit_event($user, $target)) {
+                $result['refused']++;
                 continue;
             }
             $targetData            = $data;
@@ -283,13 +312,14 @@ function dolical_save_event_series(ActionComm $event, array $data, User $user): 
  * @param  ActionComm $event Event, resources loaded
  * @param  string     $scope 'one', 'following' or 'all'
  * @param  User       $user  Current user
- * @return array             ['success' => bool, 'deleted' => int, 'cancelled' => int, 'errors' => string[]]
+ * @return array             ['success' => bool, 'deleted' => int, 'cancelled' => int, 'refused' => int (dates the user may
+ *                           not delete, left as they are), 'errors' => string[]]
  */
 function dolical_delete_event_series(ActionComm $event, string $scope, User $user): array
 {
-    global $db;
+    global $db, $langs;
 
-    $result   = ['success' => false, 'deleted' => 0, 'cancelled' => 0, 'errors' => []];
+    $result   = ['success' => false, 'deleted' => 0, 'cancelled' => 0, 'refused' => 0, 'errors' => []];
     $siblings = dolical_series_occurrences($event);
     if (count($siblings) <= 1) {
         $scope = 'one';
@@ -312,12 +342,23 @@ function dolical_delete_event_series(ActionComm $event, string $scope, User $use
     }
 
     $removed = [];
+    $refused = [];
     foreach ($siblings as $siblingId => $siblingStart) {
         if ($scope === 'all' || $siblingStart > $start || ($siblingStart === $start && $siblingId >= $event->id)) {
+            // Each date is checked as the one opened was : a date of someone else the user may not delete stays
+            $occurrence = new ActionComm($db);
+            if ($siblingId !== (int) $event->id && ($occurrence->fetch($siblingId) <= 0 || !dolical_can_delete_event($user, $occurrence))) {
+                $refused[$siblingId] = $siblingStart;
+                continue;
+            }
             $removed[$siblingId] = $siblingStart;
         }
     }
     $remaining = array_diff_key($siblings, $removed);
+    $result['refused'] = count($refused);
+    if (!empty($refused)) {
+        $result['errors'][] = $langs->trans('DoliCalSeriesRefused', count($refused));
+    }
 
     $first = new ActionComm($db);
     $first->fetch((int) array_key_first($siblings));
@@ -328,7 +369,7 @@ function dolical_delete_event_series(ActionComm $event, string $scope, User $use
         // The whole series goes : one cancellation of the series for each person
         $mail = dolical_send_invitations($first, $user, $invited, 'cancel', ['series' => true]);
         $result['cancelled'] = $mail['sent'];
-        $result['errors']    = $mail['errors'];
+        $result['errors']    = array_merge($result['errors'], $mail['errors']);
     }
 
     $heirId = (int) (array_key_first($remaining) ?? 0);
@@ -340,12 +381,13 @@ function dolical_delete_event_series(ActionComm $event, string $scope, User $use
     }
 
     if (!empty($remaining)) {
-        // The series now ends the day before : its people get the change, their calendar drops the rest
-        dolical_set_series(array_keys($remaining), (string) $event->recurid, dolical_recurrence_normalize((string) $event->recurrule), dolical_local_date($start)->modify('-1 day')->setTime(12, 0)->getTimestamp());
+        // The series now ends the day before : its people get the change, their calendar drops the rest. The dates the
+        // user may not change keep their end
+        dolical_set_series(dolical_series_editable(array_keys($remaining), $user), (string) $event->recurid, dolical_recurrence_normalize((string) $event->recurrule), dolical_local_date($start)->modify('-1 day')->setTime(12, 0)->getTimestamp());
         $heir = new ActionComm($db);
         if ($heir->fetch($heirId) > 0) {
             $mail = dolical_send_invitations($heir, $user, dolical_invited_only(dolical_invitation_recipients($heir), dolical_invitation_history($heir)), 'update', ['series' => true]);
-            $result['errors'] = $mail['errors'];
+            $result['errors'] = array_merge($result['errors'], $mail['errors']);
         }
     }
 
