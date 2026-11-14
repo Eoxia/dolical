@@ -230,4 +230,61 @@ class ActionsDoliCal
 
         return 0;
     }
+
+    /**
+     * An invitation read in a mail application (hook inboxInviteEvent, context inbox) that DoliCal sent itself : the
+     * user is already in the event, the application must not add it twice. Mode « find » gives the event, mode
+     * « answer » records the answer of the user as the link of the invitation does (native answer_status, trace,
+     * organizer told).
+     *
+     * @param  array $parameters Hook parameters (mode, user, uid, organizer ; event and partstat for « answer »)
+     * @return int               0
+     */
+    public function inboxInviteEvent(array $parameters): int
+    {
+        global $db, $langs;
+
+        $user = $parameters['user'] ?? null;
+        if (!($user instanceof User) || !isModEnabled('dolical') || $user->socid > 0
+            || !$user->hasRight('dolical', 'read') || !$user->hasRight('agenda', 'myactions', 'read')) {
+            return 0;
+        }
+
+        require_once __DIR__ . '/../lib/dolical_event.lib.php';
+        require_once __DIR__ . '/../lib/dolical_invitation.lib.php';
+
+        $event = dolical_event_from_uid((string) ($parameters['uid'] ?? ''), $user);
+        if ($event === null) {
+            return 0;
+        }
+        // Sent by the organizer of this event : another Dolibarr may number its events the same way
+        $organizer = dol_strtolower(trim((string) ($parameters['organizer'] ?? '')));
+        if ($organizer !== '') {
+            $owner = new User($db);
+            if ($owner->fetch((int) $event->userownerid) <= 0 || dol_strtolower(trim((string) $owner->email)) !== $organizer) {
+                return 0;
+            }
+        }
+        $attendee = isset($event->userassigned[$user->id]) && (int) $event->userownerid !== (int) $user->id;
+        $statuses = [1 => 'ACCEPTED', 2 => 'TENTATIVE', -1 => 'DECLINED'];
+
+        if (($parameters['mode'] ?? '') === 'answer') {
+            $status = array_search((string) ($parameters['partstat'] ?? ''), $statuses, true);
+            if ($status === false || !$attendee || (int) ($parameters['event'] ?? 0) !== (int) $event->id) {
+                return 0;
+            }
+            $this->results['answered'] = dolical_record_answer($event, 'u', (int) $user->id, (int) $status, $user->getFullName($langs));
+
+            return 0;
+        }
+
+        $this->results['event'] = [
+            'id'       => (int) $event->id,
+            'attendee' => $attendee,
+            'partstat' => $statuses[(int) ($event->userassigned[$user->id]['answer_status'] ?? 0)] ?? '',
+            'url'      => dol_buildpath('/dolical/view/dolical_event.php', 1) . '?id=' . ((int) $event->id) . '&dol_hide_topmenu=1&dol_hide_leftmenu=1',
+        ];
+
+        return 0;
+    }
 }

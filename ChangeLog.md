@@ -10,6 +10,9 @@
 - « Planifier un rendez-vous » sur un mail (hook `inboxMailActions`) : la page d'un nouveau rendez-vous dans une
   fenêtre, avec le sujet du mail en titre, ses correspondants en contacts (le contact connu, sinon un nouveau contact
   proposé) et le lien vers le mail (`email_msgid`).
+- Invitation de DoliCal lue dans une messagerie qui offre le hook `inboxInviteEvent` : « Déjà dans votre agenda »
+  au lieu d'un ajout en double, et la réponse (Accepter, Peut-être, Refuser) enregistrée comme par le lien de
+  l'invitation (réponse native, trace, organisateur prévenu).
 - Réactiver le module pour le volet agenda (nouveau contexte de hooks).
 
 ## 1.2.0

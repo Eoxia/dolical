@@ -147,6 +147,12 @@ proposé, créé à l'enregistrement) et le Message-ID du mail gardé sur l'év�
 adresses et le Message-ID arrivent après le `#` de l'adresse, que le navigateur n'envoie jamais au serveur, puis
 partent au formulaire par POST : ils ne sont écrits dans aucun journal du serveur web.
 
+**Invitations lues dans la messagerie** : avec le hook `inboxInviteEvent`, une invitation envoyée par DoliCal à un
+utilisateur déjà participant est reconnue par son identifiant (`dolical-<entité>-<id>@<hôte>`, une série, ou
+l'identifiant choisi par un téléphone) et par son organisateur. La messagerie affiche « Déjà dans votre agenda » au
+lieu de proposer un ajout en double ; la réponse donnée depuis le mail est enregistrée comme par le lien de
+l'invitation (réponse native, trace, organisateur prévenu).
+
 ## Où sont stockées les données
 
 | Donnée | Stockage natif |
