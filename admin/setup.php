@@ -70,14 +70,15 @@ if ($action == 'update' && $permissionToWrite && dolical_valid_post()) {
     dolibarr_set_const($db, 'DOLICAL_NOTIFY_ORGANIZER', GETPOSTINT('DOLICAL_NOTIFY_ORGANIZER') ? 1 : 0, 'integer', 0, '', $conf->entity);
     dolibarr_set_const($db, 'DOLICAL_AUTO_REMIND', GETPOSTINT('DOLICAL_AUTO_REMIND') ? 1 : 0, 'integer', 0, '', $conf->entity);
     dolibarr_set_const($db, 'DOLICAL_AUTO_REMIND_DAYS', min(30, max(1, GETPOSTINT('DOLICAL_AUTO_REMIND_DAYS'))), 'integer', 0, '', $conf->entity);
-    foreach (['DOLICAL_REMINDER_BY_DEFAULT', 'DOLICAL_CALDAV'] as $constName) {
+    foreach (['DOLICAL_REMINDER_BY_DEFAULT', 'DOLICAL_CALDAV', 'DOLICAL_CALDAV_ALLOW_HTTP'] as $constName) {
         dolibarr_set_const($db, $constName, GETPOSTINT($constName) ? 1 : 0, 'integer', 0, '', $conf->entity);
     }
     $timezone = GETPOST('DOLICAL_TIMEZONE', 'alphanohtml');
     if (in_array($timezone, timezone_identifiers_list(), true)) {
         dolibarr_set_const($db, 'DOLICAL_TIMEZONE', $timezone, 'chaine', 0, '', $conf->entity);
     }
-    // Native option : the elements linked from the calendar also show on the card of the event
+    // Hidden constant of the Agenda module, not of DoliCal (the page says so) : the elements linked from the calendar
+    // also show on the native card of every event
     dolibarr_set_const($db, 'AGENDA_ENABLE_LINKED_ELEMENTS', GETPOSTINT('AGENDA_ENABLE_LINKED_ELEMENTS') ? 1 : 0, 'chaine', 0, '', $conf->entity);
 
     setEventMessages($langs->trans('SetupSaved'), null);
@@ -134,10 +135,16 @@ $toggles = [
     'DOLICAL_NOTIFY_ORGANIZER'   => ['DoliCalNotifyOrganizer', 'DoliCalNotifyOrganizerHelp', 1],
     'DOLICAL_AUTO_REMIND'        => ['DoliCalAutoRemind', 'DoliCalAutoRemindHelp', 0],
     'DOLICAL_REMINDER_BY_DEFAULT' => ['DoliCalSetupReminderByDefault', 'DoliCalSetupReminderByDefaultHelp', 1],
-    'DOLICAL_CALDAV'             => ['DoliCalSetupCalDav', 'DoliCalSetupCalDavHelp', 1],
+    'DOLICAL_CALDAV'             => ['DoliCalSetupCalDav', 'DoliCalSetupCalDavHelp', 0],
+    'DOLICAL_CALDAV_ALLOW_HTTP'  => ['DoliCalSetupCalDavHttp', 'DoliCalSetupCalDavHttpHelp', 0],
 ];
 foreach ($toggles as $constName => $toggle) {
-    print '<tr class="oddeven"><td>' . $langs->trans($toggle[0]) . '</td><td>' . $langs->trans($toggle[1]) . '</td><td class="center">';
+    print '<tr class="oddeven"><td>' . $langs->trans($toggle[0]) . '</td><td>' . $langs->trans($toggle[1]);
+    // An option of the Agenda module, not of DoliCal (a hidden constant of the core) : it acts on every event
+    if (strpos($constName, 'DOLICAL_') !== 0) {
+        print '<br><span class="opacitymedium">' . img_picto('', 'warning', 'class="pictofixedwidth"') . $langs->trans('DoliCalSharedAgendaSetting', $constName) . '</span>';
+    }
+    print '</td><td class="center">';
     print '<input type="checkbox" name="' . $constName . '" value="1"' . (getDolGlobalInt($constName, $toggle[2]) ? ' checked' : '') . '>';
     print '</td></tr>';
 }

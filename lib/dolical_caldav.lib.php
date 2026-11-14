@@ -24,6 +24,7 @@
  *          go to the external reference of the native event.
  */
 
+require_once DOL_DOCUMENT_ROOT . '/core/lib/functions2.lib.php';
 require_once __DIR__ . '/dolical_series.lib.php';
 
 /**
@@ -32,13 +33,212 @@ require_once __DIR__ . '/dolical_series.lib.php';
 const DOLICAL_CALDAV_PAST_DAYS = 180;
 
 /**
- * Whether the synchronization is open
+ * Dates of a series walked through at most, from a phone or an imported file, before the ones kept
+ */
+const DOLICAL_CALDAV_MAX_STEPS = 10000;
+
+/**
+ * Whether the synchronization is open : closed until an administrator opens it in the setup of DoliCal
  *
  * @return bool
  */
 function dolical_caldav_enabled(): bool
 {
-    return getDolGlobalInt('DOLICAL_CALDAV', 1) > 0;
+    return getDolGlobalInt('DOLICAL_CALDAV', 0) > 0;
+}
+
+/**
+ * Whether the request may carry a password : HTTPS, or plain HTTP when the setup allows it for a test installation
+ *
+ * @return bool
+ */
+function dolical_caldav_transport_ok(): bool
+{
+    return isHTTPS() || getDolGlobalInt('DOLICAL_CALDAV_ALLOW_HTTP') > 0;
+}
+
+/**
+ * The synchronization password of a person : never his Dolibarr password, one made for his devices, kept hashed in his
+ * user parameter DOLICAL_CALDAV_PASSWORD as "date|hash"
+ *
+ * @param  User  $user Person, his parameters loaded
+ * @return array       ['hash' => string, 'date' => int], empty hash when he has none
+ */
+function dolical_caldav_password(User $user): array
+{
+    $value = (string) ($user->conf->DOLICAL_CALDAV_PASSWORD ?? '');
+    $parts = explode('|', $value, 2);
+
+    return count($parts) === 2 && $parts[1] !== '' ? ['hash' => $parts[1], 'date' => (int) $parts[0]] : ['hash' => '', 'date' => 0];
+}
+
+/**
+ * Make a new synchronization password for a person, the previous one stops working
+ *
+ * @param  User   $user Person
+ * @return string       The password in clear, to show him once ; empty on error
+ */
+function dolical_caldav_new_password(User $user): string
+{
+    global $conf, $db;
+
+    // 6 groups of 4 among letters and digits that cannot be mistaken for each other on a phone keyboard
+    $alphabet = 'abcdefghjkmnpqrstuvwxyz23456789';
+    $groups   = [];
+    for ($group = 0; $group < 6; $group++) {
+        $chars = '';
+        for ($index = 0; $index < 4; $index++) {
+            $chars .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+        }
+        $groups[] = $chars;
+    }
+    $password = implode('-', $groups);
+
+    $stored = dol_now() . '|' . password_hash($password, PASSWORD_DEFAULT);
+    if (dol_set_user_param($db, $conf, $user, ['DOLICAL_CALDAV_PASSWORD' => $stored]) <= 0) {
+        return '';
+    }
+    $user->conf->DOLICAL_CALDAV_PASSWORD = $stored;
+
+    return $password;
+}
+
+/**
+ * Remove the synchronization password of a person : his devices stop synchronizing
+ *
+ * @param  User $user Person
+ * @return bool
+ */
+function dolical_caldav_revoke_password(User $user): bool
+{
+    global $conf, $db;
+
+    $done = dol_set_user_param($db, $conf, $user, ['DOLICAL_CALDAV_PASSWORD' => '']) > 0;
+    if ($done) {
+        unset($user->conf->DOLICAL_CALDAV_PASSWORD);
+    }
+
+    return $done;
+}
+
+/**
+ * Whether a password is the synchronization password of a person
+ *
+ * @param  User   $user     Person, his parameters loaded
+ * @param  string $password Password given by the device
+ * @return bool
+ */
+function dolical_caldav_check_password(User $user, string $password): bool
+{
+    $stored = dolical_caldav_password($user);
+    // The devices type it as shown, the spaces some of them add around are not part of it
+    $password = strtolower(trim($password));
+    if ($stored['hash'] === '') {
+        // The same time spent as for a true check : nothing tells who has a password
+        password_verify($password, '$2y$10$lB3iv.2vXpnaA4yj4QV5Iez.bgvEWRuYndX.ESJsahv9jT6Piy.Ci');
+        return false;
+    }
+
+    return password_verify($password, $stored['hash']);
+}
+
+/**
+ * File keeping the recent failures of one key (a login or an address) : nothing in the database, a few bytes in the
+ * temporary directory of the module, forgotten after the window
+ *
+ * @param  string $key 'login:<login>' or 'ip:<address>'
+ * @return string
+ */
+function dolical_caldav_throttle_file(string $key): string
+{
+    global $conf;
+
+    $dir = DOL_DATA_ROOT . '/dolical/temp/caldav';
+    dol_mkdir($dir);
+
+    return $dir . '/' . hash('sha256', ($conf->file->instance_unique_id ?? '') . '|' . $key) . '.json';
+}
+
+/**
+ * The failures of a key still within the window
+ *
+ * @param  string $key    'login:<login>' or 'ip:<address>'
+ * @param  int    $window Seconds
+ * @return int[]          Timestamps
+ */
+function dolical_caldav_failures(string $key, int $window): array
+{
+    $file  = dolical_caldav_throttle_file($key);
+    $times = is_file($file) ? json_decode((string) @file_get_contents($file), true) : [];
+    $since = dol_now() - $window;
+
+    return array_values(array_filter(is_array($times) ? array_map('intval', $times) : [], function ($time) use ($since) {
+        return $time > $since;
+    }));
+}
+
+/**
+ * Keys a login attempt is counted on, with their limit : the login, and the address it comes from
+ *
+ * @param  string $login Login typed
+ * @return array         [key => most failures allowed in the window], 0 lifting a limit
+ */
+function dolical_caldav_throttle_keys(string $login): array
+{
+    return [
+        'login:' . dol_strtolower(trim($login)) => getDolGlobalInt('DOLICAL_CALDAV_MAX_FAILS_LOGIN', 5),
+        'ip:' . getUserRemoteIP()               => getDolGlobalInt('DOLICAL_CALDAV_MAX_FAILS_IP', 20),
+    ];
+}
+
+/**
+ * Whether a login, or the address it comes from, failed too often lately : no password is checked then, the right one
+ * included
+ *
+ * @param  string $login Login typed
+ * @return bool
+ */
+function dolical_caldav_blocked(string $login): bool
+{
+    $window = 60 * getDolGlobalInt('DOLICAL_CALDAV_FAIL_WINDOW', 15);
+    foreach (dolical_caldav_throttle_keys($login) as $key => $max) {
+        if ($max > 0 && count(dolical_caldav_failures($key, $window)) >= $max) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Count a failed attempt on the login and on the address
+ *
+ * @param  string $login Login typed
+ * @return void
+ */
+function dolical_caldav_record_failure(string $login): void
+{
+    $window = 60 * getDolGlobalInt('DOLICAL_CALDAV_FAIL_WINDOW', 15);
+    foreach (array_keys(dolical_caldav_throttle_keys($login)) as $key) {
+        $times   = dolical_caldav_failures($key, $window);
+        $times[] = dol_now();
+        // The last ones are enough to decide
+        @file_put_contents(dolical_caldav_throttle_file($key), json_encode(array_slice($times, -100)), LOCK_EX);
+    }
+}
+
+/**
+ * Forget the failures of a login once it connected : the address keeps its own
+ *
+ * @param  string $login Login
+ * @return void
+ */
+function dolical_caldav_clear_failures(string $login): void
+{
+    $file = dolical_caldav_throttle_file('login:' . dol_strtolower(trim($login)));
+    if (is_file($file)) {
+        @unlink($file);
+    }
 }
 
 /**
@@ -461,8 +661,9 @@ function dolical_caldav_dates(\Sabre\VObject\Component\VEvent $vevent): array
 }
 
 /**
- * Users, contacts and third party of the instance behind the people of an iCalendar event, with the answer each one
- * gave. A person is found by his address (the professional or the personal one of a user), else by his name : the
+ * Users, contacts and third party of the instance behind the people of an iCalendar event, with their answer : the
+ * one of the person acting, and the one a contact gave with his address ; the other users and the contacts found by
+ * their name only stay to answer (0). A person is found by his address (the professional or the personal one of a user), else by his name : the
  * one the agenda shows with the address, or the "firstname.lastname" of the address, when only one person bears it.
  * The third party is the one with that address, else the one of a contact found, else the only one of the domain the
  * outside addresses share : neither the mail providers of everyone nor the domains of the users of the instance
@@ -494,19 +695,21 @@ function dolical_caldav_people(array $emails, User $user, int $exceptUserId = 0,
     $list = "'" . implode("', '", array_map([$db, 'escape'], array_keys($answers))) . "'";
 
     $people = [];
-    $addUser = function (int $userId, string $email) use (&$found, &$people, $answers, $exceptUserId) {
+    // Only the person acting answers for himself : the answer another agenda shows for a colleague is not his, he
+    // stays to answer. A contact keeps the answer given with his address, not one guessed from a name
+    $addUser = function (int $userId, string $email) use (&$found, &$people, $answers, $exceptUserId, $user) {
         $people[$email] = true;
         if ($userId !== $exceptUserId && !isset($found['answers']['user'][$userId])) {
             $found['users'][]                   = $userId;
-            $found['answers']['user'][$userId] = $answers[$email] ?? 0;
+            $found['answers']['user'][$userId] = $userId === (int) $user->id ? ($answers[$email] ?? 0) : 0;
         }
     };
     $companies = [];
-    $addContact = function (int $contactId, int $socid, string $email) use (&$found, &$people, &$companies, $answers) {
+    $addContact = function (int $contactId, int $socid, string $email, bool $byName = false) use (&$found, &$people, &$companies, $answers) {
         $people[$email] = true;
         if (!isset($found['answers']['socpeople'][$contactId])) {
             $found['contacts'][]                         = $contactId;
-            $found['answers']['socpeople'][$contactId] = $answers[$email] ?? 0;
+            $found['answers']['socpeople'][$contactId] = $byName ? 0 : ($answers[$email] ?? 0);
             if ($socid > 0) {
                 $companies['contact'][] = $socid;
             }
@@ -545,7 +748,7 @@ function dolical_caldav_people(array $emails, User $user, int $exceptUserId = 0,
         }
         $match = dolical_caldav_find_by_name('socpeople', $guesses);
         if ($match !== null && dolical_can_see_object($user, 'contact', $match['id'])) {
-            $addContact($match['id'], $match['socid'], $email);
+            $addContact($match['id'], $match['socid'], $email, true);
         }
     }
 
@@ -777,6 +980,13 @@ function dolical_caldav_set_answer(ActionComm $event, int $userId, int $status):
  */
 function dolical_caldav_occurrences(array $read, int $until): array
 {
+    // A rule more frequent than a day (every hour, every minute, or several hours or minutes a day) is no series the
+    // agenda holds, and would be walked through date after date : the event is kept alone
+    if (preg_match('/(^|;)\s*(FREQ=(SECONDLY|MINUTELY|HOURLY)|BY(HOUR|MINUTE|SECOND)=[^;]*,)/i', (string) $read['rrule'])) {
+        dol_syslog(__FUNCTION__ . ' rule more frequent than a day, kept as one event: ' . $read['rrule'], LOG_INFO);
+        return [];
+    }
+
     try {
         $zone = new DateTimeZone(dolical_reference_timezone());
     } catch (Exception $exception) {
@@ -791,8 +1001,9 @@ function dolical_caldav_occurrences(array $read, int $until): array
     \Sabre\VObject\Settings::$maxRecurrences = -1;
     try {
         $iterator = new \Sabre\VObject\Recur\EventIterator($read['vcalendar']->select('VEVENT'), null, $zone);
-        // A rule more frequent than the agenda handles (every minute...) stops there
-        for ($steps = 0; $iterator->valid() && $iterator->getDtStart() <= $end && $steps < 50000; $steps++) {
+        // At most DOLICAL_CALDAV_MAX_STEPS dates walked through : a daily series of more than 25 years, or a list of
+        // extra dates without end, stops there
+        for ($steps = 0; $iterator->valid() && $iterator->getDtStart() <= $end && $steps < DOLICAL_CALDAV_MAX_STEPS; $steps++) {
             $occurrence = $iterator->getEventObject();
             // The extra dates often repeat the first one : the same date twice is one date
             $startKey = $iterator->getDtStart()->getTimestamp();
@@ -899,8 +1110,9 @@ function dolical_caldav_create(User $user, string $uri, array $read, ?User $owne
         return -1;
     }
 
-    // The answers already given, the owner's included : before the dates of the series, which copy them
-    if (!empty($read['answer'])) {
+    // The answers already given, before the dates of the series, which copy them : the owner's when he is the one
+    // acting (a colleague's agenda imported does not answer for him), the others as dolical_caldav_people() kept them
+    if (!empty($read['answer']) && (int) $owner->id === (int) $user->id) {
         dolical_caldav_set_answer($event, (int) $owner->id, (int) $read['answer']);
     }
     foreach ($people['answers']['user'] as $userId => $answer) {

@@ -812,6 +812,37 @@ function dolical_get_event_participants(ActionComm $event): array
 }
 
 /**
+ * The participants as the card shows them : the email and the phones of a contact for whoever may read the contact,
+ * the ones of a user for whoever may read the users, as on their native cards. The address stays known to the server
+ * under 'address', for the invitations, and is never printed
+ *
+ * @param  array $participants From dolical_get_event_participants()
+ * @param  User  $user         Current user
+ * @return array               Same, 'email' and 'phone' emptied where the user may not read them, 'emails' as well
+ */
+function dolical_mask_participants(array $participants, User $user): array
+{
+    $readUsers = (bool) $user->hasRight('user', 'user', 'lire');
+    $emails    = [];
+    foreach ($participants['people'] as $index => $person) {
+        $visible = $person['kind'] === 'user'
+            ? ($readUsers || $person['id'] === (int) $user->id)
+            : dolical_can_see_object($user, 'contact', (int) $person['id']);
+
+        $participants['people'][$index]['address'] = $person['email'];
+        if (!$visible) {
+            $participants['people'][$index]['email'] = '';
+            $participants['people'][$index]['phone'] = '';
+        } elseif ($person['email'] !== '') {
+            $emails[] = $person['email'];
+        }
+    }
+    $participants['emails'] = array_values(array_unique($emails));
+
+    return $participants;
+}
+
+/**
  * Directory of the documents of an event, the one the native card uses
  *
  * @param  ActionComm $event Event
@@ -969,7 +1000,7 @@ function dolical_get_event_card(ActionComm $event, User $user): array
         }
     }
 
-    $card['participants'] = dolical_get_event_participants($event);
+    $card['participants'] = dolical_mask_participants(dolical_get_event_participants($event), $user);
     $card['objects']      = dolical_get_linked_objects($event, $user);
     $card['billing']      = dolical_get_billing_summary($event, $card['objects'], $user);
     $card['files']        = dolical_get_event_files($event);
@@ -1245,6 +1276,25 @@ function dolical_search_projects(User $user, string $search, int $socid = 0): ar
 }
 
 /**
+ * Whether the third party and the project chosen for an event may be given to it : ones the user may see, or the
+ * ones the event already has. Checked before anything is written, the contacts typed in the form included
+ *
+ * @param  ActionComm $event     Event, new or loaded
+ * @param  int        $socid     Third party chosen, 0 for none
+ * @param  int        $projectId Project chosen, 0 for none
+ * @param  User       $user      Current user
+ * @return bool
+ */
+function dolical_can_link_event(ActionComm $event, int $socid, int $projectId, User $user): bool
+{
+    if ($socid > 0 && $socid !== (int) $event->socid && !dolical_can_see_object($user, 'societe', $socid)) {
+        return false;
+    }
+
+    return !($projectId > 0 && $projectId !== (int) $event->fk_project && !dolical_can_see_object($user, 'project', $projectId));
+}
+
+/**
  * Create or update an event from the form of the calendar, with its people and its linked elements
  *
  * @param  ActionComm $event Event, new or loaded with its resources
@@ -1297,8 +1347,7 @@ function dolical_save_event(ActionComm $event, array $data, User $user): int
     // A third party or a project chosen for the event must be one the user may see ; the ones already there stay
     $socid     = max(0, (int) $data['socid']);
     $projectId = max(0, (int) $data['project_id']);
-    if (($socid > 0 && $socid !== (int) $event->socid && !dolical_can_see_object($user, 'societe', $socid))
-        || ($projectId > 0 && $projectId !== (int) $event->fk_project && !dolical_can_see_object($user, 'project', $projectId))) {
+    if (!dolical_can_link_event($event, $socid, $projectId, $user)) {
         $event->error = $langs->trans('NotEnoughPermissions');
         return -1;
     }

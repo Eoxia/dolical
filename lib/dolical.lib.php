@@ -87,8 +87,18 @@ function dolical_header(string $title, string $morecssonbody = ''): void
 function dolical_valid_post(): bool
 {
     $token = GETPOST('token', 'alpha');
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || $token === '') {
+        return false;
+    }
 
-    return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && $token !== '' && in_array($token, [currentToken(), newToken()], true);
+    // Compared in constant time, against the token of the page and the one of the session
+    foreach ([(string) currentToken(), (string) newToken()] as $expected) {
+        if ($expected !== '' && hash_equals($expected, $token)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**

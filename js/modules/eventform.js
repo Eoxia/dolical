@@ -234,8 +234,7 @@ window.dolical.eventform.checkAvailability = function($form) {
   }
 
   $.getJSON(U.config().urls.event, {
-    action: 'availability',
-    token: U.config().token,
+    view: 'availability',
     id: parseInt($form.attr('data-id'), 10) || 0,
     start: Math.floor(period.start.getTime() / 1000),
     end: Math.floor(period.end.getTime() / 1000),
@@ -310,12 +309,13 @@ window.dolical.eventform.open = function(params) {
   $box.html('<div class="dolical-form__loading"><i class="fas fa-circle-notch fa-spin"></i></div>');
   $modal.addClass('modal-active');
 
-  // What comes from a mail (title, addresses, Message-ID) goes by POST : never in an address, so never in a log
+  // What comes from a mail (title, addresses, Message-ID) goes by POST, the token in the body : never in an
+  // address, so never in a log. Else a read in GET without token, as the other views
   const fromMail = !!(params && (params.label || params.emails || params.email_msgid));
   $.ajax({
     url: config.urls.event,
     method: fromMail ? 'POST' : 'GET',
-    data: $.extend({action: 'form', token: config.token}, params || {}),
+    data: $.extend({view: 'form'}, fromMail ? {token: config.token} : {}, params || {}),
     dataType: 'html'
   }).done(function(html) {
     $box.html(html);

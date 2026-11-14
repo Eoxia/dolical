@@ -65,6 +65,9 @@ $config = ['maxSize' => $maxSize, 'i18n' => ['tooLarge' => $langs->transnoentiti
                             </ul>
                         </li>
                     <?php endif; ?>
+                    <?php if (!empty($result['truncated'])) : ?>
+                        <li class="dolical-import__failed"><?php echo $langs->trans('DoliCalImportTruncated', (int) $result['truncated']); ?></li>
+                    <?php endif; ?>
                     <?php if (!empty($result['unknown'])) : ?>
                         <li class="dolical-import__unknown">
                             <?php echo $langs->trans('DoliCalImportUnknown', count($result['unknown'])); ?>

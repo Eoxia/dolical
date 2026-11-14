@@ -92,7 +92,8 @@ function dolical_save_report(ActionComm $event, string $text, bool $done, User $
 }
 
 /**
- * Whether the user may write the report of an event : whoever may change it, or took part in it
+ * Whether the user may write the report of an event and add its files : whoever may change it, or took part in it
+ * with the right of the module to write the reports
  *
  * @param  User       $user  Current user
  * @param  ActionComm $event Event, resources loaded
@@ -100,8 +101,15 @@ function dolical_save_report(ActionComm $event, string $text, bool $done, User $
  */
 function dolical_can_report(User $user, ActionComm $event): bool
 {
-    return dolical_report_available() && $event->type !== 'systemauto'
-        && (dolical_can_edit_event($user, $event) || isset($event->userassigned[$user->id]) || (int) $event->userownerid === (int) $user->id);
+    if (!dolical_report_available() || $event->type === 'systemauto') {
+        return false;
+    }
+    if (dolical_can_edit_event($user, $event)) {
+        return true;
+    }
+    $tookPart = isset($event->userassigned[$user->id]) || (int) $event->userownerid === (int) $user->id;
+
+    return $tookPart && $user->hasRight('dolical', 'report', 'write');
 }
 
 /**
@@ -122,7 +130,8 @@ function dolical_report_due(ActionComm $event, User $user): bool
     }
     $mine = (int) $event->userownerid === (int) $user->id || isset($event->userassigned[$user->id]);
 
-    return $mine && dolical_get_report($event) === '';
+    // Awaited only from whoever may write it
+    return $mine && dolical_can_report($user, $event) && dolical_get_report($event) === '';
 }
 
 /**

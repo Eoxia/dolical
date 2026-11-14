@@ -79,7 +79,9 @@ $answers = [
                 </form>
             <?php endif; ?>
 
-            <a class="dolical-public-card__ics" href="<?php echo dol_escape_htmltag($pageUrl . '&ics=1'); ?>"><i class="far fa-calendar-plus pictofixedwidth"></i><?php echo $langs->trans('DoliCalAddToCalendar'); ?></a>
+            <?php if (!$isPast) : ?>
+                <a class="dolical-public-card__ics" href="<?php echo dol_escape_htmltag($pageUrl . '&ics=1'); ?>"><i class="far fa-calendar-plus pictofixedwidth"></i><?php echo $langs->trans('DoliCalAddToCalendar'); ?></a>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 </div>

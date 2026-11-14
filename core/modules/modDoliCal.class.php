@@ -184,7 +184,8 @@ class modDoliCal extends DolibarrModules
 
             // CONST REMINDER, REPORT AND SYNCHRONIZATION
             $i++ => ['DOLICAL_REMINDER_BY_DEFAULT', 'integer', 1, '', 0, 'current'],
-            $i++ => ['DOLICAL_CALDAV', 'integer', 1, '', 0, 'current'],
+            // Closed until the administrator opens it : each person then makes his own synchronization password
+            $i++ => ['DOLICAL_CALDAV', 'integer', 0, '', 0, 'current'],
 
             // CONST MODULE
             $i++ => ['DOLICAL_VERSION', 'chaine', $this->version, '', 0, 'current'],
@@ -238,6 +239,14 @@ class modDoliCal extends DolibarrModules
         $this->rights[$r][1] = $langs->transnoentities('ReadAdminPage', $this->name);
         $this->rights[$r][4] = 'adminpage';
         $this->rights[$r][5] = 'read';
+        $r++;
+
+        /* REPORT PERMISSIONS : a participant who may not change the event writes its report and adds its files */
+        $this->rights[$r][0] = $this->numero . sprintf('%02d', $r + 1);
+        $this->rights[$r][1] = $langs->transnoentities('DoliCalRightReport');
+        $this->rights[$r][3] = 1;
+        $this->rights[$r][4] = 'report';
+        $this->rights[$r][5] = 'write';
 
         // Main menu entries to add
         // The left menu is a flat list sorted on 'position'

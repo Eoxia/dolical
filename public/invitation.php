@@ -103,12 +103,19 @@ if ($valid && !empty($event->recurid)) {
     $lastStart = max($lastStart, (int) max(dolical_series_occurrences($event) ?: [0]));
 }
 $isPast     = $valid && $lastStart < dol_now();
+// The link lasts a while after the event (DOLICAL_INVITATION_VALIDITY days, 0 for ever), to read the answer given :
+// then it is no longer valid, and tells nothing of the event
+$validity = getDolGlobalInt('DOLICAL_INVITATION_VALIDITY', 30);
+if ($isPast && $validity > 0 && $lastStart + $validity * 86400 < dol_now()) {
+    $valid = false;
+}
 
 /*
  * Actions
  */
 
-if ($valid && GETPOSTINT('ics')) {
+// The file adds the event to a calendar : nothing left to add once it is over
+if ($valid && !$isPast && GETPOSTINT('ics')) {
     $organizer = new User($db);
     $organizer->fetch($event->userownerid);
     header('Content-Type: text/calendar; charset=utf-8');
@@ -118,7 +125,7 @@ if ($valid && GETPOSTINT('ics')) {
 }
 
 if ($valid && $action === 'answer' && $_SERVER['REQUEST_METHOD'] === 'POST' && !$isPast) {
-    $done = dolical_record_answer($event, $kind, $personId, GETPOSTINT('status'), $personName);
+    $done = dolical_record_answer($event, $kind, $personId, GETPOSTINT('status'), $personName, (string) $person->email);
     // Post, redirect, get : a reload of the page does not answer twice
     header('Location: ' . $pageUrl . ($done ? '&done=1' : '&failed=1'));
     exit;
