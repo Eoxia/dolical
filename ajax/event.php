@@ -466,7 +466,8 @@ if ($action === 'save') {
     dolical_json_exit([
         'success'   => true,
         'id'        => $result,
-        'warnings'  => array_merge($uploadErrors, $mail['errors']),
+        // The dates of the series the user may not change were left as they are : he is told
+        'warnings'  => array_merge(!empty($saved['refused']) ? [$langs->trans('DoliCalSeriesRefused', $saved['refused'])] : [], $uploadErrors, $mail['errors']),
         'sent'      => $mail['sent'],
         'cancelled' => $mail['cancelled'],
         'created'   => $saved['created'],

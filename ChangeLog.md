@@ -47,6 +47,10 @@
   connectés doivent recevoir ce nouveau mot de passe) ; hooks de la page de connexion appelés (double
   authentification, bannissement…), au plus 5 échecs par identifiant et 20 par adresse en 15 minutes ; refusée en
   http, sauf option pour une installation de test.
+- Séries (#25) : « Cette date et les suivantes » et « Toute la série » vérifient les droits sur chaque date ; une date
+  d'une autre personne que l'on ne peut pas modifier ou supprimer reste intacte et le bilan l'indique. Une série est
+  limitée à son auteur, aussi pour les séries créées par DoliCal : un événement d'un autre auteur portant le même
+  `recurid` n'en fait plus partie.
 - Nouvelle entrée de menu : réactiver le module pour la voir.
 
 ## 1.1.0
