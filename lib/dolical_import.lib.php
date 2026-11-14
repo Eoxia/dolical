@@ -27,6 +27,35 @@ require_once DOL_DOCUMENT_ROOT . '/includes/sabre/autoload.php';
 require_once __DIR__ . '/dolical_caldav.lib.php';
 
 /**
+ * Biggest file taken, in Ko : the setting DOLICAL_IMPORT_MAX_SIZE (10 Mo by default), within what PHP and Dolibarr
+ * accept for an upload
+ *
+ * @return int
+ */
+function dolical_import_max_size(): int
+{
+    $server = (int) getMaxFileSizeArray()['maxmin'];
+    $module = getDolGlobalInt('DOLICAL_IMPORT_MAX_SIZE', 10240);
+
+    return $server > 0 && $module > 0 ? min($server, $module) : max($server, $module);
+}
+
+/**
+ * Time an import or its removal may take, in seconds (DOLICAL_IMPORT_TIME_LIMIT, 10 minutes by default) : longer than
+ * a page, never without end. A server already without limit keeps it
+ *
+ * @return void
+ */
+function dolical_import_time_limit(): void
+{
+    $current = (int) ini_get('max_execution_time');
+    $wanted  = getDolGlobalInt('DOLICAL_IMPORT_TIME_LIMIT', 600);
+    if ($current > 0 && $wanted > $current) {
+        @set_time_limit($wanted);
+    }
+}
+
+/**
  * Identifiers of the events of other agendas already in the agenda of a person, as owner or as participant
  *
  * @param  User  $owner Person
@@ -140,7 +169,8 @@ function dolical_import_complete(int $id, array $people): bool
  * @param  User   $owner Person whose agenda gets the events
  * @param  User   $user  Person importing
  * @return array         ['key' => import key of the events created, 'events', 'series', 'dates', 'duplicates', 'linked',
- *                       'ignored' => int, 'failed' => string[], 'unknown' => [address => number of meetings]], or
+ *                       'ignored' => int, 'failed' => string[], 'unknown' => [address => number of meetings],
+ *                       'truncated' => the most appointments read when the file held more, else 0], or
  *                       ['error' => message] when the file is not an agenda
  */
 function dolical_import_ics(string $file, User $owner, User $user): array
@@ -161,15 +191,22 @@ function dolical_import_ics(string $file, User $owner, User $user): array
         fclose($handle);
     }
 
-    $result = ['key' => dolical_import_new_key(), 'events' => 0, 'series' => 0, 'dates' => 0, 'duplicates' => 0, 'linked' => 0, 'ignored' => 0, 'failed' => [], 'unknown' => []];
+    $result = ['key' => dolical_import_new_key(), 'events' => 0, 'series' => 0, 'dates' => 0, 'duplicates' => 0, 'linked' => 0, 'ignored' => 0, 'failed' => [], 'unknown' => [], 'truncated' => 0];
     $owned  = array_fill_keys(array_filter([dol_strtolower((string) $owner->email), dol_strtolower((string) $owner->personal_email)]), true);
     $known  = dolical_import_known_uids($owner);
     $ahead  = (new DateTimeImmutable('@' . dol_now()))->modify('+1 year')->getTimestamp();
+    // At most so many appointments read from one file (DOLICAL_IMPORT_MAX_EVENTS) : the rest is left, and told
+    $max    = getDolGlobalInt('DOLICAL_IMPORT_MAX_EVENTS', 5000);
+    $taken  = 0;
 
     while ($vcalendar = $splitter->getNext()) {
         // Tasks and notes are not events
         if (!isset($vcalendar->VEVENT)) {
             continue;
+        }
+        if ($max > 0 && ++$taken > $max) {
+            $result['truncated'] = $max;
+            break;
         }
         try {
             $read = dolical_caldav_read($vcalendar->serialize(), (string) $owner->email);
