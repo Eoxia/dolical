@@ -88,8 +88,15 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
 
 ## Synchronisation avec les téléphones (CalDAV)
 
+- Fermée par défaut : un administrateur l'ouvre dans la configuration de DoliCal.
 - Menu *Synchroniser mon téléphone* : l'adresse, l'identifiant, les étapes pour **DAVx⁵ (Android)**, **iPhone / iPad /
-  Mac** et **Thunderbird**. Connexion avec l'identifiant et le mot de passe Dolibarr.
+  Mac** et **Thunderbird**. Chacun y crée son **mot de passe de synchronisation** (affiché une fois, gardé haché dans
+  son paramètre utilisateur `DOLICAL_CALDAV_PASSWORD`), le renouvelle ou désactive sa synchronisation. Le mot de passe
+  Dolibarr n'ouvre pas CalDAV, et celui de synchronisation n'ouvre pas Dolibarr.
+- Connexion protégée comme la page de connexion : hooks `beforeLoginAuthentication` et `afterLoginFailed` (modules de
+  double authentification, de bannissement, de limitation), échecs dans les événements de sécurité, et au plus 5 échecs
+  par identifiant et 20 par adresse en 15 minutes (réglable) : au-delà, même le bon mot de passe est refusé un moment.
+- Refusée en http, sauf option « installation de test » de la configuration.
 - Serveur CalDAV `dav/caldav.php`, sur la bibliothèque SabreDAV livrée avec Dolibarr. Dans les deux sens : créer,
   déplacer, renommer, supprimer un rendez-vous sur le téléphone met à jour l'événement natif ; accepter ou refuser
   une invitation remplit `answer_status` ; une alarme du téléphone devient un rappel, et inversement.
@@ -177,6 +184,9 @@ Constantes facultatives (*Configuration > Divers*), 0 pour lever une limite :
 | `DOLICAL_IMPORT_MAX_SIZE` | 10240 | Taille maximale d'un fichier importé, en Ko (dans la limite du serveur) |
 | `DOLICAL_IMPORT_MAX_EVENTS` | 5000 | Rendez-vous lus au plus dans un fichier importé |
 | `DOLICAL_IMPORT_TIME_LIMIT` | 600 | Durée maximale d'un import ou de sa suppression, en secondes |
+| `DOLICAL_CALDAV_MAX_FAILS_LOGIN` | 5 | Échecs de connexion CalDAV permis par identifiant dans la fenêtre |
+| `DOLICAL_CALDAV_MAX_FAILS_IP` | 20 | Échecs de connexion CalDAV permis par adresse IP dans la fenêtre |
+| `DOLICAL_CALDAV_FAIL_WINDOW` | 15 | Fenêtre des échecs CalDAV, en minutes |
 
 ## Prérequis
 

@@ -20,8 +20,8 @@
  * \ingroup dolical
  * \brief   Page of the synchronization : address and login, steps for each kind of device, agendas of the colleagues.
  *
- * Rendered by view/dolical_sync.php (inherits its scope). Expects: $syncUrl, $calendarUrl, $isSecure, $canShare,
- * $calendarUsers, $shared, $user, $langs.
+ * Rendered by view/dolical_sync.php (inherits its scope). Expects: $syncUrl, $calendarUrl, $isSecure, $httpAllowed,
+ * $newPassword, $syncPassword, $canShare, $calendarUsers, $shared, $user, $langs.
  */
 
 $devices = [
@@ -40,8 +40,39 @@ $devices = [
         <div class="dolical-sync__notice dolical-sync__notice--warning"><i class="fas fa-ban"></i><?php echo $langs->trans('DoliCalSyncDisabled'); ?></div>
     <?php else : ?>
         <?php if (!$isSecure) : ?>
-            <div class="dolical-sync__notice dolical-sync__notice--warning"><i class="fas fa-unlock"></i><?php echo $langs->trans('DoliCalSyncNotSecure'); ?></div>
+            <div class="dolical-sync__notice dolical-sync__notice--warning"><i class="fas fa-unlock"></i><?php echo $langs->trans($httpAllowed ? 'DoliCalSyncNotSecure' : 'DoliCalSyncHttpRefused'); ?></div>
         <?php endif; ?>
+
+        <div class="dolical-sync__card dolical-sync__password">
+            <h2><i class="fas fa-key pictofixedwidth"></i><?php echo $langs->trans('DoliCalSyncPasswordTitle'); ?></h2>
+            <?php if ($newPassword !== '') : ?>
+                <div class="dolical-sync__notice dolical-sync__notice--success"><i class="fas fa-exclamation-circle"></i><?php echo $langs->trans('DoliCalSyncPasswordShownOnce'); ?></div>
+                <div class="dolical-sync__field">
+                    <span class="dolical-sync__label"><?php echo $langs->trans('Password'); ?></span>
+                    <code class="dolical-sync__value dolical-sync__secret"><?php echo dol_escape_htmltag($newPassword); ?></code>
+                    <button type="button" class="dolical-icon-btn dolical-copy" data-copy="<?php echo dol_escape_htmltag($newPassword); ?>" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalCopy')); ?>"><i class="far fa-copy"></i></button>
+                </div>
+            <?php elseif ($syncPassword['hash'] !== '') : ?>
+                <p><?php echo $langs->trans('DoliCalSyncPasswordActive', dol_print_date($syncPassword['date'], 'dayhour', 'tzuserrel')); ?></p>
+            <?php else : ?>
+                <p><?php echo $langs->trans('DoliCalSyncPasswordNone'); ?></p>
+            <?php endif; ?>
+            <p class="dolical-card__muted"><?php echo $langs->trans('DoliCalSyncPasswordHelp'); ?></p>
+            <div class="dolical-sync__actions">
+                <form method="POST" action="<?php echo dol_escape_htmltag($_SERVER['PHP_SELF']); ?>"<?php echo $syncPassword['hash'] !== '' ? ' data-confirm="' . dol_escape_htmltag($langs->transnoentities('DoliCalSyncPasswordConfirmNew')) . '"' : ''; ?>>
+                    <input type="hidden" name="token" value="<?php echo newToken(); ?>">
+                    <input type="hidden" name="action" value="caldavpassword">
+                    <button type="submit" class="dolical-btn dolical-btn--primary"><i class="fas fa-key"></i><?php echo $langs->trans($syncPassword['hash'] !== '' ? 'DoliCalSyncPasswordRenew' : 'DoliCalSyncPasswordCreate'); ?></button>
+                </form>
+                <?php if ($syncPassword['hash'] !== '') : ?>
+                    <form method="POST" action="<?php echo dol_escape_htmltag($_SERVER['PHP_SELF']); ?>" data-confirm="<?php echo dol_escape_htmltag($langs->transnoentities('DoliCalSyncPasswordConfirmRevoke')); ?>">
+                        <input type="hidden" name="token" value="<?php echo newToken(); ?>">
+                        <input type="hidden" name="action" value="caldavrevoke">
+                        <button type="submit" class="dolical-btn"><i class="fas fa-ban"></i><?php echo $langs->trans('DoliCalSyncPasswordRevoke'); ?></button>
+                    </form>
+                <?php endif; ?>
+            </div>
+        </div>
 
         <div class="dolical-sync__card">
             <div class="dolical-sync__field">
