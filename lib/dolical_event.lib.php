@@ -222,6 +222,18 @@ function dolical_type_icon(string $typeCode, string $type = '', string $typePict
 }
 
 /**
+ * Longest event the calendar shows while it lasts, in seconds (hidden setting DOLICAL_LONGEST_EVENT_DAYS, 92 days by
+ * default). The searches of a period read only the events started that long before it : the date of start has an
+ * index, its end has none, and without this bound a large agenda is read whole (seconds for 800 000 events)
+ *
+ * @return int
+ */
+function dolical_longest_event(): int
+{
+    return max(1, getDolGlobalInt('DOLICAL_LONGEST_EVENT_DAYS', 92)) * 86400;
+}
+
+/**
  * Events of a period for a set of people, ready to be drawn by the calendar
  *
  * An event belongs to a person when he owns it or is one of the users assigned to it, as in the native
@@ -259,6 +271,8 @@ function dolical_fetch_events(User $user, int $start, int $end, array $userIds, 
     // Overlaps the period : starts before its end, ends (or starts, without end) after its start
     $sql .= " AND a.datep < '" . $db->idate($end) . "'";
     $sql .= " AND COALESCE(a.datep2, a.datep) >= '" . $db->idate($start) . "'";
+    // Started at most the longest event before : a range on the index of datep, else the whole history is read
+    $sql .= " AND a.datep >= '" . $db->idate($start - dolical_longest_event()) . "'";
     $sql .= ' AND (a.fk_user_action IN (' . $db->sanitize($userList) . ')';
     $sql .= ' OR EXISTS (SELECT ar.fk_actioncomm FROM ' . MAIN_DB_PREFIX . "actioncomm_resources as ar WHERE ar.fk_actioncomm = a.id AND ar.element_type = 'user' AND ar.fk_element IN (" . $db->sanitize($userList) . ')))';
     if ($user->socid > 0) {
@@ -418,6 +432,7 @@ function dolical_find_conflicts(User $user, int $start, int $end, array $userIds
     $sql .= ' AND r.fk_element IN (' . $db->sanitize(implode(',', $userIds)) . ')';
     $sql .= ' AND a.id <> ' . ((int) $excludeId);
     $sql .= " AND a.datep < '" . $db->idate($end) . "' AND COALESCE(a.datep2, a.datep) > '" . $db->idate($start) . "'";
+    $sql .= " AND a.datep >= '" . $db->idate($start - dolical_longest_event()) . "'";
     $sql .= " AND (ca.type IS NULL OR ca.type <> 'systemauto')";
     $sql .= ' AND COALESCE(r.answer_status, 0) <> -1';
     // A day of remote work marked free does not take the slot, a fair marked busy does

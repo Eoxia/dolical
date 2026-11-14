@@ -1,5 +1,11 @@
 # ChangeLog
 
+## Non publié
+
+- Calendrier et créneaux déjà pris rapides sur un grand agenda : seuls les événements commencés au plus 92 jours avant
+  la période sont lus (réglage caché `DOLICAL_LONGEST_EVENT_DAYS`), au lieu de tout l'historique (plusieurs secondes
+  pour 800 000 événements).
+
 ## 1.2.0
 
 - Import d'un agenda depuis son fichier `.ics` (Nextcloud, Google Agenda, Outlook, Thunderbird…) : page « Importer un
