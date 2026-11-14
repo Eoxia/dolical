@@ -407,5 +407,6 @@ DoliCalSetupCalDavHelp            = Chacun peut synchroniser son agenda avec DAV
 # Page d'un événement seul (fenêtre d'une autre application, lien « Planifier »)
 #
 DoliCalUnsavedChanges = Les modifications de ce rendez-vous ne sont pas enregistrées.
+DoliCalPlanMeeting = Planifier un rendez-vous
 DoliCalEventGone      = Ce rendez-vous n'existe plus, ou vous n'avez pas le droit de le voir.
 DoliCalBackToCalendar = Retour au calendrier

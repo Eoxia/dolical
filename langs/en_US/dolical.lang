@@ -407,5 +407,6 @@ DoliCalSetupCalDavHelp            = Everyone can sync his agenda with DAVx⁵, a
 # Page of one event alone (window of another application, link « Plan »)
 #
 DoliCalUnsavedChanges = The changes of this event are not saved.
+DoliCalPlanMeeting = Plan a meeting
 DoliCalEventGone      = This event no longer exists, or you are not allowed to see it.
 DoliCalBackToCalendar = Back to the calendar

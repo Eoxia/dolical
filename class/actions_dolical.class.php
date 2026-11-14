@@ -198,4 +198,36 @@ class ActionsDoliCal
 
         return 0;
     }
+
+    /**
+     * Actions of a mail in a mail application (hook inboxMailActions, context inbox) : « Plan a meeting » opens the
+     * page of one event, filled from the mail. The mail application fills the markers : {socid}, {contactids},
+     * {projectid}, {elements} with what it recognized ; {subject}, {emails} (the correspondents, without the
+     * addresses of the user) and {messageid} only after the « # », a part that the browser never sends to the server.
+     *
+     * @param  array $parameters Hook parameters (mail, account, message_id, from, subject)
+     * @return int               0
+     */
+    public function inboxMailActions(array $parameters): int
+    {
+        global $langs, $user;
+
+        if (!($user instanceof User) || !isModEnabled('dolical') || $user->socid > 0
+            || !$user->hasRight('dolical', 'read') || !$user->hasRight('agenda', 'myactions', 'read')) {
+            return 0;
+        }
+
+        require_once __DIR__ . '/../lib/dolical.lib.php';
+        if (!dolical_can_create($user)) {
+            return 0;
+        }
+        $langs->load('dolical@dolical');
+
+        $url = dol_buildpath('/dolical/view/dolical_event.php', 1) . '?action=create&socid={socid}&contactids={contactids}&projectid={projectid}&elements={elements}'
+            . '&dol_hide_topmenu=1&dol_hide_leftmenu=1#subject={subject}&emails={emails}&messageid={messageid}';
+
+        $this->results['actions'][] = ['label' => $langs->trans('DoliCalPlanMeeting'), 'icon' => 'event-new', 'window' => true, 'url' => $url];
+
+        return 0;
+    }
 }

@@ -140,6 +140,13 @@ Ouverte dans la fenêtre d'une autre page du même site (iframe), elle la prévi
 de DoliCal les adresses de cette page pour créer un rendez-vous (tiers, contacts, projet et documents reconnus sur le
 mail ouvert) et ouvrir un rendez-vous, et celle du calendrier pour tout voir. Rien n'est appelé sans cette application.
 
+**Planifier un rendez-vous depuis un mail** : avec le hook `inboxMailActions`, le mail ouvert reçoit l'action
+« Planifier un rendez-vous ». Elle ouvre cette page avec le sujet du mail en titre (sans « Re: », « TR: »…), ses
+correspondants en contacts (le contact de l'adresse s'il existe et qu'on peut le voir, sinon un nouveau contact
+proposé, créé à l'enregistrement) et le Message-ID du mail gardé sur l'événement (`email_msgid`). Le sujet, les
+adresses et le Message-ID arrivent après le `#` de l'adresse, que le navigateur n'envoie jamais au serveur, puis
+partent au formulaire par POST : ils ne sont écrits dans aucun journal du serveur web.
+
 ## Où sont stockées les données
 
 | Donnée | Stockage natif |

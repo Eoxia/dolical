@@ -1316,6 +1316,10 @@ function dolical_save_event(ActionComm $event, array $data, User $user): int
     if ($isNew || !empty($data['note_changed'])) {
         $event->note_private = sanitizeVal((string) $data['note'], 'restricthtml');
     }
+    // A new event planned from a mail keeps the Message-ID of the mail : the mail application finds it back
+    if ($isNew && !empty($data['email_msgid'])) {
+        $event->email_msgid = (string) $data['email_msgid'];
+    }
 
     // People : the owner first, the answers already given are kept
     $ownerId = (int) $data['owner_id'] > 0 && dolical_filter_active_users([(int) $data['owner_id']]) ? (int) $data['owner_id'] : (int) $user->id;

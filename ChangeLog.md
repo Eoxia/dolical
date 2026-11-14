@@ -7,6 +7,9 @@
   application, elle lui dit son titre, la saisie non enregistrée, puis l'enregistrement ou la suppression.
 - Volet agenda d'une messagerie qui offre le hook `inboxAgendaProvider` : créer et ouvrir un rendez-vous passent par
   DoliCal, avec le tiers, les contacts, le projet et les documents reconnus sur le mail ouvert.
+- « Planifier un rendez-vous » sur un mail (hook `inboxMailActions`) : la page d'un nouveau rendez-vous dans une
+  fenêtre, avec le sujet du mail en titre, ses correspondants en contacts (le contact connu, sinon un nouveau contact
+  proposé) et le lien vers le mail (`email_msgid`).
 - Réactiver le module pour le volet agenda (nouveau contexte de hooks).
 
 ## 1.2.0

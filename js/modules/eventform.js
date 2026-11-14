@@ -310,7 +310,14 @@ window.dolical.eventform.open = function(params) {
   $box.html('<div class="dolical-form__loading"><i class="fas fa-circle-notch fa-spin"></i></div>');
   $modal.addClass('modal-active');
 
-  $.get(config.urls.event, $.extend({action: 'form', token: config.token}, params || {}), null, 'html').done(function(html) {
+  // What comes from a mail (title, addresses, Message-ID) goes by POST : never in an address, so never in a log
+  const fromMail = !!(params && (params.label || params.emails || params.email_msgid));
+  $.ajax({
+    url: config.urls.event,
+    method: fromMail ? 'POST' : 'GET',
+    data: $.extend({action: 'form', token: config.token}, params || {}),
+    dataType: 'html'
+  }).done(function(html) {
     $box.html(html);
     F.setup($box);
   }).fail(function(xhr) {

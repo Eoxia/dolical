@@ -167,7 +167,7 @@ window.dolical.single.onCard = function() {
 };
 
 /**
- * Values of a new event given in the address of the page, as the calendar takes them.
+ * Values of a new event given in the address of the page, as the calendar takes them, and the ones of a mail.
  *
  * @returns {Object}
  */
@@ -180,7 +180,39 @@ window.dolical.single.createParams = function() {
       params[name] = value;
     }
   });
+  // A mail gives its subject, its correspondents and its Message-ID after the « # » : the browser never sends this
+  // part to the server, so it stays out of its logs ; the form receives them by POST
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const subject = window.dolical.single.cleanSubject(hash.get('subject') || '');
+  if (subject !== '') {
+    params.label = subject;
+  }
+  if (hash.get('emails')) {
+    params.emails = hash.get('emails');
+  }
+  if (hash.get('messageid')) {
+    params.email_msgid = hash.get('messageid');
+  }
+  if (window.location.hash && window.history.replaceState) {
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
   return params;
+};
+
+/**
+ * Subject of a mail as title of an event : without its « Re: », « Fwd: », « TR: » ... in front
+ *
+ * @param   {String} subject Subject
+ * @returns {String}
+ */
+window.dolical.single.cleanSubject = function(subject) {
+  let text = String(subject).replace(/\s+/g, ' ').trim();
+  let before;
+  do {
+    before = text;
+    text = text.replace(/^(re|fw|fwd|tr|aw|wg|rif|r|i|sv|vs|antw)\s*(\[\d+\])?\s*:\s*/i, '');
+  } while (text !== before);
+  return text.slice(0, 255);
 };
 
 /**

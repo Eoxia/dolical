@@ -989,6 +989,47 @@ function dolical_record_answer(ActionComm $event, string $kind, int $personId, i
 }
 
 /**
+ * The active contact of an address that the user may see, the ones of the third party first
+ *
+ * @param  string $email Address
+ * @param  int    $socid Third party of the event, 0 if none
+ * @param  User   $user  Current user
+ * @return int           Id of the contact, 0 if none
+ */
+function dolical_find_contact_by_email(string $email, int $socid, User $user): int
+{
+    global $db;
+
+    $sql  = 'SELECT rowid FROM ' . MAIN_DB_PREFIX . 'socpeople';
+    $sql .= " WHERE email = '" . $db->escape($email) . "' AND statut = 1 AND entity IN (" . getEntity('contact') . ')';
+    $sql .= ' ORDER BY ' . ($socid > 0 ? '(fk_soc = ' . ((int) $socid) . ') DESC, ' : '') . 'rowid ASC';
+    $sql .= $db->plimit(20);
+    $found = 0;
+    $resql = $db->query($sql);
+    if ($resql) {
+        while (!$found && ($obj = $db->fetch_object($resql))) {
+            $found = dolical_can_see_object($user, 'contact', (int) $obj->rowid) ? (int) $obj->rowid : 0;
+        }
+        $db->free($resql);
+    }
+
+    return $found;
+}
+
+/**
+ * Message-ID of a mail an event comes from (field email_msgid of the event), without its angle brackets
+ *
+ * @param  string $value Value received
+ * @return string        The Message-ID, '' when it does not look like one
+ */
+function dolical_clean_msgid(string $value): string
+{
+    $value = trim($value, " \t<>");
+
+    return preg_match('/^[^\s<>"\'@]{1,200}@[^\s<>"\'@]{1,200}$/', $value) ? $value : '';
+}
+
+/**
  * Contacts of the form : ids of existing contacts, and people typed as an email, found among the contacts
  * or created as new contacts of the third party of the event
  *
@@ -1028,18 +1069,7 @@ function dolical_resolve_contacts(array $values, int $socid, User $user, array &
         }
 
         // An existing contact of this address, among the ones the user may see
-        $sql  = 'SELECT rowid FROM ' . MAIN_DB_PREFIX . 'socpeople';
-        $sql .= " WHERE email = '" . $db->escape($email) . "' AND statut = 1 AND entity IN (" . getEntity('contact') . ')';
-        $sql .= ' ORDER BY ' . ($socid > 0 ? '(fk_soc = ' . ((int) $socid) . ') DESC, ' : '') . 'rowid ASC';
-        $sql .= $db->plimit(20);
-        $found = 0;
-        $resql = $db->query($sql);
-        if ($resql) {
-            while (!$found && ($obj = $db->fetch_object($resql))) {
-                $found = dolical_can_see_object($user, 'contact', (int) $obj->rowid) ? (int) $obj->rowid : 0;
-            }
-            $db->free($resql);
-        }
+        $found = dolical_find_contact_by_email($email, $socid, $user);
         if ($found > 0) {
             $ids[] = $found;
             continue;
