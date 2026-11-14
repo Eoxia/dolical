@@ -39,6 +39,9 @@
 - Contact créé depuis une adresse e-mail (#28) : rattaché au tiers de l'événement seulement si l'utilisateur peut voir
   ce tiers, sinon sans tiers ; le tiers et le projet sont contrôlés avant toute écriture, et un contact créé pour un
   événement finalement refusé est supprimé.
+- Import et synchronisation (#27) : un rendez-vous déjà présent n'est complété (participants, tiers) que par qui peut
+  le modifier ; seule la réponse de la personne qui importe ou synchronise est reprise pour les utilisateurs, les
+  collègues gardent la leur (« en attente » s'ils n'ont pas répondu), et un contact retrouvé par son seul nom aussi.
 - Nouvelle entrée de menu : réactiver le module pour la voir.
 
 ## 1.1.0
