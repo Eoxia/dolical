@@ -1,5 +1,11 @@
 # ChangeLog
 
+## Non publié
+
+- Calendrier et créneaux déjà pris rapides sur un grand agenda : seuls les événements commencés au plus 92 jours avant
+  la période sont lus (réglage caché `DOLICAL_LONGEST_EVENT_DAYS`), au lieu de tout l'historique (plusieurs secondes
+  pour 800 000 événements).
+
 ## 1.3.0
 
 - Page d'un événement seul (`view/dolical_event.php`) : le formulaire d'un nouveau rendez-vous, ou la fiche d'un
