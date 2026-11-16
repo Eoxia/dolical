@@ -64,7 +64,7 @@
                 <?php if (!empty($owner->job) || dolical_booking_text('DOLICAL_BOOKING_TITLE', (int) $owner->id) !== '') : ?>
                     <div class="dolical-public-card__row"><i class="far fa-user"></i><span><?php echo dol_escape_htmltag($owner->getFullName($langs) . (!empty($owner->job) ? ', ' . $owner->job : '')); ?></span></div>
                 <?php endif; ?>
-                <div class="dolical-public-card__row"><i class="fas fa-globe-europe"></i><span><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalBookingTimezone', dolical_booking_timezone())); ?></span></div>
+                <div class="dolical-public-card__row"><i class="fas fa-globe-europe"></i><span><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalBookingTimezone', dolical_timezone_label(dolical_booking_timezone(), $start))); ?></span></div>
             </div>
 
             <?php if ($isPast) : ?>

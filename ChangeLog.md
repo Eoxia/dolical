@@ -45,6 +45,9 @@
 - Pages de configuration (générale et prise de rendez-vous) au design de DoliCal : une carte par section, une ligne
   par réglage avec une aide courte, interrupteurs, sections listées sur le côté et bouton « Enregistrer » toujours
   visible ; un réglage qui dépend d'un autre n'apparaît que lorsqu'il sert.
+- Fuseau horaire affiché avec son écart à UTC (« Europe/Paris (UTC+01:00) ») : liste de la configuration, prise de
+  rendez-vous, modèle hebdomadaire et pages publiques ; l'écart est celui du jour du créneau ou du rendez-vous (heure
+  d'été comprise).
 
 ## 1.3.0
 

@@ -41,7 +41,7 @@ $pageTitle = dolical_booking_text('DOLICAL_BOOKING_TITLE', $userId);
                 <div class="dolical-public-card__row"><i class="far fa-user"></i><span><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalBookingWithName', $person['name'])); ?></span></div>
             <?php endif; ?>
             <div class="dolical-public-card__row"><i class="far fa-clock"></i><span><?php echo dolical_booking_hour($slot) . ' – ' . dolical_booking_hour($slot + $duration * 60); ?> <span class="dolical-public-card__muted">(<?php echo dol_escape_htmltag(dolical_format_duration($duration * 60)); ?>)</span></span></div>
-            <div class="dolical-public-card__row"><i class="fas fa-globe-europe"></i><span><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalBookingTimezone', dolical_booking_timezone())); ?></span></div>
+            <div class="dolical-public-card__row"><i class="fas fa-globe-europe"></i><span><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalBookingTimezone', dolical_timezone_label(dolical_booking_timezone(), $slot))); ?></span></div>
         </div>
 
         <?php foreach ($errors as $error) : ?>

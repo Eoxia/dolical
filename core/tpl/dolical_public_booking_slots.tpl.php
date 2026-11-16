@@ -79,7 +79,7 @@ $formTitle = dolical_booking_text('DOLICAL_BOOKING_FORM_TITLE', $userId);
                     <?php if ($phone !== '') : ?>
                         <span><i class="fas fa-phone-alt pictofixedwidth"></i><?php echo dol_escape_htmltag($phone); ?></span>
                     <?php endif; ?>
-                    <span><i class="fas fa-globe-europe pictofixedwidth"></i><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalBookingTimezone', $zone)); ?></span>
+                    <span><i class="fas fa-globe-europe pictofixedwidth"></i><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalBookingTimezone', dolical_timezone_label($zone, $weekStart->getTimestamp()))); ?></span>
                 </div>
             </div>
         </div>
