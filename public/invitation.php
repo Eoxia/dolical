@@ -150,7 +150,7 @@ $conf->dol_hide_leftmenu = 1;
 
 llxHeader('', $title, '', '', 0, 0, [], [dolical_asset('css/dolical.css')], '', 'dolical-public', '<div>', 1);
 
-htmlPrintOnlineHeader($mysoc, $langs, 1, '', '', '', '');
+require __DIR__ . '/../core/tpl/dolical_public_header.tpl.php';
 
 require __DIR__ . '/../core/tpl/dolical_public_invitation.tpl.php';
 

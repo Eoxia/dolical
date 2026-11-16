@@ -107,6 +107,7 @@ class ActionsDoliCal
             'dolical_reminder'   => $picto . dol_escape_htmltag($langs->trans('DoliCalTemplateReminder')),
             'dolical_cancel'     => $picto . dol_escape_htmltag($langs->trans('DoliCalTemplateCancel')),
             'dolical_answer'     => $picto . dol_escape_htmltag($langs->trans('DoliCalTemplateAnswer')),
+            'dolical_booking'    => $picto . dol_escape_htmltag($langs->trans('DoliCalTemplateBooking')),
         ];
 
         return 0;

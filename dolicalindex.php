@@ -32,6 +32,7 @@ if (file_exists('dolical.main.inc.php')) {
 
 // Load DoliCal libraries
 require_once __DIR__ . '/lib/dolical_event.lib.php';
+require_once __DIR__ . '/lib/dolical_booking.lib.php';
 
 global $conf, $db, $langs, $user;
 

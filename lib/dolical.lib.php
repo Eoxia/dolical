@@ -79,6 +79,25 @@ function dolical_header(string $title, string $morecssonbody = ''): void
 }
 
 /**
+ * Address of the logo of the company for the public pages, or nothing when it has none : never the logo of Dolibarr
+ *
+ * @return string Absolute URL, empty without logo
+ */
+function dolical_company_logo_url(): string
+{
+    global $conf, $dolibarr_main_url_root, $mysoc;
+
+    // The logo itself rather than its thumbnail, sharp on the screens of the phones
+    foreach (['logos/' => (string) ($mysoc->logo ?? ''), 'logos/thumbs/' => (string) ($mysoc->logo_small ?? '')] as $dir => $file) {
+        if ($file !== '' && is_readable($conf->mycompany->dir_output . '/' . $dir . $file)) {
+            return $dolibarr_main_url_root . '/viewimage.php?modulepart=mycompany&entity=' . ((int) $conf->entity) . '&file=' . urlencode($dir . $file);
+        }
+    }
+
+    return '';
+}
+
+/**
  * Whether the request is a POST carrying the token of the session. main.inc.php checks it only as far as
  * MAIN_SECURITY_CSRF_WITH_TOKEN asks : every change made by DoliCal requires it, whatever the setup
  *
