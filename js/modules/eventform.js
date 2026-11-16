@@ -57,6 +57,7 @@ window.dolical.eventform.event = function() {
   $(document).on('click', '#dolical-event-modal .dolical-file__delete', F.deleteFile);
   $(document).on('keydown', '#dolical-event-modal', F.keyboard);
   $(document).on('change', '#dolical-event-modal #dolical-users, #dolical-event-modal #dolical-contacts', F.peopleChanged);
+  $(document).on('select2:select', '#dolical-event-modal #dolical-contacts', F.contactChosen);
   $(document).on('change', '#dolical-event-modal input[name="start_at"], #dolical-event-modal input[name="end_at"], #dolical-event-modal input[name="start_day"], #dolical-event-modal input[name="end_day"], #dolical-event-modal input[name="fullday"], #dolical-event-modal input[name="location"]', F.placeChanged);
   $(document).on('click', '#dolical-event-modal input[name="notify"]', F.notifyTouched);
   $(document).on('change', '#dolical-event-modal select[name="owner_id"]', function() {
@@ -179,6 +180,26 @@ window.dolical.eventform.peopleChanged = function() {
     window.dolical.eventform.proposeNotify($form);
   }
   window.dolical.eventform.scheduleAvailability($form);
+};
+
+/**
+ * A contact of a third party chosen while the event has none yet : that third party fills the field.
+ * A third party already chosen is kept, the contact may come from a partner.
+ *
+ * @param   {Event} e select2:select event
+ * @returns {void}
+ */
+window.dolical.eventform.contactChosen = function(e) {
+  const data        = (e.params && e.params.data) || {};
+  const $thirdparty = $(this).closest('.dolical-form').find('select[name="socid"]');
+  const socid       = parseInt(data.socid, 10);
+  if (!socid || !$thirdparty.length || $thirdparty.val()) {
+    return;
+  }
+  if (!$thirdparty.find('option[value="' + socid + '"]').length) {
+    $thirdparty.append(new Option(data.socname || '', socid, false, false));
+  }
+  $thirdparty.val(String(socid)).trigger('change');
 };
 
 /**
