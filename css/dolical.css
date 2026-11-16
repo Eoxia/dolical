@@ -3180,6 +3180,25 @@ a.dolical-booking-slot:hover, a.dolical-booking-slot:focus {
   color: #c53030;
   font-style: normal;
 }
+
+/* The consent of the setup : a box to tick before booking */
+.dolical-booking-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 14px 0 0;
+  color: #4a5568;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.dolical-booking-consent input {
+  flex: none;
+  margin-top: 3px;
+}
+.dolical-booking-consent em {
+  color: #c53030;
+  font-style: normal;
+}
 .dolical-booking-form .dolical-booking-field input, .dolical-booking-form .dolical-booking-field textarea {
   box-sizing: border-box;
   width: 100%;
@@ -3644,4 +3663,520 @@ button.dolical-btn.dolical-btn--destructive:hover {
 .dolical-embedded #dolical-event-modal .modal-header,
 .dolical-embedded .dolical-popover .dolical-card__close {
   display: none;
+}
+
+/* Weekly template of the online booking (admin/booking_template.php), as the one of the appointments of Nextcloud :
+   the frame, the toolbar and the week of the calendar, the slots drawn as its events */
+.dolical-template-main {
+  margin-top: 8px;
+  color: #2d3748;
+  font-size: 13.5px;
+}
+
+.dolical-template__zone {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 4px;
+  color: #718096;
+  font-size: 12.5px;
+}
+
+p.dolical-template__help {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 9px 14px;
+  border-bottom: 1px solid #e7edf2;
+  background: #f9fbfc;
+  color: #718096;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+p.dolical-template__help i {
+  margin-top: 2px;
+  color: #4f9ab8;
+}
+
+.dolical-template .ra-tg__scroll {
+  height: calc(100vh - 320px);
+  min-height: 420px;
+}
+.dolical-template.is-readonly .ra-tg__col {
+  cursor: default;
+}
+
+.dolical-template__dayhead {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 9px 30px;
+}
+
+.dolical-template__daycount {
+  color: #2d3748;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.dolical-template__daycount.is-empty {
+  color: #a0aec0;
+  font-weight: 400;
+}
+
+button.dolical-template__daymenu {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+  transform: translateY(-50%);
+}
+
+/* A slot takes its whole day and the color of the agenda */
+.dolical-template__slot.ra-block {
+  --ra-left: 0%;
+  --ra-width: 100%;
+  --ra-color: #63acc9;
+}
+.dolical-template__slot .ra-block__label {
+  white-space: nowrap;
+}
+.dolical-template__slot:hover .ra-block__resize::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 18px;
+  height: 3px;
+  margin-left: -9px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--ra-color) 60%, #fff);
+}
+
+/* Menus of a slot and of a day : the look of the popover of the calendar */
+.dolical-template__pop {
+  position: fixed;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 290px;
+  padding: 14px;
+  border: 1px solid rgba(15, 35, 52, 0.08);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(15, 35, 52, 0.18), 0 2px 6px rgba(15, 35, 52, 0.08);
+  color: #2d3748;
+  font-size: 13px;
+  animation: dolical-pop 0.14s ease-out;
+}
+.dolical-template__pop.is-menu {
+  width: auto;
+  min-width: 230px;
+  gap: 0;
+  padding: 6px;
+}
+
+.dolical-template__poptitle {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dolical-template__poprow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+label.dolical-template__popfield {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  color: #4a5568;
+  font-size: 12px;
+  font-weight: 600;
+}
+.dolical-template__popfield input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 34px;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  background: #fff;
+  color: #2d3748;
+  font-family: inherit;
+  font-size: 13.5px;
+}
+.dolical-template__popfield input:focus {
+  border-color: #63acc9;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 172, 201, 0.2);
+}
+
+.dolical-template__days {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+button.dolical-template__menuitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #2d3748;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+button.dolical-template__menuitem:hover {
+  background: #f5f8fa;
+}
+button.dolical-template__menuitem i {
+  width: 16px;
+  color: #718096;
+  text-align: center;
+}
+button.dolical-template__menuitem.is-danger,
+button.dolical-template__menuitem.is-danger i {
+  color: #c53030;
+}
+
+.dolical-template__popactions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Setup of the online booking (admin/booking.php) : the sections listed on the side, a card for each as on the page
+   of a person, a line for each setting, the save button always in sight */
+.dolical-setup {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 900px);
+  align-items: start;
+  gap: 16px 24px;
+  margin-top: 8px;
+  color: #2d3748;
+  font-size: 13.5px;
+}
+
+.dolical-setup__nav {
+  position: sticky;
+  top: 70px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dolical-setup__nav a {
+  display: flex;
+  white-space: nowrap;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #4a5568;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.dolical-setup__nav a:hover {
+  background: #f5f8fa;
+  color: #2d3748;
+}
+.dolical-setup__nav a.is-active {
+  background: #eaf4f9;
+  color: #014751;
+  font-weight: 600;
+}
+.dolical-setup__nav a i {
+  color: #4f9ab8;
+}
+
+.dolical-setup__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.dolical-sync__card.dolical-setup__card {
+  gap: 0;
+  scroll-margin-top: 70px;
+}
+.dolical-setup__card h2 {
+  margin: 0 0 6px;
+  padding: 0;
+  border: 0;
+  color: #2d3748;
+  font-size: 15px;
+  font-weight: 600;
+}
+.dolical-setup__card h2 i {
+  color: #4f9ab8;
+}
+.dolical-setup__card > .dolical-card__muted {
+  margin: 0 0 6px;
+}
+
+.dolical-setting {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 24px;
+  padding: 12px 0;
+  border-top: 1px solid #edf2f7;
+}
+.dolical-setting.dolical-setting--stacked {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.dolical-setting__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dolical-setting__name {
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.dolical-setting__help {
+  color: #718096;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.dolical-setting__field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.dolical-setting--inline .dolical-setting__field {
+  justify-content: flex-end;
+}
+
+.dolical-setup input[type=text],
+.dolical-setup input[type=number],
+.dolical-setup textarea,
+.dolical-setup select.dolical-select {
+  box-sizing: border-box;
+  height: 34px;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  background: #fff;
+  color: #2d3748;
+  font-family: inherit;
+  font-size: 13.5px;
+}
+.dolical-setup textarea {
+  height: auto;
+  min-height: 74px;
+  padding: 8px 10px;
+  line-height: 1.45;
+  resize: vertical;
+}
+.dolical-setup input[type=text]:focus,
+.dolical-setup input[type=number]:focus,
+.dolical-setup textarea:focus,
+.dolical-setup select.dolical-select:focus {
+  border-color: #63acc9;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 172, 201, 0.2);
+}
+.dolical-setting--stacked input[type=text],
+.dolical-setting--stacked textarea {
+  width: 100%;
+}
+.dolical-setting--stacked span[class^=multiselectarray],
+.dolical-setting--stacked .select2-container {
+  display: block;
+  width: 100% !important;
+}
+
+.dolical-setting__number {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #4a5568;
+}
+.dolical-setup .dolical-setting__number input[type=number] {
+  width: 78px;
+  padding-right: 4px;
+  text-align: right;
+}
+
+.dolical-setting__pair {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  color: #4a5568;
+}
+
+.dolical-switch.dolical-setting__switch {
+  font-weight: 500;
+}
+
+.dolical-setting__value {
+  font-weight: 600;
+}
+
+.dolical-setting__warning {
+  color: #b7791f;
+}
+
+.dolical-setup__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
+}
+
+p.dolical-setup__note {
+  margin: 4px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f5f8fa;
+  color: #4a5568;
+  font-size: 12.5px;
+}
+p.dolical-setup__note i {
+  color: #4f9ab8;
+}
+
+/* Reminders : a chip for each delay, lit when chosen */
+.dolical-setup__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+label.dolical-setup__chip {
+  position: relative;
+  margin: 0;
+}
+.dolical-setup__chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.dolical-setup__chip span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 14px;
+  border: 1px solid #d5dde5;
+  border-radius: 999px;
+  background: #fff;
+  color: #4a5568;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.dolical-setup__chip span:hover {
+  border-color: #63acc9;
+}
+.dolical-setup__chip input:checked + span {
+  border-color: #63acc9;
+  background: #eaf4f9;
+  color: #014751;
+  font-weight: 600;
+}
+.dolical-setup__chip input:checked + span::before {
+  content: "\f00c";
+  font-family: "Font Awesome 5 Free";
+  font-size: 11px;
+  font-weight: 900;
+}
+.dolical-setup__chip input:focus-visible + span {
+  box-shadow: 0 0 0 3px rgba(99, 172, 201, 0.35);
+}
+
+.dolical-setup__savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  grid-column: 2;
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 18px;
+  border: 1px solid #e7edf2;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 -4px 16px rgba(15, 35, 52, 0.08);
+}
+
+@media (max-width: 1100px) {
+  .dolical-setup {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dolical-setup__nav {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .dolical-setup__savebar {
+    grid-column: auto;
+  }
+}
+@media (max-width: 768px) {
+  .dolical-setup__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dolical-setting {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dolical-setting--inline .dolical-setting__field {
+    justify-content: flex-start;
+  }
+}
+
+/* General setup (admin/setup.php) : the state of a setting of the Agenda module, the tokens of the mail templates */
+.dolical-setting__state {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #edf2f7;
+  color: #718096;
+  font-size: 12px;
+  font-weight: 600;
+}
+.dolical-setting__state.is-on {
+  background: #f3faf5;
+  color: #2f855a;
+}
+
+.dolical-setup__note code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: #fff;
+  color: #014751;
+  font-size: 11.5px;
+}
+
+.dolical-setting__pair > .fa-arrow-right {
+  color: #a0aec0;
+  font-size: 11px;
 }

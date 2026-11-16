@@ -295,7 +295,7 @@ function dolical_booking_people(): array
 }
 
 /**
- * Length of an appointment, in minutes
+ * Default length of an appointment, in minutes : the length of a new slot of the weekly template
  *
  * @return int
  */
@@ -305,32 +305,145 @@ function dolical_booking_duration(): int
 }
 
 /**
+ * Weekly template of the slots, as the one of the appointments of Nextcloud : the slots offered each day of the week,
+ * each with its start and its length, placed in a week in the setup. Stored as JSON in DOLICAL_BOOKING_SLOTS
+ * ({"2": [[630, 60], [690, 60]], ...}, start and length in minutes). A setup saved before it had the same hours for the
+ * days ticked (DOLICAL_BOOKING_DAYS, DOLICAL_BOOKING_HOURS), cut in appointments of the default length : read the same
+ * way until the template is saved
+ *
+ * @return array [ISO day 1 monday … 7 sunday => [[start minute, length in minutes]]], every day given, sorted
+ */
+function dolical_booking_template(): array
+{
+    static $template = null;
+    if ($template !== null) {
+        return $template;
+    }
+
+    $stored = json_decode(getDolGlobalString('DOLICAL_BOOKING_SLOTS'), true);
+    if (!is_array($stored)) {
+        $stored = [];
+        $length = dolical_booking_duration();
+        $ranges = dolical_booking_hours(getDolGlobalString('DOLICAL_BOOKING_HOURS', DOLICAL_BOOKING_DEFAULT_HOURS));
+        foreach (array_map('intval', explode(',', getDolGlobalString('DOLICAL_BOOKING_DAYS', '1,2,3,4,5'))) as $isoDay) {
+            foreach ($ranges as [$from, $to]) {
+                for ($minute = $from; $minute + $length <= $to; $minute += $length) {
+                    $stored[$isoDay][] = [$minute, $length];
+                }
+            }
+        }
+    }
+
+    return $template = dolical_booking_clean_template($stored);
+}
+
+/**
+ * A weekly template as it was posted or stored, made safe : slots within their day, from 5 minutes to 8 hours, sorted,
+ * a slot overlapping the previous one left out
+ *
+ * @param  mixed $data [ISO day => [[start minute, length]]]
+ * @return array       [ISO day => [[start minute, length]]], every day given
+ */
+function dolical_booking_clean_template($data): array
+{
+    $template = array_fill_keys(range(1, 7), []);
+    foreach (is_array($data) ? $data : [] as $isoDay => $slots) {
+        $isoDay = (int) $isoDay;
+        if ($isoDay < 1 || $isoDay > 7 || !is_array($slots)) {
+            continue;
+        }
+        $day = [];
+        foreach ($slots as $slot) {
+            if (!is_array($slot) || !isset($slot[0], $slot[1]) || !is_numeric($slot[0]) || !is_numeric($slot[1])) {
+                continue;
+            }
+            $start  = (int) $slot[0];
+            $length = (int) $slot[1];
+            if ($start >= 0 && $length >= 5 && $length <= 480 && $start + $length <= 1440) {
+                $day[] = [$start, $length];
+            }
+        }
+        usort($day, function ($a, $b) {
+            return $a[0] <=> $b[0];
+        });
+        $end = -1;
+        foreach ($day as $slot) {
+            if ($slot[0] >= $end) {
+                $template[$isoDay][] = $slot;
+                $end = $slot[0] + $slot[1];
+            }
+        }
+    }
+
+    return $template;
+}
+
+/**
+ * The weekly template as it is stored
+ *
+ * @param  array  $template From dolical_booking_clean_template()
+ * @return string           JSON, the days without slot left out
+ */
+function dolical_booking_store_template(array $template): string
+{
+    return (string) json_encode((object) array_filter($template));
+}
+
+/**
  * Days of the week open to the bookings, ISO numbers : 1 monday … 7 sunday
  *
  * @return int[]
  */
 function dolical_booking_days(): array
 {
-    $days = array_values(array_unique(array_filter(array_map('intval', explode(',', getDolGlobalString('DOLICAL_BOOKING_DAYS', '1,2,3,4,5'))), function ($day) {
-        return $day >= 1 && $day <= 7;
-    })));
-    sort($days);
-
-    return $days;
+    return array_keys(array_filter(dolical_booking_template()));
 }
 
 /**
- * Opening hours read from a text : « 09:00-12:00 14:00-18:00 », « 9h-12h, 14h-18h30 »
+ * Lengths of the slots of the template, in minutes
  *
- * @param  string $text Hours as typed, the setup when null
- * @return array        [[start minute, end minute]], sorted, without overlap
+ * @return int[]
  */
-function dolical_booking_hours(?string $text = null): array
+function dolical_booking_template_lengths(): array
 {
-    if ($text === null) {
-        $text = getDolGlobalString('DOLICAL_BOOKING_HOURS', DOLICAL_BOOKING_DEFAULT_HOURS);
+    $lengths = [];
+    foreach (dolical_booking_template() as $slots) {
+        foreach ($slots as $slot) {
+            $lengths[$slot[1]] = true;
+        }
     }
 
+    return array_keys($lengths);
+}
+
+/**
+ * Length of the appointment that starts at a slot : the one of its slot in the weekly template
+ *
+ * @param  int $start Start of the slot
+ * @return int        Minutes
+ */
+function dolical_booking_slot_length(int $start): int
+{
+    $local  = (new DateTimeImmutable('@' . $start))->setTimezone(new DateTimeZone(dolical_booking_timezone()));
+    $minute = (int) $local->format('G') * 60 + (int) $local->format('i');
+    foreach (dolical_booking_template()[(int) $local->format('N')] as [$from, $length]) {
+        if ($from === $minute) {
+            return $length;
+        }
+    }
+
+    return dolical_booking_duration();
+}
+
+/**
+ * Opening hours read from a text : « 09:00-12:00 14:00-18:00 », « 9h-12h, 14h-18h30 ». Only the setup saved before the
+ * weekly template still has them
+ *
+ * @param  string $text Hours as stored
+ * @return array        [[start minute, end minute]], sorted, without overlap
+ */
+function dolical_booking_hours(string $text): array
+{
     preg_match_all('/(\d{1,2})(?:\s*[:hH]\s*(\d{2})?)?\s*[-–à]\s*(\d{1,2})(?:\s*[:hH]\s*(\d{2})?)?/u', $text, $matches, PREG_SET_ORDER);
     $ranges = [];
     foreach ($matches as $match) {
@@ -356,19 +469,6 @@ function dolical_booking_hours(?string $text = null): array
     }
 
     return $merged;
-}
-
-/**
- * Opening hours written back : « 09:00-12:00 14:00-18:00 »
- *
- * @param  array  $ranges From dolical_booking_hours()
- * @return string
- */
-function dolical_booking_format_hours(array $ranges): string
-{
-    return implode(' ', array_map(function ($range) {
-        return sprintf('%02d:%02d-%02d:%02d', intdiv($range[0], 60), $range[0] % 60, intdiv($range[1], 60), $range[1] % 60);
-    }, $ranges));
 }
 
 /**
@@ -431,6 +531,176 @@ function dolical_booking_reminder_delays(): array
     sort($delays);
 
     return $delays;
+}
+
+/**
+ * Settings of the page written as plain text in the setup (several lines, emojis kept), with their longest length
+ */
+const DOLICAL_BOOKING_SETTING_TEXTS = [
+    'DOLICAL_BOOKING_EMAIL'          => 128,
+    'DOLICAL_BOOKING_LOCATION'       => 128,
+    'DOLICAL_BOOKING_PHONE'          => 100,
+    'DOLICAL_BOOKING_CONFIRM_TEXT'   => 2000,
+    'DOLICAL_BOOKING_ICS_TEXT'       => 2000,
+    'DOLICAL_BOOKING_REMINDER_TEXT'  => 2000,
+    'DOLICAL_BOOKING_CONSENT'        => 1000,
+    'DOLICAL_BOOKING_BLOCKED'        => 5000,
+    'DOLICAL_BOOKING_EVENT_LABEL'    => 128,
+    'DOLICAL_BOOKING_VISIO'          => 1024,
+    'DOLICAL_BOOKING_VISIO_SERVER'   => 255,
+    'DOLICAL_BOOKING_REDIRECT_URL'   => 1024,
+];
+
+/**
+ * A plain text setting as it is stored : its lines kept, cut to its length, its emojis written as numeric entities
+ *
+ * @param  string $constName Key of DOLICAL_BOOKING_SETTING_TEXTS
+ * @param  string $text      Text typed, without HTML
+ * @return string
+ */
+function dolical_booking_store_setting(string $constName, string $text): string
+{
+    $text = trim(str_replace("\r", '', $text));
+
+    return mb_encode_numericentity(dol_trunc($text, DOLICAL_BOOKING_SETTING_TEXTS[$constName] ?? 255, 'right', 'UTF-8', 1), DOLICAL_BOOKING_ENTITY_MAP, 'UTF-8');
+}
+
+/**
+ * Address of the organizer of the appointments booked online : the one the customers answer to and the organizer of
+ * their calendar files (DOLICAL_BOOKING_EMAIL), the address of the person booked when none is set
+ *
+ * @param  User   $owner Person booked
+ * @return string
+ */
+function dolical_booking_reply_to(User $owner): string
+{
+    $email = dolical_booking_text('DOLICAL_BOOKING_EMAIL');
+
+    return isValidEmail($email) ? $email : (string) $owner->email;
+}
+
+/**
+ * The person booked as the customer sees him in a calendar file : his name, the address of the organizer
+ *
+ * @param  User $owner Person booked
+ * @return User
+ */
+function dolical_booking_organizer(User $owner): User
+{
+    $organizer        = clone $owner;
+    $organizer->email = dolical_booking_reply_to($owner);
+
+    return $organizer;
+}
+
+/**
+ * How the form asks for the phone number : 'optional', 'required' or 'hidden' (DOLICAL_BOOKING_PHONE_FIELD)
+ *
+ * @return string
+ */
+function dolical_booking_phone_field(): string
+{
+    $mode = getDolGlobalString('DOLICAL_BOOKING_PHONE_FIELD', 'optional');
+
+    return in_array($mode, ['optional', 'required', 'hidden'], true) ? $mode : 'optional';
+}
+
+/**
+ * Whether an address may not book online : an address of the list of the setup (DOLICAL_BOOKING_BLOCKED), or of a
+ * domain of it (« @domain.com », « *@domain.com » or « domain.com »)
+ *
+ * @param  string $email Address typed
+ * @return bool
+ */
+function dolical_booking_blocked(string $email): bool
+{
+    $email  = dol_strtolower(trim($email));
+    $domain = substr((string) strrchr($email, '@'), 1);
+    foreach (preg_split('/[\s,;]+/', dol_strtolower(dolical_booking_text('DOLICAL_BOOKING_BLOCKED'))) as $entry) {
+        if ($entry === '') {
+            continue;
+        }
+        if ($entry === $email) {
+            return true;
+        }
+        $isDomain = strpos($entry, '@') === false || strpos($entry, '@') === 0 || strpos($entry, '*@') === 0;
+        if ($isDomain && $domain !== '' && ltrim($entry, '*@') === $domain) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Video call link of a new appointment : a room of its own when the setup asks for one (DOLICAL_BOOKING_VISIO_ROOMS,
+ * on the server DOLICAL_BOOKING_VISIO_SERVER, Jitsi by default), else the link of the person, else the common link
+ * of the setup (DOLICAL_BOOKING_VISIO)
+ *
+ * @param  User   $owner Person booked
+ * @param  int    $start Start of the appointment
+ * @return string        Empty when there is none
+ */
+function dolical_booking_visio_for(User $owner, int $start): string
+{
+    global $mysoc;
+
+    if (getDolGlobalInt('DOLICAL_BOOKING_VISIO_ROOMS')) {
+        $server = dolical_clean_url(dolical_booking_text('DOLICAL_BOOKING_VISIO_SERVER') ?: 'https://meet.jit.si/');
+        if ($server !== '') {
+            // Named after the page and the date, with a random end : a room nobody guesses, without the name of the
+            // customer in an address seen by the server
+            $title = dolical_booking_text('DOLICAL_BOOKING_TITLE', (int) $owner->id) ?: (string) ($mysoc->name ?? 'DoliCal');
+            $name  = preg_replace('/[^A-Za-z0-9]+/', '', ucwords(dol_string_unaccent(dol_html_entity_decode($title, ENT_QUOTES | ENT_HTML5))));
+            $room  = dol_trunc($name !== '' ? $name : 'DoliCal', 40, 'right', 'UTF-8', 1) . '-' . dolical_print_date($start, '%Y%m%d-%H%M', dolical_booking_timezone()) . '-' . bin2hex(random_bytes(4));
+
+            return rtrim($server, '/') . '/' . $room;
+        }
+    }
+
+    $own = dolical_booking_person_visio((int) $owner->id);
+
+    return $own !== '' ? $own : dolical_clean_url(dolical_booking_text('DOLICAL_BOOKING_VISIO'));
+}
+
+/**
+ * Title of an appointment booked online in the agenda of the person : the model of the setup
+ * (DOLICAL_BOOKING_EVENT_LABEL, with __NAME__, __COMPANY__, __EMAIL__, __PHONE__, __TITLE__), « Appointment with »
+ * the customer and his company when none is set
+ *
+ * @param  array  $visitor ['name', 'email', 'phone', 'company']
+ * @param  User   $owner   Person booked
+ * @return string
+ */
+function dolical_booking_event_label(array $visitor, User $owner): string
+{
+    global $langs;
+
+    $model = dolical_booking_text('DOLICAL_BOOKING_EVENT_LABEL');
+    if ($model === '') {
+        $label = $langs->transnoentities('DoliCalBookingEventLabel', $visitor['name'] . ($visitor['company'] !== '' ? ' (' . $visitor['company'] . ')' : ''));
+    } else {
+        $label = str_replace(
+            ['__NAME__', '__COMPANY__', '__EMAIL__', '__PHONE__', '__TITLE__'],
+            [$visitor['name'], $visitor['company'], $visitor['email'], $visitor['phone'], dolical_booking_text('DOLICAL_BOOKING_TITLE', (int) $owner->id)],
+            $model
+        );
+        // A value left empty leaves no empty brackets nor dashes behind
+        $label = trim(preg_replace(['/\(\s*\)|\[\s*\]/', '/\s+([-–:,])(?=\s*$)/', '/\s{2,}/'], ['', '', ' '], $label), " \t-–:,");
+    }
+
+    return dol_trunc($label !== '' ? $label : $visitor['name'], 128, 'right', 'UTF-8', 1);
+}
+
+/**
+ * Page the customer goes to once his appointment is booked (DOLICAL_BOOKING_REDIRECT_URL) : empty for the page of his
+ * appointment
+ *
+ * @return string
+ */
+function dolical_booking_redirect_url(): string
+{
+    return dolical_clean_url(dolical_booking_text('DOLICAL_BOOKING_REDIRECT_URL'));
 }
 
 /**
@@ -557,7 +827,18 @@ function dolical_booking_closed_days(int $userId, DateTimeImmutable $from, int $
 }
 
 /**
- * Free slots of a person, day by day : the opening hours cut in appointments, those already taken left out
+ * Free time asked around an appointment, in seconds : before it (DOLICAL_BOOKING_BUFFER_BEFORE) and after it
+ * (DOLICAL_BOOKING_BUFFER_AFTER), in minutes in the setup. A slot is free when nothing else is in the agenda then
+ *
+ * @return int[] [before, after]
+ */
+function dolical_booking_buffers(): array
+{
+    return [min(240, max(0, getDolGlobalInt('DOLICAL_BOOKING_BUFFER_BEFORE'))) * 60, min(240, max(0, getDolGlobalInt('DOLICAL_BOOKING_BUFFER_AFTER'))) * 60];
+}
+
+/**
+ * Free slots of a person, day by day : the slots of the weekly template, those already taken left out
  *
  * @param  int               $userId Person
  * @param  DateTimeImmutable $from   First day, at midnight in the time zone of the bookings
@@ -566,35 +847,34 @@ function dolical_booking_closed_days(int $userId, DateTimeImmutable $from, int $
  */
 function dolical_booking_slots(int $userId, DateTimeImmutable $from, int $days): array
 {
-    $minutes        = dolical_booking_duration();
-    $openDays       = dolical_booking_days();
-    $ranges         = dolical_booking_hours();
-    [$first, $last] = dolical_booking_window();
-    $closed         = dolical_booking_closed_days($userId, $from, $days);
-    $busy           = dolical_booking_busy($userId, $from->getTimestamp(), $from->modify('+' . $days . ' days')->getTimestamp());
+    $template          = dolical_booking_template();
+    [$before, $after]  = dolical_booking_buffers();
+    [$first, $last]    = dolical_booking_window();
+    $closed            = dolical_booking_closed_days($userId, $from, $days);
+    $busy              = dolical_booking_busy($userId, $from->getTimestamp() - $after, $from->modify('+' . $days . ' days')->getTimestamp() + $before);
 
     $result = [];
     for ($i = 0; $i < $days; $i++) {
-        $day  = $from->modify('+' . $i . ' days');
-        $key  = $day->format('Ymd');
-        $open = in_array((int) $day->format('N'), $openDays, true) && !isset($closed[$key]);
+        $day      = $from->modify('+' . $i . ' days');
+        $key      = $day->format('Ymd');
+        // The slots of that day of the week : a day without any is closed
+        $daySlots = $template[(int) $day->format('N')] ?? [];
+        $open     = !empty($daySlots) && !isset($closed[$key]);
 
         $slots = [];
-        foreach ($open ? $ranges : [] as [$rangeStart, $rangeEnd]) {
-            for ($minute = $rangeStart; $minute + $minutes <= $rangeEnd; $minute += $minutes) {
-                // The wall clock of the day : the change of time does not shift the hours
-                $start = $day->setTime(intdiv($minute, 60), $minute % 60)->getTimestamp();
-                $end   = $start + $minutes * 60;
-                if ($start < $first || $start >= $last) {
-                    continue;
-                }
-                foreach ($busy as [$busyStart, $busyEnd]) {
-                    if ($busyStart < $end && $busyEnd > $start) {
-                        continue 2;
-                    }
-                }
-                $slots[] = $start;
+        foreach ($open ? $daySlots : [] as [$minute, $length]) {
+            // The wall clock of the day : the change of time does not shift the hours
+            $start = $day->setTime(intdiv($minute, 60), $minute % 60)->getTimestamp();
+            $end   = $start + $length * 60;
+            if ($start < $first || $start >= $last) {
+                continue;
             }
+            foreach ($busy as [$busyStart, $busyEnd]) {
+                if ($busyStart < $end + $after && $busyEnd > $start - $before) {
+                    continue 2;
+                }
+            }
+            $slots[] = $start;
         }
         $result[$key] = ['date' => $day->getTimestamp(), 'open' => $open, 'slots' => $slots];
     }
@@ -1008,6 +1288,10 @@ function dolical_booking_create(User $owner, int $start, array $visitor, string 
         if ($visitor['company'] !== '') {
             $note[] = $langs->transnoentities('Company') . ' : ' . $visitor['company'];
         }
+        if (!empty($visitor['consent'])) {
+            // The text the customer agreed to, kept with the date : the proof of his consent
+            $note[] = $langs->transnoentities('DoliCalBookingConsentGiven', dolical_booking_text('DOLICAL_BOOKING_CONSENT'));
+        }
         if ($visitor['message'] !== '') {
             $note[] = '';
             $note[] = $visitor['message'];
@@ -1015,9 +1299,11 @@ function dolical_booking_create(User $owner, int $start, array $visitor, string 
 
         $event                    = new ActionComm($db);
         $event->type_code         = dolical_booking_type_code();
-        $event->label             = dol_trunc($langs->transnoentities('DoliCalBookingEventLabel', $visitor['name'] . ($visitor['company'] !== '' ? ' (' . $visitor['company'] . ')' : '')), 128, 'right', 'UTF-8', 1);
+        $event->label             = dolical_booking_event_label($visitor, $owner);
+        $event->location          = dol_trunc(preg_replace('/\s+/', ' ', dolical_booking_text('DOLICAL_BOOKING_LOCATION')), 128, 'right', 'UTF-8', 1);
         $event->datep             = $start;
-        $event->datef             = $start + dolical_booking_duration() * 60;
+        // The length of its slot in the weekly template
+        $event->datef             = $start + dolical_booking_slot_length($start) * 60;
         $event->fulldayevent      = 0;
         $event->percentage        = 0;
         $event->transparency      = 1;
@@ -1053,18 +1339,20 @@ function dolical_booking_create(User $owner, int $start, array $visitor, string 
 
     $event->fetch($eventId);
     dolical_save_reminders($event, dolical_reminder_default($event->type_code), $owner);
-    // The video call link of the person, on the appointment : it goes with the confirmation, and he may change it in
-    // the agenda for this appointment only
-    $visio = dolical_booking_person_visio((int) $owner->id);
+    // The video call link : a room of its own, the one of the person or the common one. It goes with the confirmation,
+    // and the person may change it in the agenda for this appointment only
+    $visio = dolical_booking_visio_for($owner, $start);
     if ($visio !== '' && dolical_set_visio($event, $visio, $owner) <= 0) {
         dol_syslog(__FUNCTION__ . ' visio: ' . $event->error, LOG_WARNING);
     }
     $langs = $savedLangs;
 
     $visitor['contactId'] = $contact['id'];
-    $mailError            = dolical_booking_send_confirmation($event, $owner, $visitor);
-    if ($mailError !== '') {
-        dol_syslog(__FUNCTION__ . ' confirmation: ' . $mailError, LOG_WARNING);
+    if (getDolGlobalInt('DOLICAL_BOOKING_MAIL_CONFIRM', 1)) {
+        $mailError = dolical_booking_send_confirmation($event, $owner, $visitor);
+        if ($mailError !== '') {
+            dol_syslog(__FUNCTION__ . ' confirmation: ' . $mailError, LOG_WARNING);
+        }
     }
     dolical_booking_notify_owner($event, $owner, $visitor, 'new');
 
@@ -1123,6 +1411,48 @@ function dolical_booking_customer_view(ActionComm $event, User $owner): ActionCo
 }
 
 /**
+ * Lines of a mail to the customer : when, with whom, where, the video call, and the phone number of the setup
+ *
+ * @param  ActionComm $event     Event
+ * @param  string     $when      When, in words
+ * @param  string     $ownerName Person booked
+ * @param  string     $visio     Video call link, empty when none
+ * @param  Translate  $outputLangs Language of the mail
+ * @return array                 Rows for dolical_mail_html()
+ */
+function dolical_booking_mail_rows(ActionComm $event, string $when, string $ownerName, string $visio, Translate $outputLangs): array
+{
+    $rows = [[$outputLangs->transnoentities('DoliCalMailWhen'), $when], [$outputLangs->transnoentities('DoliCalBookingWith'), $ownerName]];
+    if (!empty($event->location)) {
+        $rows[] = [$outputLangs->transnoentities('Location'), (string) $event->location];
+    }
+    if ($visio !== '') {
+        $rows[] = dolical_visio_mail_row($visio, $outputLangs);
+    }
+    $phone = dolical_booking_text('DOLICAL_BOOKING_PHONE');
+    if ($phone !== '') {
+        $rows[] = [$outputLangs->transnoentities('Phone'), $phone];
+    }
+
+    return $rows;
+}
+
+/**
+ * Calendar file of an appointment for its customer : the organizer address of the setup, the link of his appointment,
+ * and the description of the setup for the calendar files (DOLICAL_BOOKING_ICS_TEXT)
+ *
+ * @param  ActionComm $view     Event as the customer sees it
+ * @param  User       $owner    Person booked
+ * @param  string     $url      Link of his appointment
+ * @param  int        $sequence Version of the event
+ * @return string
+ */
+function dolical_booking_ics(ActionComm $view, User $owner, string $url, int $sequence): string
+{
+    return dolical_build_ics($view, dolical_booking_organizer($owner), $url, $sequence, 'PUBLISH', ['urlLabel' => 'DoliCalBookingIcsManage', 'description' => dolical_booking_text('DOLICAL_BOOKING_ICS_TEXT')]);
+}
+
+/**
  * Confirmation to the customer, in the language of the page : the appointment, the iCalendar file to add it to his
  * calendar, and the link to cancel it. Its trace is the one of an invitation : a change of the date made in the
  * calendar later tells him too
@@ -1155,15 +1485,12 @@ function dolical_booking_send_confirmation(ActionComm $event, User $owner, array
         ]);
         [$subject, $html] = dolical_mail_from_template($template, $substitutions, $langs);
     } else {
-        $rows = [[$langs->transnoentities('DoliCalMailWhen'), $when], [$langs->transnoentities('DoliCalBookingWith'), $ownerName]];
-        if ($visio !== '') {
-            $rows[] = dolical_visio_mail_row($visio, $langs);
-        }
         $subject = $langs->transnoentities('DoliCalBookingMailSubject', $ownerName, $when);
         $html    = dolical_mail_html([
             'title'     => $view->label,
             'intro'     => $langs->transnoentities('DoliCalBookingMailIntro', $visitor['name']),
-            'rows'      => $rows,
+            'rows'      => dolical_booking_mail_rows($event, $when, $ownerName, $visio, $langs),
+            'extra'     => dolical_booking_text('DOLICAL_BOOKING_CONFIRM_TEXT'),
             'button'    => [$url, $langs->transnoentities('DoliCalBookingManage')],
             'secondary' => [dolical_booking_manage_url($event, (int) $visitor['contactId'], ['ics' => 1]), $langs->transnoentities('DoliCalAddToCalendar')],
             'note'      => $langs->transnoentities('DoliCalBookingMailNote'),
@@ -1173,9 +1500,9 @@ function dolical_booking_send_confirmation(ActionComm $event, User $owner, array
     $tempDir = $conf->dolical->dir_temp ?? (DOL_DATA_ROOT . '/dolical/temp');
     dol_mkdir($tempDir);
     $icsFile = $tempDir . '/booking-' . ((int) $event->id) . '.ics';
-    file_put_contents($icsFile, dolical_build_ics($view, $owner, $url, 0, 'PUBLISH', ['urlLabel' => 'DoliCalBookingIcsManage']));
+    file_put_contents($icsFile, dolical_booking_ics($view, $owner, $url, 0));
 
-    $replyTo = (string) $owner->email;
+    $replyTo = dolical_booking_reply_to($owner);
     $error   = dolical_send_mail($visitor['email'], $subject, $html, $replyTo, $ownerName, 'rea' . ((int) $event->id), [['path' => $icsFile, 'mime' => 'text/calendar', 'name' => 'rendez-vous.ics']]);
     dol_delete_file($icsFile, 0, 1, 0, null, false, 0);
 
@@ -1199,7 +1526,8 @@ function dolical_booking_notify_owner(ActionComm $event, User $owner, array $vis
 {
     global $langs;
 
-    if (empty($owner->email) || !isValidEmail($owner->email)) {
+    // The setup may keep the person from being told (DOLICAL_BOOKING_NOTIFY_NEW, DOLICAL_BOOKING_NOTIFY_CANCEL)
+    if (empty($owner->email) || !isValidEmail($owner->email) || !getDolGlobalInt($kind === 'new' ? 'DOLICAL_BOOKING_NOTIFY_NEW' : 'DOLICAL_BOOKING_NOTIFY_CANCEL', 1)) {
         return;
     }
 
@@ -1274,19 +1602,24 @@ function dolical_booking_cancel(ActionComm $event, int $contactId): bool
     $ownerLangs = dolical_booking_langs($owner);
     dolical_log_invitation($event, $owner, DOLICAL_CODE_CANCEL, $ownerLangs->transnoentities('DoliCalTraceBookingCancelled', $visitor['name'], $when), $visitor['email'], '', $contactId, false);
 
-    if ($visitor['email'] !== '' && isValidEmail($visitor['email'])) {
+    // The setup may keep the customer from getting it (DOLICAL_BOOKING_MAIL_CANCEL)
+    if ($visitor['email'] !== '' && isValidEmail($visitor['email']) && getDolGlobalInt('DOLICAL_BOOKING_MAIL_CANCEL', 1)) {
         $tempDir = $conf->dolical->dir_temp ?? (DOL_DATA_ROOT . '/dolical/temp');
         dol_mkdir($tempDir);
         $icsFile = $tempDir . '/booking-cancel-' . ((int) $event->id) . '.ics';
-        file_put_contents($icsFile, dolical_build_ics($view, $owner, '', $sequence, 'CANCEL'));
+        file_put_contents($icsFile, dolical_build_ics($view, dolical_booking_organizer($owner), '', $sequence, 'CANCEL'));
+        $rows = [[$langs->transnoentities('DoliCalMailWhen'), $when], [$langs->transnoentities('DoliCalBookingWith'), $owner->getFullName($langs)]];
+        if (dolical_booking_text('DOLICAL_BOOKING_PHONE') !== '') {
+            $rows[] = [$langs->transnoentities('Phone'), dolical_booking_text('DOLICAL_BOOKING_PHONE')];
+        }
         $html = dolical_mail_html([
             'title' => $view->label,
             'intro' => $langs->transnoentities('DoliCalBookingCancelMailIntro', $visitor['name']),
-            'rows'  => [[$langs->transnoentities('DoliCalMailWhen'), $when], [$langs->transnoentities('DoliCalBookingWith'), $owner->getFullName($langs)]],
+            'rows'  => $rows,
             'button' => [dolical_booking_public_url((int) $owner->id), $langs->transnoentities('DoliCalBookingBookAgain')],
             'note'  => $langs->transnoentities('DoliCalMailCancelNote'),
         ]);
-        dolical_send_mail($visitor['email'], $langs->transnoentities('DoliCalBookingCancelMailSubject', $when), $html, (string) $owner->email, $owner->getFullName($langs), 'rea' . ((int) $event->id), [['path' => $icsFile, 'mime' => 'text/calendar', 'name' => 'rendez-vous.ics']]);
+        dolical_send_mail($visitor['email'], $langs->transnoentities('DoliCalBookingCancelMailSubject', $when), $html, dolical_booking_reply_to($owner), $owner->getFullName($langs), 'rea' . ((int) $event->id), [['path' => $icsFile, 'mime' => 'text/calendar', 'name' => 'rendez-vous.ics']]);
         dol_delete_file($icsFile, 0, 1, 0, null, false, 0);
     }
 
@@ -1423,25 +1756,19 @@ function dolical_booking_send_reminder(ActionComm $event, User $owner): array
             ]);
             [$subject, $html] = dolical_mail_from_template($template, $substitutions, $langs);
         } else {
-            $rows = [[$langs->transnoentities('DoliCalMailWhen'), $when], [$langs->transnoentities('DoliCalBookingWith'), $ownerName]];
-            if (!empty($event->location)) {
-                $rows[] = [$langs->transnoentities('Location'), (string) $event->location];
-            }
-            if ($visio !== '') {
-                $rows[] = dolical_visio_mail_row($visio, $langs);
-            }
             $subject = $langs->transnoentities('DoliCalBookingReminderSubject', $view->label, $when);
             $html    = dolical_mail_html([
                 'title'     => $view->label,
                 'intro'     => $langs->transnoentities('DoliCalBookingReminderIntro', $name),
-                'rows'      => $rows,
+                'rows'      => dolical_booking_mail_rows($event, $when, $ownerName, $visio, $langs),
+                'extra'     => dolical_booking_text('DOLICAL_BOOKING_REMINDER_TEXT'),
                 'button'    => [$url, $langs->transnoentities('DoliCalBookingManage')],
                 'secondary' => [dolical_booking_manage_url($event, (int) $contactId, ['ics' => 1]), $langs->transnoentities('DoliCalAddToCalendar')],
                 'note'      => $langs->transnoentities('DoliCalBookingReminderNote'),
             ]);
         }
 
-        $error = dolical_send_mail((string) $contact->email, $subject, $html, (string) $owner->email, $ownerName, 'rea' . ((int) $event->id));
+        $error = dolical_send_mail((string) $contact->email, $subject, $html, dolical_booking_reply_to($owner), $ownerName, 'rea' . ((int) $event->id));
         if ($error !== '') {
             $result['errors'][] = $contact->email . ' : ' . strip_tags($error);
             continue;

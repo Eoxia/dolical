@@ -20,9 +20,10 @@
  * \ingroup dolical
  * \brief   Body of the mails of DoliCal : invitation, change, answer received.
  *
- * Rendered by dolical_mail_html() (inherits its scope). Expects: $mail ['title', 'intro', 'rows', 'button',
+ * Rendered by dolical_mail_html() (inherits its scope). Expects: $mail ['title', 'intro', 'rows', 'extra', 'button',
  * 'secondary', 'note'], $mysoc. A row is [label, text], or [label, text, link] : the text links to it, the link
- * written under it for the mail clients that hide where a link goes (the link of a video call).
+ * written under it for the mail clients that hide where a link goes (the link of a video call). 'extra' is a plain
+ * text of the setup, its lines kept and its addresses of the web made links.
  * The styles are inline on purpose : mail clients drop style sheets, this is the one place of the module where
  * they cannot live in css/dolical.css.
  */
@@ -55,6 +56,13 @@ $company = !empty($mysoc->name) ? $mysoc->name : '';
                         </tr>
                     <?php endforeach; ?>
                 </table>
+                <?php if (!empty($mail['extra'])) : ?>
+                    <?php
+                    // Escaped first : only the links made here are HTML
+                    $extra = preg_replace('~https?://[^\s<>"\']+~i', '<a href="$0" style="color:#4f9ab8;word-break:break-all;">$0</a>', dol_escape_htmltag((string) $mail['extra'], 0, 1));
+                    ?>
+                    <p style="margin:0 0 24px;font-size:14px;line-height:1.6;"><?php echo dol_nl2br($extra); ?></p>
+                <?php endif; ?>
                 <?php if (!empty($mail['button'])) : ?>
                     <p style="margin:0 0 16px;text-align:center;">
                         <a href="<?php echo dol_escape_htmltag($mail['button'][0]); ?>" style="display:inline-block;padding:12px 28px;background:#63acc9;border-radius:24px;color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none;"><?php echo dol_escape_htmltag($mail['button'][1]); ?></a>

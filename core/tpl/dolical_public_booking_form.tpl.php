@@ -24,7 +24,8 @@
  * $errors, $captchaObject, $conf, $langs.
  */
 
-$duration  = dolical_booking_duration();
+// The length of this slot in the weekly template
+$duration  = dolical_booking_slot_length($slot);
 $slotsUrl  = dolical_booking_public_url($userId, 1) . '&w=' . $week;
 $pageTitle = dolical_booking_text('DOLICAL_BOOKING_TITLE', $userId);
 ?>
@@ -70,10 +71,12 @@ $pageTitle = dolical_booking_text('DOLICAL_BOOKING_TITLE', $userId);
                     <span><?php echo $langs->trans('Email'); ?> <em>*</em></span>
                     <input type="email" name="email" required maxlength="128" autocomplete="email" value="<?php echo dol_escape_htmltag($visitor['email']); ?>">
                 </label>
-                <label class="dolical-booking-field">
-                    <span><?php echo $langs->trans('Phone'); ?></span>
-                    <input type="tel" name="phone" maxlength="30" autocomplete="tel" value="<?php echo dol_escape_htmltag($visitor['phone']); ?>">
-                </label>
+                <?php if ($phoneField !== 'hidden') : ?>
+                    <label class="dolical-booking-field">
+                        <span><?php echo $langs->trans('Phone'); ?><?php echo $phoneField === 'required' ? ' <em>*</em>' : ''; ?></span>
+                        <input type="tel" name="phone" maxlength="30" autocomplete="tel"<?php echo $phoneField === 'required' ? ' required' : ''; ?> value="<?php echo dol_escape_htmltag($visitor['phone']); ?>">
+                    </label>
+                <?php endif; ?>
                 <label class="dolical-booking-field">
                     <span><?php echo $langs->trans('Company'); ?></span>
                     <input type="text" name="company" maxlength="100" autocomplete="organization" value="<?php echo dol_escape_htmltag($visitor['company']); ?>">
@@ -83,6 +86,14 @@ $pageTitle = dolical_booking_text('DOLICAL_BOOKING_TITLE', $userId);
                 <span><?php echo $langs->trans('DoliCalBookingMessage'); ?></span>
                 <textarea name="message" rows="4" maxlength="2000" placeholder="<?php echo dol_escape_htmltag($langs->trans('DoliCalBookingMessageHelp')); ?>"><?php echo dol_escape_htmltag($visitor['message']); ?></textarea>
             </label>
+
+            <?php if ($consentText !== '') : ?>
+                <?php // The text of the setup, its lines kept : the box must be ticked to book ?>
+                <label class="dolical-booking-consent">
+                    <input type="checkbox" name="consent" value="1" required<?php echo $visitor['consent'] ? ' checked' : ''; ?>>
+                    <span><?php echo dol_nl2br(dol_escape_htmltag($consentText, 0, 1)); ?> <em>*</em></span>
+                </label>
+            <?php endif; ?>
 
             <?php if (is_object($captchaObject) && method_exists($captchaObject, 'getCaptchaCodeForForm')) : ?>
                 <div class="dolical-booking-captcha"><?php echo $captchaObject->getCaptchaCodeForForm(''); ?></div>
