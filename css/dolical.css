@@ -940,6 +940,14 @@ button.dolical-card__invite-all {
   border-color: #d5dde5;
   border-radius: 6px;
 }
+/* select2 keeps its own 28px line in the 34px field : the text and the arrow would sit at the top.
+   33px and not 32 : the letters are drawn above the middle of their line, a name in capitals looked 1px too high */
+.dolical-field .select2-container .select2-selection--single .select2-selection__rendered {
+  line-height: 33px;
+}
+.dolical-field .select2-container .select2-selection--single .select2-selection__arrow {
+  height: 32px;
+}
 
 .dolical-field__help {
   color: #718096;
