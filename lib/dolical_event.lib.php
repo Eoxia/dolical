@@ -1145,7 +1145,7 @@ function dolical_search_contacts(User $user, string $search, int $socid = 0): ar
         return [];
     }
 
-    $sql  = 'SELECT sp.rowid, sp.lastname, sp.firstname, sp.email, s.nom as socname';
+    $sql  = 'SELECT sp.rowid, sp.lastname, sp.firstname, sp.email, sp.fk_soc, s.nom as socname';
     $sql .= ' FROM ' . MAIN_DB_PREFIX . 'socpeople as sp';
     $sql .= ' LEFT JOIN ' . MAIN_DB_PREFIX . 'societe as s ON s.rowid = sp.fk_soc';
     $sql .= ' WHERE sp.entity IN (' . getEntity('contact') . ')';
@@ -1179,7 +1179,13 @@ function dolical_search_contacts(User $user, string $search, int $socid = 0): ar
             if (!empty($obj->email)) {
                 $text .= ' <' . $obj->email . '>';
             }
-            $results[] = ['id' => (int) $obj->rowid, 'text' => $text];
+            $result = ['id' => (int) $obj->rowid, 'text' => $text];
+            // The third party of the contact fills the one of the event when it is still empty
+            if ($obj->fk_soc > 0 && !empty($obj->socname) && $user->hasRight('societe', 'lire')) {
+                $result['socid']   = (int) $obj->fk_soc;
+                $result['socname'] = $obj->socname;
+            }
+            $results[] = $result;
         }
         $db->free($resql);
     }

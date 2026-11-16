@@ -5,6 +5,8 @@
 - Calendrier et créneaux déjà pris rapides sur un grand agenda : seuls les événements commencés au plus 92 jours avant
   la période sont lus (réglage caché `DOLICAL_LONGEST_EVENT_DAYS`), au lieu de tout l'historique (plusieurs secondes
   pour 800 000 événements).
+- Formulaire d'un rendez-vous : choisir un contact d'un tiers remplit le champ « Tiers » quand il est encore vide (un
+  tiers déjà choisi est gardé). Le texte des champs « Tiers » et « Projet » est centré dans le champ.
 
 ## 1.3.0
 
