@@ -2611,7 +2611,7 @@ button.ra-list__date {
 .dolical-public-page {
   box-sizing: border-box;
   max-width: 580px;
-  margin: 20px auto 48px;
+  margin: 32px auto 48px;
   padding: 0 16px;
   color: #2d3748;
   font-size: 15px;
@@ -2773,6 +2773,510 @@ a.dolical-public-card__ics {
   color: #4f9ab8;
   font-size: 14px;
   text-align: center;
+}
+
+/* Page of a person for the online booking : his texts, on the layout of the synchronization page */
+a.dolical-booking-mine__back {
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dolical-booking-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 12px 0 0;
+}
+
+.dolical-booking-texts__field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+}
+.dolical-booking-texts__field > span {
+  color: #4a5568;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dolical-booking-texts .dolical-booking-texts__field input, .dolical-booking-texts .dolical-booking-texts__field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+/* Header of the public pages : the logo of the company alone */
+.dolical-public-header {
+  padding: 28px 16px 0;
+  text-align: center;
+}
+
+img.dolical-public-header__logo {
+  max-width: 240px;
+  max-height: 64px;
+}
+
+/* Public page of the online booking : the person, the free slots of a week, the form, the appointment */
+.dolical-public-page.dolical-public-page--wide {
+  max-width: 940px;
+}
+
+a.dolical-booking-back {
+  display: inline-block;
+  margin-bottom: 14px;
+  color: #3182a8;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+a.dolical-booking-back:hover {
+  color: #3182a8;
+  text-decoration: underline;
+}
+
+.dolical-booking-avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #63acc9;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+.dolical-booking-avatar.dolical-booking-avatar--large {
+  width: 64px;
+  height: 64px;
+  font-size: 22px;
+}
+.dolical-booking-avatar--1 { background: #e07a5f; }
+.dolical-booking-avatar--2 { background: #81b29a; }
+.dolical-booking-avatar--3 { background: #9b5de5; }
+.dolical-booking-avatar--4 { background: #f2a541; }
+.dolical-booking-avatar--5 { background: #3d5a80; }
+.dolical-booking-avatar--6 { background: #d64f7a; }
+.dolical-booking-avatar--7 { background: #2a9d8f; }
+.dolical-booking-avatar--8 { background: #8d6e63; }
+.dolical-booking-avatar--9 { background: #5c7cfa; }
+.dolical-booking-avatar--10 { background: #c0a020; }
+.dolical-booking-avatar--11 { background: #65a30d; }
+
+.dolical-booking-people {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+a.dolical-booking-person {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border: 1px solid #e7edf2;
+  border-radius: 12px;
+  color: #2d3748;
+  text-decoration: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+a.dolical-booking-person:hover {
+  border-color: #63acc9;
+  box-shadow: 0 4px 14px rgba(15, 35, 52, 0.08);
+}
+
+.dolical-booking-person__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.dolical-booking-person__text span {
+  color: #718096;
+  font-size: 13px;
+}
+
+.dolical-booking-person__arrow {
+  color: #a0aec0;
+}
+
+.dolical-booking-who {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.dolical-booking-who h1 {
+  margin: 2px 0 6px;
+}
+
+.dolical-booking-who__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  color: #718096;
+  font-size: 13px;
+}
+
+/* Texts of the setup : the title of the page, its presentation, the title above the slots */
+.dolical-public-card h1.dolical-booking-title {
+  margin: 0 0 12px;
+  font-size: 26px;
+}
+
+.dolical-booking-intro {
+  margin: 0 0 20px;
+  color: #4a5568;
+  line-height: 1.65;
+}
+.dolical-booking-intro p {
+  margin: 0 0 8px;
+}
+.dolical-booking-intro p:last-child, .dolical-booking-intro ul:last-child, .dolical-booking-intro ol:last-child {
+  margin-bottom: 0;
+}
+.dolical-booking-intro ul, .dolical-booking-intro ol {
+  margin: 0 0 8px;
+  padding-left: 22px;
+}
+.dolical-booking-intro img {
+  max-width: 100%;
+  height: auto;
+}
+
+.dolical-booking-texts__common {
+  padding: 10px 12px;
+  border: 1px dashed #cbd5e0;
+  border-radius: 8px;
+}
+.dolical-booking-texts__common .dolical-booking-intro {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
+.dolical-booking-who.dolical-booking-who--compact {
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f5f8fa;
+}
+
+.dolical-booking-who__name {
+  color: #2d3748;
+}
+
+.dolical-booking-who__job {
+  color: #718096;
+}
+
+.dolical-public-card h2.dolical-booking-form-title {
+  margin: 4px 0 14px;
+  padding: 0;
+  border: 0;
+  color: #2d3748;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.dolical-booking-week {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 8px;
+  border-radius: 12px;
+  background: #f5f8fa;
+}
+
+.dolical-booking-week__label {
+  font-weight: 700;
+  text-align: center;
+}
+
+.dolical-booking-week__nav {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  color: #4f9ab8;
+  text-decoration: none;
+  box-shadow: 0 1px 3px rgba(15, 35, 52, 0.12);
+}
+a.dolical-booking-week__nav:hover {
+  background: #63acc9;
+  color: #fff;
+}
+.dolical-booking-week__nav.is-disabled {
+  color: #cbd5e0;
+  box-shadow: none;
+}
+
+.dolical-booking-days {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 10px;
+}
+@media (max-width: 768px) {
+  .dolical-booking-days {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.dolical-booking-day {
+  min-width: 0;
+}
+.dolical-booking-day.is-past {
+  opacity: 0.5;
+}
+
+.dolical-booking-day__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e7edf2;
+}
+@media (max-width: 768px) {
+  .dolical-booking-day__head {
+    flex-direction: row;
+    gap: 8px;
+  }
+}
+
+.dolical-booking-day__name {
+  color: #2d3748;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.dolical-booking-day__date {
+  color: #718096;
+  font-size: 13px;
+}
+
+.dolical-booking-day__slots {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+@media (max-width: 768px) {
+  .dolical-booking-day__slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  }
+}
+
+a.dolical-booking-slot {
+  display: block;
+  padding: 8px 4px;
+  border: 1px solid #63acc9;
+  border-radius: 8px;
+  color: #3182a8;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+a.dolical-booking-slot:hover, a.dolical-booking-slot:focus {
+  background: #63acc9;
+  color: #fff;
+}
+
+.dolical-booking-day__empty {
+  display: block;
+  padding: 8px 0;
+  color: #a0aec0;
+  font-size: 13px;
+  text-align: center;
+}
+@media (max-width: 768px) {
+  .dolical-booking-day__empty {
+    grid-column: 1/-1;
+    padding: 0 0 6px;
+    text-align: left;
+  }
+}
+
+.dolical-booking-none {
+  margin: 18px 0 0;
+  text-align: center;
+}
+
+.dolical-booking-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+}
+
+.dolical-booking-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 768px) {
+  .dolical-booking-form__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Out of sight for the people, not for the robots that fill every field */
+.dolical-booking-form__trap {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.dolical-booking-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+}
+.dolical-booking-field > span {
+  color: #4a5568;
+  font-size: 13px;
+  font-weight: 600;
+}
+.dolical-booking-field > span em {
+  color: #c53030;
+  font-style: normal;
+}
+.dolical-booking-form .dolical-booking-field input, .dolical-booking-form .dolical-booking-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  background: #fff;
+  color: #2d3748;
+  font-family: inherit;
+  font-size: 15px;
+}
+.dolical-booking-form .dolical-booking-field input:focus, .dolical-booking-form .dolical-booking-field textarea:focus {
+  border-color: #63acc9;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 172, 201, 0.25);
+}
+
+.dolical-booking-captcha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+button.dolical-booking-submit,
+a.dolical-booking-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin: 4px 0 0;
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 24px;
+  background: #3182a8;
+  box-shadow: none;
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  text-transform: none;
+  cursor: pointer;
+}
+button.dolical-booking-submit:hover,
+a.dolical-booking-submit:hover {
+  background: #276a8a;
+}
+a.dolical-booking-submit.dolical-booking-submit--inline {
+  margin-top: 10px;
+}
+
+.dolical-booking-form__note {
+  margin: 0;
+  font-size: 13px;
+  text-align: center;
+}
+
+.dolical-booking-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+a.dolical-booking-button,
+button.dolical-booking-button {
+  display: inline-flex;
+  flex: 1 1 200px;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 16px;
+  border: 2px solid #63acc9;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: none;
+  color: #3182a8;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  text-transform: none;
+  cursor: pointer;
+}
+a.dolical-booking-button:hover,
+button.dolical-booking-button:hover {
+  background: #63acc9;
+  color: #fff;
+}
+a.dolical-booking-button.dolical-booking-button--danger,
+button.dolical-booking-button.dolical-booking-button--danger {
+  border-color: #c53030;
+  color: #c53030;
+}
+a.dolical-booking-button.dolical-booking-button--danger:hover,
+button.dolical-booking-button.dolical-booking-button--danger:hover {
+  background: #c53030;
+  color: #fff;
+}
+
+.dolical-booking-cancel {
+  margin: 0;
+  padding: 16px;
+  border-radius: 12px;
+  background: #fdf3f3;
+}
+.dolical-booking-cancel p {
+  margin: 0 0 12px;
+}
+
+.dolical-booking-contact {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 20px;
 }
 
 /* Synchronization of the phones : address and login, the steps of each device, the agendas of the colleagues */
@@ -3052,7 +3556,8 @@ button.dolical-btn.dolical-btn--destructive:hover {
 }
 
 .dolical-sidebar__sync,
-.dolical-sidebar__import {
+.dolical-sidebar__import,
+.dolical-sidebar__booking {
   display: block;
   margin-top: 4px;
   padding: 8px 4px;
@@ -3060,7 +3565,8 @@ button.dolical-btn.dolical-btn--destructive:hover {
   font-size: 13px;
 }
 .dolical-sidebar__sync:hover,
-.dolical-sidebar__import:hover {
+.dolical-sidebar__import:hover,
+.dolical-sidebar__booking:hover {
   color: #4f9ab8;
 }
 

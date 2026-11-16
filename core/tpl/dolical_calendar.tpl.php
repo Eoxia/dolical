@@ -108,6 +108,9 @@
         <?php if (dolical_can_create($user)) : ?>
             <a class="dolical-sidebar__import" href="<?php echo dol_buildpath('/dolical/view/dolical_import.php', 1); ?>"><i class="fas fa-file-upload pictofixedwidth"></i><?php echo $langs->trans('DoliCalImport'); ?></a>
         <?php endif; ?>
+        <?php if (getDolGlobalInt('DOLICAL_BOOKING') && in_array((int) $user->id, dolical_booking_user_ids(), true)) : ?>
+            <a class="dolical-sidebar__booking" href="<?php echo dol_buildpath('/dolical/view/dolical_booking.php', 1); ?>"><i class="far fa-calendar-check pictofixedwidth"></i><?php echo $langs->trans('DoliCalBookingMyPage'); ?></a>
+        <?php endif; ?>
     </aside>
 
     <section class="dolical-main">

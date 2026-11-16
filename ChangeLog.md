@@ -2,6 +2,15 @@
 
 ## Non publié
 
+- Prise de rendez-vous en ligne : une page publique sans compte par personne, où un client choisit un créneau libre
+  de son agenda (rendez-vous, congés validés et jours fériés écartés) et laisse ses coordonnées. Le rendez-vous est un
+  événement natif de la personne, le client un contact ; il reçoit une confirmation avec le `.ics` et un lien pour
+  l'annuler, la personne est prévenue. Réglages : personnes proposées, durée, jours et horaires, et trois textes
+  facultatifs (titre de la page, présentation, titre des créneaux), communs ou propres à chaque personne ; « Ma page
+  de prise de rendez-vous » sous la liste des agendas donne son lien signé et ses textes ; avec Saturne, un lien
+  court (`saturne/s/?code`) à partager.
+- Pages publiques (prise de rendez-vous, réponse à une invitation) : le logo de la société seul en en-tête, plus le
+  logo ni le « Propulsé par » de Dolibarr.
 - Calendrier et créneaux déjà pris rapides sur un grand agenda : seuls les événements commencés au plus 92 jours avant
   la période sont lus (réglage caché `DOLICAL_LONGEST_EVENT_DAYS`), au lieu de tout l'historique (plusieurs secondes
   pour 800 000 événements).

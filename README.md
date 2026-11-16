@@ -179,6 +179,52 @@ l'invitation (réponse native, trace, organisateur prévenu).
 fini depuis moins de 30 jours, n'en a pas (le bouton ouvre sa fiche pour l'écrire). Seulement les rendez-vous que
 l'utilisateur peut lire ; aucun bloc sans rendez-vous. Résumé lu par `ajax/meetings.php` (lecture seule).
 
+## Prise de rendez-vous en ligne
+
+Une page publique, sans compte, où un client prend rendez-vous dans l'agenda d'une personne de l'entreprise : **un
+lien par personne** (`public/booking.php?entity=<entité>&p=<clé>`). La clé est signée avec la clé de l'instance,
+comme les liens d'invitation : l'identifiant de l'utilisateur n'apparaît nulle part, et le lien d'un collègue ne se
+devine pas à partir du sien. Retirer une personne des personnes proposées ferme son lien. Fermée par défaut : *Configuration > Prise de
+rendez-vous en ligne* — les personnes proposées, la durée d'un rendez-vous, les jours ouverts et les plages horaires
+(« 09:00-12:00 14:00-18:00 », à l'heure du fuseau de DoliCal), et trois textes facultatifs : le **titre de la page**
+(aussi titre du rendez-vous dans l'agenda du client et en tête de sa confirmation), une **présentation** mise en forme
+dans l'éditeur WYSIWYG de Dolibarr (gras, couleurs, listes, liens ; nettoyée de tout script à l'enregistrement et à
+l'affichage ; emojis gardés, même sur une base en latin1 : ils sont enregistrés en entités numériques) et le **titre
+des créneaux**. Ces textes sont communs : **chaque personne peut
+écrire les siens** sur « Ma page de prise de rendez-vous » (sous la liste des agendas : son lien à copier, ses
+textes, les textes communs en grisé), et l'administrateur sur celle de chacun (crayon à côté de son lien dans la
+configuration). Un texte laissé vide reprend le texte commun. Quand le module Saturne est activé, chaque lien a aussi
+son **lien court** (`saturne/s/?code`, créé une fois puis réutilisé, raccourci encore avec `SATURNE_SHORT_URL_ROOT`) :
+c'est lui que la configuration et « Ma page de prise de rendez-vous » donnent à partager. Sans Saturne, le lien
+complet seul. La page publique n'a pas l'en-tête de Dolibarr : le logo
+de la société s'il y en a un, rien sinon (de même pour la page de réponse aux invitations). La page de configuration
+donne le lien de chaque personne ; chacune trouve aussi « Ma page de prise de rendez-vous » sous la liste des agendas.
+La page sans personne ne liste personne pour l'instant (constante cachée `DOLICAL_BOOKING_HUB` à 1 pour afficher la
+liste des personnes proposées).
+
+- **Le client** choisit un créneau libre de la semaine (semaines suivantes en flèches), puis donne son nom, son e-mail
+  et, s'il veut, son téléphone, sa société et un message.
+- **Créneaux libres** : les plages horaires découpées à la durée choisie, à partir de 2 heures après maintenant et sur
+  30 jours. Sont écartés les créneaux pris par un événement de la personne (organisatrice ou invitée, sauf si elle
+  l'a refusé ; les événements automatiques ne comptent pas), ses congés validés (module Congés) et les jours fériés
+  du pays de l'entreprise. Un événement marqué *disponible* qui dure une journée ou plus ne bloque pas (journée de
+  télétravail, tâche étalée sur des semaines) ; plus court, il bloque même marqué disponible.
+- **Le rendez-vous** est un événement natif de type « Rendez-vous », dans l'agenda de la personne, avec le rappel par
+  défaut. Le client devient un contact (retrouvé par son e-mail, sinon créé et rattaché au tiers du domaine de son
+  adresse quand il n'y en a qu'un), participant avec la réponse « acceptée » ; ses coordonnées et son message sont
+  dans la description.
+- **E-mails** : le client reçoit la confirmation avec le `.ics` et un lien signé (comme celui d'une invitation) pour
+  revoir ou **annuler** son rendez-vous ; la personne reçoit « Nouveau rendez-vous », avec la réponse directe au
+  client. Le texte de la confirmation est modifiable (modèle « DoliCal – Confirmation d'un rendez-vous pris en ligne »,
+  `__DOLICAL_ANSWER_LINK__` étant le lien du client). Déplacer ou supprimer le rendez-vous dans le calendrier prévient
+  le client comme un invité.
+- **Annulation par le client** : l'événement est supprimé, le créneau se libère, la personne est prévenue, le client
+  reçoit le `.ics` qui retire le rendez-vous de son agenda, et une trace reste dans l'historique du contact.
+- **Protections** : deux visiteurs sur le même créneau, le second est renvoyé aux créneaux ; un double envoi rend le
+  même rendez-vous ; formulaire signé, refusé s'il est renvoyé en moins de 2 secondes ou après 2 heures, champ piège
+  pour les robots ; 3 rendez-vous à venir au plus par adresse e-mail et 5 réservations par heure et par adresse IP ;
+  code anti-robot de Dolibarr en option (voir *Limites*).
+
 ## Où sont stockées les données
 
 | Donnée | Stockage natif |
@@ -193,6 +239,10 @@ l'utilisateur peut lire ; aucun bloc sans rendez-vous. Résumé lu par `ajax/mee
 | Compte-rendu | champ complémentaire `dolical_report` de l'événement |
 | Événement créé sur un téléphone | `llx_actioncomm.ref_ext` : `dav:` + nom du fichier + `\|` + identifiant |
 | Import d'un agenda (.ics) | `llx_actioncomm.import_key` : même clé pour tous les événements d'un import |
+| Rendez-vous pris en ligne | `llx_actioncomm.ref_ext` = `dolical-booking` ; le client est un contact natif |
+| Textes de la page d'une personne | paramètres utilisateur `DOLICAL_BOOKING_TITLE`, `_INTRO`, `_FORM_TITLE` (communs : constantes du même nom) |
+| Lien court d'une page (avec Saturne) | table de Saturne `llx_saturne_object_redirection` |
+| Réservations récentes par adresse IP | `documents/dolical/temp/booking/` (quelques octets, oubliés après une heure) |
 | Agendas de collègues synchronisés | paramètre utilisateur `DOLICAL_CALDAV_SHARED` |
 | Couleurs choisies pour les autres | paramètre utilisateur `DOLICAL_COLORS` (`{"id": "rrggbb"}`) |
 
@@ -223,6 +273,12 @@ Constantes facultatives (*Configuration > Divers*), 0 pour lever une limite :
 | `DOLICAL_CALDAV_MAX_FAILS_LOGIN` | 5 | Échecs de connexion CalDAV permis par identifiant dans la fenêtre |
 | `DOLICAL_CALDAV_MAX_FAILS_IP` | 20 | Échecs de connexion CalDAV permis par adresse IP dans la fenêtre |
 | `DOLICAL_CALDAV_FAIL_WINDOW` | 15 | Fenêtre des échecs CalDAV, en minutes |
+| `DOLICAL_BOOKING_NOTICE_HOURS` | 2 | Heures entre maintenant et le premier créneau proposé en ligne |
+| `DOLICAL_BOOKING_HORIZON_DAYS` | 30 | Jours sur lesquels les créneaux sont proposés en ligne |
+| `DOLICAL_BOOKING_MAX_PER_EMAIL` | 3 | Rendez-vous à venir pris en ligne par une même adresse e-mail |
+| `DOLICAL_BOOKING_MAX_PER_IP` | 5 | Rendez-vous pris en ligne par heure depuis une même adresse IP |
+| `DOLICAL_BOOKING_CAPTCHA` | 0 | 1 : code anti-robot de Dolibarr sur le formulaire de prise de rendez-vous |
+| `DOLICAL_BOOKING_HUB` | 0 | 1 : la page de prise de rendez-vous sans personne liste les personnes proposées |
 
 ## Prérequis
 

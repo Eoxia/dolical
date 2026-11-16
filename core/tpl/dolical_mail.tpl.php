@@ -43,7 +43,7 @@ $company = !empty($mysoc->name) ? $mysoc->name : '';
                     <?php foreach ($mail['rows'] as $row) : ?>
                         <tr>
                             <td style="padding:10px 14px;width:110px;color:#718096;font-size:13px;vertical-align:top;"><?php echo dol_escape_htmltag($row[0]); ?></td>
-                            <td style="padding:10px 14px;font-size:14px;font-weight:bold;"><?php echo dol_escape_htmltag($row[1]); ?></td>
+                            <td style="padding:10px 14px;font-size:14px;font-weight:bold;"><?php echo dol_nl2br(dol_escape_htmltag($row[1], 0, 1)); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </table>

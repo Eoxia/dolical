@@ -35,6 +35,7 @@ require_once DOL_DOCUMENT_ROOT . '/core/lib/admin.lib.php';
 
 // Load DoliCal libraries
 require_once __DIR__ . '/../lib/dolical.lib.php';
+require_once __DIR__ . '/../lib/dolical_booking.lib.php';
 
 global $conf, $db, $langs, $user;
 
@@ -80,6 +81,29 @@ if ($action == 'update' && $permissionToWrite && dolical_valid_post()) {
     // Hidden constant of the Agenda module, not of DoliCal (the page says so) : the elements linked from the calendar
     // also show on the native card of every event
     dolibarr_set_const($db, 'AGENDA_ENABLE_LINKED_ELEMENTS', GETPOSTINT('AGENDA_ENABLE_LINKED_ELEMENTS') ? 1 : 0, 'chaine', 0, '', $conf->entity);
+
+    // Online booking : the people offered, the length of an appointment, the days and the hours open
+    $bookingUsers = dolical_filter_active_users(GETPOST('DOLICAL_BOOKING_USERS', 'array:int'));
+    $bookingDays  = array_values(array_intersect(range(1, 7), array_map('intval', GETPOST('DOLICAL_BOOKING_DAYS', 'array:int'))));
+    dolibarr_set_const($db, 'DOLICAL_BOOKING', GETPOSTINT('DOLICAL_BOOKING') ? 1 : 0, 'integer', 0, '', $conf->entity);
+    dolibarr_set_const($db, 'DOLICAL_BOOKING_USERS', implode(',', $bookingUsers), 'chaine', 0, '', $conf->entity);
+    dolibarr_set_const($db, 'DOLICAL_BOOKING_DURATION', min(480, max(5, GETPOSTINT('DOLICAL_BOOKING_DURATION'))), 'integer', 0, '', $conf->entity);
+    // No day at all is a choice too : 0 keeps it from falling back on the days by default
+    dolibarr_set_const($db, 'DOLICAL_BOOKING_DAYS', !empty($bookingDays) ? implode(',', $bookingDays) : '0', 'chaine', 0, '', $conf->entity);
+    $bookingHours = dolical_booking_hours(GETPOST('DOLICAL_BOOKING_HOURS', 'alphanohtml'));
+    if (!empty($bookingHours)) {
+        dolibarr_set_const($db, 'DOLICAL_BOOKING_HOURS', dolical_booking_format_hours($bookingHours), 'chaine', 0, '', $conf->entity);
+    } else {
+        setEventMessages($langs->trans('DoliCalBookingHoursInvalid'), null, 'errors');
+    }
+    // Texts of the page : plain titles, the presentation as HTML of the editor, cleaned of anything that runs
+    foreach (array_keys(DOLICAL_BOOKING_TEXTS) as $constName) {
+        $typed = GETPOST($constName, $constName === 'DOLICAL_BOOKING_INTRO' ? 'restricthtml' : 'nohtml');
+        dolibarr_set_const($db, $constName, dolical_booking_store_text($constName, $typed), 'chaine', 0, '', $conf->entity);
+    }
+    if (GETPOSTINT('DOLICAL_BOOKING') && empty($bookingUsers)) {
+        setEventMessages($langs->trans('DoliCalBookingNobody'), null, 'warnings');
+    }
 
     setEventMessages($langs->trans('SetupSaved'), null);
     header('Location: ' . $_SERVER['PHP_SELF']);
@@ -168,6 +192,70 @@ print '<tr class="oddeven"><td>' . $langs->trans('DoliCalEventTypes') . '</td><t
 print getDolGlobalString('AGENDA_USE_EVENT_TYPE') ? img_picto($langs->trans('Enabled'), 'switch_on') : img_picto($langs->trans('Disabled'), 'switch_off');
 print ' <a href="' . DOL_URL_ROOT . '/admin/agenda_other.php">' . $langs->trans('DoliCalAgendaSetup') . '</a>';
 print '</td></tr>';
+
+print '</table>';
+
+// Online booking : a public page where the customers book a free slot in the agenda of the people chosen
+require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
+$form = new Form($db);
+
+print '<br><table class="noborder centpercent">';
+print '<tr class="liste_titre"><td>' . $langs->trans('DoliCalBooking') . '</td><td>' . $langs->trans('Description') . '</td><td class="center">' . $langs->trans('Value') . '</td></tr>';
+
+print '<tr class="oddeven"><td>' . $langs->trans('DoliCalBookingEnable') . '</td><td>' . $langs->trans('DoliCalBookingEnableHelp') . '</td><td class="center">';
+print '<input type="checkbox" name="DOLICAL_BOOKING" value="1"' . (getDolGlobalInt('DOLICAL_BOOKING') ? ' checked' : '') . '>';
+print '</td></tr>';
+
+print '<tr class="oddeven"><td>' . $langs->trans('DoliCalBookingPeople') . '</td><td>' . $langs->trans('DoliCalBookingPeopleHelp') . '</td><td class="center">';
+print $form->multiselectarray('DOLICAL_BOOKING_USERS', dolical_booking_candidates(), dolical_booking_user_ids(), 0, 0, 'minwidth300 maxwidth500 widthcentpercentminusx', 0, 0, '', '', $langs->trans('DoliCalBookingPeoplePlaceholder'));
+print '</td></tr>';
+
+print '<tr class="oddeven"><td>' . $langs->trans('DoliCalBookingDuration') . '</td><td>' . $langs->trans('DoliCalBookingDurationHelp') . '</td><td class="center nowraponall">';
+print '<input type="number" name="DOLICAL_BOOKING_DURATION" class="width75" min="5" max="480" step="5" value="' . dolical_booking_duration() . '"> ' . $langs->trans('Minutes');
+print '</td></tr>';
+
+print '<tr class="oddeven"><td>' . $langs->trans('DoliCalBookingOpening') . '</td><td>' . $langs->trans('DoliCalBookingOpeningHelp', dol_escape_htmltag(dolical_booking_timezone())) . '</td><td class="center">';
+foreach (range(1, 7) as $isoDay) {
+    print '<label class="nowraponall marginrightonly"><input type="checkbox" name="DOLICAL_BOOKING_DAYS[]" value="' . $isoDay . '"' . (in_array($isoDay, dolical_booking_days(), true) ? ' checked' : '') . '> ' . $langs->trans('Day' . ($isoDay % 7)) . '</label> ';
+}
+print '<br><input type="text" name="DOLICAL_BOOKING_HOURS" class="minwidth200 margintoponly" placeholder="' . dol_escape_htmltag(DOLICAL_BOOKING_DEFAULT_HOURS) . '" value="' . dol_escape_htmltag(dolical_booking_format_hours(dolical_booking_hours())) . '">';
+print '</td></tr>';
+
+// Texts of the page : a title, a presentation of several lines, a title above the slots
+foreach (['DOLICAL_BOOKING_TITLE' => 'DoliCalBookingPageTitle', 'DOLICAL_BOOKING_INTRO' => 'DoliCalBookingIntro', 'DOLICAL_BOOKING_FORM_TITLE' => 'DoliCalBookingFormTitle'] as $constName => $labelKey) {
+    print '<tr class="oddeven"><td>' . $langs->trans($labelKey) . '</td><td>' . $langs->trans($labelKey . 'Help') . '</td><td class="center">';
+    if ($constName === 'DOLICAL_BOOKING_INTRO') {
+        print '<div class="left">' . dolical_booking_intro_editor($constName, dolical_booking_text($constName)) . '</div>';
+    } else {
+        print '<input type="text" name="' . $constName . '" class="quatrevingtpercent" maxlength="' . DOLICAL_BOOKING_TEXTS[$constName] . '" placeholder="' . dol_escape_htmltag($langs->trans($labelKey . 'Example')) . '" value="' . dol_escape_htmltag(dolical_booking_text($constName)) . '">';
+    }
+    print '</td></tr>';
+}
+
+if (dolical_booking_enabled()) {
+    print '<tr class="oddeven"><td>' . $langs->trans('DoliCalBookingLinks') . '</td><td>' . $langs->trans('DoliCalBookingLinksHelp') . '</td><td>';
+    // One link for each person ; the list of everybody only when the hidden setting DOLICAL_BOOKING_HUB asks for it
+    $links = dolical_booking_hub_enabled() ? [0 => $langs->trans('DoliCalBookingLinkAll')] : [];
+    foreach (dolical_booking_people() as $person) {
+        $links[$person['id']] = $person['name'];
+    }
+    // One person only : the page opens on him, the link of everybody is the same
+    if (count($links) === 2 && isset($links[0])) {
+        unset($links[0]);
+    }
+    foreach ($links as $personId => $linkLabel) {
+        // The short link of the person when Saturne makes them : the one to share
+        $shortUrl = $personId > 0 ? dolical_booking_short_url((int) $personId, $user) : '';
+        $url      = $shortUrl !== '' ? $shortUrl : dolical_booking_public_url((int) $personId);
+        print '<div class="tdoverflowmax500">' . img_picto('', 'globe', 'class="pictofixedwidth"') . '<strong>' . dol_escape_htmltag($linkLabel) . '</strong> : ';
+        // The texts of each person, written by him or by an administrator
+        if ($personId > 0 && $permissionToWrite) {
+            print '<a href="' . dol_buildpath('/dolical/view/dolical_booking.php', 1) . '?id=' . ((int) $personId) . '" title="' . dol_escape_htmltag($langs->trans('DoliCalBookingEditTexts')) . '">' . img_picto($langs->trans('DoliCalBookingEditTexts'), 'edit', 'class="pictofixedwidth"') . '</a>';
+        }
+        print '<a href="' . dol_escape_htmltag($url) . '" target="_blank" rel="noopener">' . dol_escape_htmltag($url) . '</a></div>';
+    }
+    print '</td></tr>';
+}
 
 print '</table>';
 

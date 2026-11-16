@@ -444,7 +444,8 @@ function dolical_event_from_uid(string $uid, User $user): ?ActionComm
  * @param  int        $sequence  Version of the event : the number of changes sent, so that a calendar replaces its copy
  * @param  string     $method    'PUBLISH', or 'CANCEL' to take the event out of the calendar of the person
  * @param  array      $options   ['series' => true] for the whole series of the event, given by its first date ;
- *                               ['recurrenceId' => original start] for one date of a series
+ *                               ['recurrenceId' => original start] for one date of a series ;
+ *                               ['urlLabel' => key of translation] for the text before the link in the description
  * @return string
  */
 function dolical_build_ics(ActionComm $event, User $organizer, string $url, int $sequence = 0, string $method = 'PUBLISH', array $options = []): string
@@ -501,7 +502,7 @@ function dolical_build_ics(ActionComm $event, User $organizer, string $url, int 
         $lines[] = 'LOCATION:' . $escape((string) $event->location);
     }
     if ($url !== '') {
-        $lines[] = 'DESCRIPTION:' . $escape($langs->transnoentities('DoliCalIcsAnswerHere') . ' ' . $url);
+        $lines[] = 'DESCRIPTION:' . $escape($langs->transnoentities($options['urlLabel'] ?? 'DoliCalIcsAnswerHere') . ' ' . $url);
         $lines[] = 'URL:' . $url;
     }
     if (!empty($organizer->email)) {
