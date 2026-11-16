@@ -58,6 +58,17 @@ function dolical_visio_available(): bool
  */
 function dolical_visio_clean(string $text): string
 {
+    return dolical_clean_url($text);
+}
+
+/**
+ * An address of the web as typed, made safe : http(s) only, its scheme added when it was typed without it
+ *
+ * @param  string $text Address typed
+ * @return string       The address, empty when there is none or when it is not an address of the web
+ */
+function dolical_clean_url(string $text): string
+{
     $url = trim(preg_replace('/\s+/', '', $text));
     if ($url === '') {
         return '';

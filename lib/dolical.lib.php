@@ -40,11 +40,85 @@ function dolical_admin_prepare_head(): array
     $head[$h][2] = 'settings';
     $h++;
 
+    // The online booking, in the sections of the appointments of Nextcloud, and its weekly template of the slots
+    $head[$h][0] = dol_buildpath('dolical/admin/booking.php', 1);
+    $head[$h][1] = $conf->browser->layout == 'classic' ? '<i class="far fa-calendar-check pictofixedwidth"></i>' . $langs->trans('DoliCalBooking') : '<i class="far fa-calendar-check"></i>';
+    $head[$h][2] = 'booking';
+    $h++;
+
+    $head[$h][0] = dol_buildpath('dolical/admin/booking_template.php', 1);
+    $head[$h][1] = $conf->browser->layout == 'classic' ? '<i class="fas fa-th pictofixedwidth"></i>' . $langs->trans('DoliCalTemplate') : '<i class="fas fa-th"></i>';
+    $head[$h][2] = 'template';
+    $h++;
+
     complete_head_from_modules($conf, $langs, null, $head, $h, 'dolical@dolical');
 
     complete_head_from_modules($conf, $langs, null, $head, $h, 'dolical@dolical', 'remove');
 
     return $head;
+}
+
+/**
+ * A line of a setup page of DoliCal : the name of the setting and a line of help, its field beside them or under them
+ *
+ * @param  string $name     Name, translated
+ * @param  string $helpHtml Help, HTML ('' for none)
+ * @param  string $field    Field, HTML
+ * @param  string $layout   'inline' : the field beside the name, 'stacked' : under it
+ * @param  string $depends  Switch that shows the setting ('!' before its name : when it is off), '' when always shown
+ * @return string           HTML
+ */
+function dolical_setting(string $name, string $helpHtml, string $field, string $layout = 'inline', string $depends = ''): string
+{
+    $html  = '<div class="dolical-setting dolical-setting--' . $layout . '"' . ($depends !== '' ? ' data-depends="' . dol_escape_htmltag($depends) . '"' : '') . '>';
+    $html .= '<div class="dolical-setting__text"><span class="dolical-setting__name">' . $name . '</span>';
+    $html .= $helpHtml !== '' ? '<span class="dolical-setting__help">' . $helpHtml . '</span>' : '';
+    $html .= '</div><div class="dolical-setting__field">' . $field . '</div></div>';
+
+    return $html;
+}
+
+/**
+ * A switch of a setup page of DoliCal
+ *
+ * @param  string $inputName Name of the field
+ * @param  bool   $checked   Whether it is on
+ * @param  string $label     Label beside it, translated ('' for none)
+ * @return string            HTML
+ */
+function dolical_setting_switch(string $inputName, bool $checked, string $label = ''): string
+{
+    return '<label class="dolical-switch dolical-setting__switch"><input type="checkbox" name="' . dol_escape_htmltag($inputName) . '" value="1"' . ($checked ? ' checked' : '') . '><span class="dolical-switch__track"></span>'
+        . ($label !== '' ? '<span>' . $label . '</span>' : '') . '</label>';
+}
+
+/**
+ * A number of a setup page of DoliCal and its unit
+ *
+ * @param  string $inputName Name of the field
+ * @param  int    $value     Value
+ * @param  int    $min       Smallest value
+ * @param  int    $max       Largest value
+ * @param  string $unit      Unit, translated ('' for none)
+ * @param  int    $step      Step
+ * @return string            HTML
+ */
+function dolical_setting_number(string $inputName, int $value, int $min, int $max, string $unit = '', int $step = 1): string
+{
+    return '<span class="dolical-setting__number"><input type="number" name="' . dol_escape_htmltag($inputName) . '" min="' . $min . '" max="' . $max . '" step="' . $step . '" value="' . min($max, max($min, $value)) . '">'
+        . ($unit !== '' ? '<span>' . $unit . '</span>' : '') . '</span>';
+}
+
+/**
+ * Head of a card of a setup page of DoliCal, its icon and its title
+ *
+ * @param  string $icon  Classes of the icon
+ * @param  string $title Title, translated
+ * @return string        HTML
+ */
+function dolical_setting_card_title(string $icon, string $title): string
+{
+    return '<h2><i class="' . dol_escape_htmltag($icon) . ' pictofixedwidth"></i>' . $title . '</h2>';
 }
 
 /**

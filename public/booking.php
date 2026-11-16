@@ -87,6 +87,13 @@ $visitor    = [
 // One line : the name and the company become the title of the event
 $visitor['name']    = trim(preg_replace('/\s+/', ' ', $visitor['name']));
 $visitor['company'] = trim(preg_replace('/\s+/', ' ', $visitor['company']));
+// The phone number only when the form asks for it ; the consent when the setup has a text for it
+$phoneField         = dolical_booking_phone_field();
+$consentText        = dolical_booking_text('DOLICAL_BOOKING_CONSENT');
+if ($phoneField === 'hidden') {
+    $visitor['phone'] = '';
+}
+$visitor['consent'] = $consentText !== '' && GETPOSTINT('consent') === 1;
 
 // The anti-robot code of Dolibarr, when the setup asks for it (DOLICAL_BOOKING_CAPTCHA)
 $captchaObject = null;
@@ -136,7 +143,7 @@ if ($bookingId > 0) {
     if ($valid && !$isPast && GETPOSTINT('ics')) {
         header('Content-Type: text/calendar; charset=utf-8');
         header('Content-Disposition: attachment; filename="rendez-vous.ics"');
-        echo dolical_build_ics(dolical_booking_customer_view($event, $owner), $owner, $manageUrl, dolical_invitation_sequence($event), 'PUBLISH', ['urlLabel' => 'DoliCalBookingIcsManage']);
+        echo dolical_booking_ics(dolical_booking_customer_view($event, $owner), $owner, $manageUrl, dolical_invitation_sequence($event));
         exit;
     }
 
@@ -180,6 +187,15 @@ if ($showScreen === 'slots') {
         }
         if (!isValidEmail($visitor['email'])) {
             $errors[] = dol_escape_htmltag($langs->transnoentities('ErrorBadEMail', $visitor['email']));
+        } elseif (dolical_booking_blocked($visitor['email'])) {
+            // Said plainly, without telling that the address is on a list
+            $errors[] = $langs->trans('DoliCalBookingBlockedEmail');
+        }
+        if ($phoneField === 'required' && $visitor['phone'] === '') {
+            $errors[] = $langs->trans('ErrorFieldRequired', $langs->transnoentities('Phone'));
+        }
+        if ($consentText !== '' && !$visitor['consent']) {
+            $errors[] = $langs->trans('DoliCalBookingConsentRequired');
         }
         if (is_object($captchaObject) && method_exists($captchaObject, 'validateCodeAfterLoginSubmit') && !$captchaObject->validateCodeAfterLoginSubmit()) {
             $errors[] = $langs->trans('ErrorBadValueForCode');
@@ -195,7 +211,9 @@ if ($showScreen === 'slots') {
             $booked = dolical_booking_create($owner, $slot, $visitor, $error);
             if (!empty($booked)) {
                 dolical_booking_record_ip();
-                header('Location: ' . dolical_booking_manage_url($booked['event'], $booked['contactId']) . '&done=1');
+                // The page of the setup when there is one (a thank-you page of the website), else his appointment
+                $redirect = dolical_booking_redirect_url();
+                header('Location: ' . ($redirect !== '' ? $redirect : dolical_booking_manage_url($booked['event'], $booked['contactId']) . '&done=1'));
                 exit;
             }
             $errors[] = $langs->trans($error);

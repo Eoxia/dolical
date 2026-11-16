@@ -448,7 +448,8 @@ function dolical_event_from_uid(string $uid, User $user): ?ActionComm
  * @param  string     $method    'PUBLISH', or 'CANCEL' to take the event out of the calendar of the person
  * @param  array      $options   ['series' => true] for the whole series of the event, given by its first date ;
  *                               ['recurrenceId' => original start] for one date of a series ;
- *                               ['urlLabel' => key of translation] for the text before the link in the description
+ *                               ['urlLabel' => key of translation] for the text before the link in the description ;
+ *                               ['description' => text] at the top of the description
  * @return string
  */
 function dolical_build_ics(ActionComm $event, User $organizer, string $url, int $sequence = 0, string $method = 'PUBLISH', array $options = []): string
@@ -508,6 +509,10 @@ function dolical_build_ics(ActionComm $event, User $organizer, string $url, int 
         $lines[] = 'LOCATION:' . $escape(!empty($event->location) ? (string) $event->location : $visio);
     }
     $description = [];
+    // A text of the setup first : what the person wants the customer to find in his calendar
+    if (!empty($options['description']) && $method !== 'CANCEL') {
+        $description[] = (string) $options['description'];
+    }
     if ($visio !== '') {
         $description[] = $langs->transnoentities('DoliCalIcsVisio') . ' ' . $visio;
         $lines[]       = 'CONFERENCE;VALUE=URI;FEATURE=AUDIO,VIDEO:' . $visio;
@@ -807,6 +812,10 @@ function dolical_send_invitations(ActionComm $event, User $sender, array $recipi
             if ($visio !== '') {
                 $rows[] = dolical_visio_mail_row($visio, $langs);
             }
+            // The customer of an appointment booked online : the phone number of the setup to reach the company
+            if ($forCustomer && dolical_booking_text('DOLICAL_BOOKING_PHONE') !== '') {
+                $rows[] = [$langs->transnoentities('Phone'), dolical_booking_text('DOLICAL_BOOKING_PHONE')];
+            }
             $html   = dolical_mail_html([
                 'title'     => $mailLabel,
                 'intro'     => $langs->transnoentities($visioOnly ? 'DoliCalMailVisioIntro' : $settings['intro'], $recipient['name'], $organizerName),
@@ -818,9 +827,11 @@ function dolical_send_invitations(ActionComm $event, User $sender, array $recipi
         }
 
         $icsFile = $tempDir . '/invitation-' . ((int) $event->id) . '-' . $recipient['kind'] . ((int) $recipient['id']) . '.ics';
-        file_put_contents($icsFile, dolical_build_ics($mailEvent, $organizer, $url, $sequence, $settings['method'], $forCustomer ? $options + ['urlLabel' => 'DoliCalBookingIcsManage'] : $options));
+        // The customer of an appointment booked online : the organizer address and the description of the setup
+        $icsOptions = $forCustomer ? $options + ['urlLabel' => 'DoliCalBookingIcsManage', 'description' => dolical_booking_text('DOLICAL_BOOKING_ICS_TEXT')] : $options;
+        file_put_contents($icsFile, dolical_build_ics($mailEvent, $forCustomer ? dolical_booking_organizer($organizer) : $organizer, $url, $sequence, $settings['method'], $icsOptions));
 
-        $error = dolical_send_mail($recipient['email'], $subject, $html, $replyTo, $organizerName, 'rea' . ((int) $event->id), [['path' => $icsFile, 'mime' => 'text/calendar', 'name' => 'invitation.ics']]);
+        $error = dolical_send_mail($recipient['email'], $subject, $html, $forCustomer ? dolical_booking_reply_to($organizer) : $replyTo, $organizerName, 'rea' . ((int) $event->id), [['path' => $icsFile, 'mime' => 'text/calendar', 'name' => 'invitation.ics']]);
         dol_delete_file($icsFile, 0, 1, 0, null, false, 0);
 
         if ($error !== '') {

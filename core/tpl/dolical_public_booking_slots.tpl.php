@@ -64,7 +64,21 @@ $formTitle = dolical_booking_text('DOLICAL_BOOKING_FORM_TITLE', $userId);
                     <h1><?php echo dol_escape_htmltag($person['name']); ?></h1>
                 <?php endif; ?>
                 <div class="dolical-booking-who__meta">
-                    <span><i class="far fa-clock pictofixedwidth"></i><?php echo dol_escape_htmltag(dolical_format_duration(dolical_booking_duration() * 60)); ?></span>
+                    <?php
+                    // The length when every slot of the template has the same, the place and the phone of the setup
+                    $lengths  = dolical_booking_template_lengths();
+                    $location = dolical_booking_text('DOLICAL_BOOKING_LOCATION');
+                    $phone    = dolical_booking_text('DOLICAL_BOOKING_PHONE');
+                    ?>
+                    <?php if (count($lengths) === 1) : ?>
+                        <span><i class="far fa-clock pictofixedwidth"></i><?php echo dol_escape_htmltag(dolical_format_duration($lengths[0] * 60)); ?></span>
+                    <?php endif; ?>
+                    <?php if ($location !== '') : ?>
+                        <span><i class="fas fa-map-marker-alt pictofixedwidth"></i><?php echo dol_escape_htmltag($location); ?></span>
+                    <?php endif; ?>
+                    <?php if ($phone !== '') : ?>
+                        <span><i class="fas fa-phone-alt pictofixedwidth"></i><?php echo dol_escape_htmltag($phone); ?></span>
+                    <?php endif; ?>
                     <span><i class="fas fa-globe-europe pictofixedwidth"></i><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalBookingTimezone', $zone)); ?></span>
                 </div>
             </div>

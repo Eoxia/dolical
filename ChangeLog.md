@@ -28,6 +28,23 @@
 - Rappels au client avant un rendez-vous pris en ligne : 1 semaine, 2 jours, 1 jour, 2 heures ou 1 heure avant, au
   choix dans la configuration (aucun par défaut), par la nouvelle tâche planifiée « Rappels des rendez-vous en ligne »
   (toutes les 15 minutes, créée à l'activation du module), modèle d'e-mail modifiable.
+- Prise de rendez-vous en ligne réglée comme les rendez-vous de Nextcloud, dans son propre onglet de la configuration
+  (sections Agendas et planification, Informations de contact, E-mails et notifications, Formulaire, Sécurité,
+  Rappels, Visioconférence, Avancé) :
+  - **modèle hebdomadaire** des créneaux, dans un onglet à lui et dans la grille de la vue Semaine du calendrier : on
+    y pose, déplace, étire et supprime les créneaux à la souris, un menu par jour ajoute une série, copie la journée ou
+    la vide. Il remplace les jours cochés et les plages horaires ; une configuration d'avant est lue comme un modèle ;
+  - tampons avant et après un rendez-vous, préavis minimum ;
+  - e-mail de l'organisateur (réponse du client, organisateur du `.ics`), lieu, téléphone (sur la page et dans les
+    e-mails) ;
+  - choix des e-mails au client et à la personne, texte en plus de la confirmation, du `.ics` et des rappels ;
+  - champ « Téléphone » facultatif, obligatoire ou masqué, case de consentement (RGPD) gardée dans le rendez-vous ;
+  - adresses e-mail ou domaines bloqués ; code anti-robot et limites par adresse e-mail et par IP réglables ;
+  - lien de visio commun, ou une salle Jitsi nouvelle par rendez-vous ;
+  - modèle du titre de l'événement, page de redirection après réservation.
+- Pages de configuration (générale et prise de rendez-vous) au design de DoliCal : une carte par section, une ligne
+  par réglage avec une aide courte, interrupteurs, sections listées sur le côté et bouton « Enregistrer » toujours
+  visible ; un réglage qui dépend d'un autre n'apparaît que lorsqu'il sert.
 
 ## 1.3.0
 
