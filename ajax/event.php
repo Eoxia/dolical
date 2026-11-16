@@ -139,6 +139,7 @@ if ($view === 'form') {
             'start'      => (int) $source->datep,
             'end'        => (int) ($source->datef ?: $source->datep),
             'location'   => $source->location,
+            'visio'      => dolical_get_visio($source),
             'percent'    => (int) $source->percentage,
             'busy'       => (int) $source->transparency,
             'owner_id'   => (int) $source->userownerid,
@@ -174,6 +175,7 @@ if ($view === 'form') {
             'start'      => $start,
             'end'        => $end,
             'location'   => '',
+            'visio'      => '',
             'percent'    => 0,
             'busy'       => 1,
             'owner_id'   => $ownerId,
@@ -378,7 +380,7 @@ if ($action === 'save') {
     foreach (array_keys($event->socpeopleassigned) as $contactId) {
         $previousPeople['c' . $contactId] = true;
     }
-    $previousPlace = [(int) $event->datep, (int) $event->datef, (int) $event->fulldayevent, trim((string) $event->location)];
+    $previousPlace = [(int) $event->datep, (int) $event->datef, (int) $event->fulldayevent, trim((string) $event->location), dolical_get_visio($event)];
     // The people invited by email before the change : the ones removed have to be told
     $previouslyInvited = $isNew ? [] : dolical_invited_only(dolical_invitation_recipients($event), dolical_invitation_history($event));
     $previousRecurid   = (string) $event->recurid;
@@ -413,6 +415,10 @@ if ($action === 'save') {
             'everyone' => GETPOSTINT('reminder_everyone'),
         ] : null,
     ];
+    // Untouched when the form had no field for it ; kept raw, dolical_save_event() keeps an address of the web only
+    if (GETPOSTISSET('visio')) {
+        $data['visio'] = GETPOST('visio', 'nohtml');
+    }
 
     $saved  = dolical_save_event_series($event, $data, $user);
     $result = $saved['id'];
@@ -446,7 +452,11 @@ if ($action === 'save') {
         } elseif (!empty($event->recurid) && $previousRecurid !== '') {
             $mailOptions = ['recurrenceId' => $saved['oldStart']];
         }
-        $changed     = !$isNew && ($saved['ruleChanged'] || $previousPlace !== [(int) $event->datep, (int) $event->datef, (int) $event->fulldayevent, trim((string) $event->location)]);
+        // A video call link added or changed is news too : the people invited get it, in a mail of its own when
+        // nothing else changed
+        $place       = [(int) $event->datep, (int) $event->datef, (int) $event->fulldayevent, trim((string) $event->location), dolical_get_visio($event, true)];
+        $changed     = !$isNew && ($saved['ruleChanged'] || $previousPlace !== $place);
+        $visioOnly   = $changed && !$saved['ruleChanged'] && array_slice($previousPlace, 0, 4) === array_slice($place, 0, 4) && $place[4] !== '';
         $current     = dolical_invitation_recipients($mailEvent);
         $currentKeys = array_map(function ($recipient) {
             return $recipient['kind'] . $recipient['id'];
@@ -472,7 +482,7 @@ if ($action === 'save') {
             if ($mode !== 'cancel') {
                 $recipients = dolical_throttle_recipients($mailEvent, $user, $recipients, false, $mail['errors']);
             }
-            $sending           = dolical_send_invitations($mailEvent, $user, $recipients, $mode, $mailOptions);
+            $sending           = dolical_send_invitations($mailEvent, $user, $recipients, $mode, $mode === 'update' && $visioOnly ? $mailOptions + ['visioOnly' => true] : $mailOptions);
             $mail[$mode === 'cancel' ? 'cancelled' : 'sent'] += $sending['sent'];
             $mail['errors']    = array_merge($mail['errors'], $sending['errors']);
         }

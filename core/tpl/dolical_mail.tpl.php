@@ -21,7 +21,8 @@
  * \brief   Body of the mails of DoliCal : invitation, change, answer received.
  *
  * Rendered by dolical_mail_html() (inherits its scope). Expects: $mail ['title', 'intro', 'rows', 'button',
- * 'secondary', 'note'], $mysoc.
+ * 'secondary', 'note'], $mysoc. A row is [label, text], or [label, text, link] : the text links to it, the link
+ * written under it for the mail clients that hide where a link goes (the link of a video call).
  * The styles are inline on purpose : mail clients drop style sheets, this is the one place of the module where
  * they cannot live in css/dolical.css.
  */
@@ -43,7 +44,14 @@ $company = !empty($mysoc->name) ? $mysoc->name : '';
                     <?php foreach ($mail['rows'] as $row) : ?>
                         <tr>
                             <td style="padding:10px 14px;width:110px;color:#718096;font-size:13px;vertical-align:top;"><?php echo dol_escape_htmltag($row[0]); ?></td>
-                            <td style="padding:10px 14px;font-size:14px;font-weight:bold;"><?php echo dol_nl2br(dol_escape_htmltag($row[1], 0, 1)); ?></td>
+                            <?php if (!empty($row[2])) : ?>
+                                <td style="padding:10px 14px;font-size:14px;font-weight:bold;">
+                                    <a href="<?php echo dol_escape_htmltag($row[2]); ?>" style="color:#4f9ab8;"><?php echo dol_escape_htmltag($row[1]); ?></a>
+                                    <div style="margin-top:4px;color:#718096;font-size:12px;font-weight:normal;word-break:break-all;"><?php echo dol_escape_htmltag($row[2]); ?></div>
+                                </td>
+                            <?php else : ?>
+                                <td style="padding:10px 14px;font-size:14px;font-weight:bold;"><?php echo dol_nl2br(dol_escape_htmltag($row[1], 0, 1)); ?></td>
+                            <?php endif; ?>
                         </tr>
                     <?php endforeach; ?>
                 </table>

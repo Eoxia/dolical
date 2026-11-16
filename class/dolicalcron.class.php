@@ -78,4 +78,32 @@ class DoliCalCron
 
         return 0;
     }
+
+    /**
+     * Remind the customers of their appointments booked online, at the delays chosen in the setup (a week, a day, an
+     * hour before...). Run every few minutes : a reminder leaves soon after its moment
+     *
+     * @return int 0 when done, < 0 on error
+     */
+    public function remindBookings(): int
+    {
+        global $langs;
+
+        require_once __DIR__ . '/../lib/dolical_booking.lib.php';
+        $langs->load('dolical@dolical');
+
+        if (empty(dolical_booking_reminder_delays())) {
+            $this->output = $langs->transnoentities('DoliCalBookingRemindDisabled');
+            return 0;
+        }
+
+        $summary      = dolical_booking_send_due_reminders();
+        $this->output = $langs->transnoentities('DoliCalBookingRemindDone', (string) $summary['sent'], (string) $summary['events']);
+        if (!empty($summary['errors'])) {
+            $this->error = implode(' ', $summary['errors']);
+            return -1;
+        }
+
+        return 0;
+    }
 }

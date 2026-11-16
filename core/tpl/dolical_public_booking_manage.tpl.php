@@ -41,6 +41,7 @@
         $contact->fetch($contactId);
         $start = (int) $event->datep;
         $end   = (int) ($event->datef ?: $event->datep);
+        $visio = $isPast ? '' : dolical_get_visio($event);
         ?>
         <div class="dolical-public-card">
             <div class="dolical-public-card__kicker"><i class="far fa-calendar-check pictofixedwidth"></i><?php echo $langs->trans('DoliCalBookingYours'); ?></div>
@@ -56,6 +57,9 @@
                 <div class="dolical-public-card__row"><i class="far fa-calendar"></i><span><?php echo dol_escape_htmltag(dolical_booking_when($start, $end)); ?></span></div>
                 <?php if (!empty($event->location)) : ?>
                     <div class="dolical-public-card__row"><i class="fas fa-map-marker-alt"></i><span><?php echo dol_escape_htmltag($event->location); ?></span></div>
+                <?php endif; ?>
+                <?php if ($visio !== '') : ?>
+                    <div class="dolical-public-card__row"><i class="fas fa-video"></i><a href="<?php echo dol_escape_htmltag($visio); ?>" target="_blank" rel="noopener noreferrer"><?php echo $langs->trans('DoliCalVisioJoin'); ?></a></div>
                 <?php endif; ?>
                 <?php if (!empty($owner->job) || dolical_booking_text('DOLICAL_BOOKING_TITLE', (int) $owner->id) !== '') : ?>
                     <div class="dolical-public-card__row"><i class="far fa-user"></i><span><?php echo dol_escape_htmltag($owner->getFullName($langs) . (!empty($owner->job) ? ', ' . $owner->job : '')); ?></span></div>

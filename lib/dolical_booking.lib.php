@@ -130,6 +130,41 @@ function dolical_booking_save_person_texts(User $person, array $texts): bool
 }
 
 /**
+ * Video call link a person gives to the appointments booked on his page : a parameter of the user, in the entity of
+ * the page, as his texts
+ *
+ * @param  int    $userId Person
+ * @return string         Empty when he gave none
+ */
+function dolical_booking_person_visio(int $userId): string
+{
+    global $conf, $db;
+
+    $sql   = 'SELECT value FROM ' . MAIN_DB_PREFIX . 'user_param';
+    $sql  .= ' WHERE fk_user = ' . $userId . ' AND entity = ' . ((int) $conf->entity) . " AND param = 'DOLICAL_BOOKING_VISIO'";
+    $resql = $db->query($sql);
+    $obj   = $resql ? $db->fetch_object($resql) : null;
+
+    return $obj ? dolical_visio_clean((string) $obj->value) : '';
+}
+
+/**
+ * Save the video call link of the page of a person ; an empty one is removed
+ *
+ * @param  User   $person Person whose page it is
+ * @param  string $url    Link, cleaned by dolical_visio_clean()
+ * @return bool
+ */
+function dolical_booking_save_person_visio(User $person, string $url): bool
+{
+    global $conf, $db;
+
+    require_once DOL_DOCUMENT_ROOT . '/core/lib/functions2.lib.php';
+
+    return dol_set_user_param($db, $conf, $person, ['DOLICAL_BOOKING_VISIO' => $url], (int) $conf->entity) > 0;
+}
+
+/**
  * A text of the public page as it is stored : plain text, its lines kept, cut to its length, its emojis written as
  * numeric entities
  *
@@ -349,8 +384,18 @@ function dolical_booking_timezone(): string
 }
 
 /**
- * First and last moment a slot may start : some hours from now (DOLICAL_BOOKING_NOTICE_HOURS), until some days from
- * today (DOLICAL_BOOKING_HORIZON_DAYS)
+ * How far ahead an appointment may be booked, in weeks from today (DOLICAL_BOOKING_HORIZON_WEEKS)
+ *
+ * @return int
+ */
+function dolical_booking_horizon_weeks(): int
+{
+    return min(52, max(1, getDolGlobalInt('DOLICAL_BOOKING_HORIZON_WEEKS', 4)));
+}
+
+/**
+ * First and last moment a slot may start : some hours from now (DOLICAL_BOOKING_NOTICE_HOURS), until some weeks from
+ * today, that last day included
  *
  * @return int[] [first, last]
  */
@@ -359,9 +404,33 @@ function dolical_booking_window(): array
     $now     = dol_now();
     $zone    = new DateTimeZone(dolical_booking_timezone());
     $today   = (new DateTimeImmutable('@' . $now))->setTimezone($zone)->setTime(0, 0);
-    $horizon = min(365, max(1, getDolGlobalInt('DOLICAL_BOOKING_HORIZON_DAYS', 30)));
+    $horizon = dolical_booking_horizon_weeks() * 7;
 
     return [$now + max(0, getDolGlobalInt('DOLICAL_BOOKING_NOTICE_HOURS', 2)) * 3600, $today->modify('+' . ($horizon + 1) . ' days')->getTimestamp()];
+}
+
+/**
+ * Reminders the customer may get before his appointment : delay before the start in seconds => key of translation
+ */
+const DOLICAL_BOOKING_REMINDER_DELAYS = [
+    604800 => 'DoliCalBookingRemindWeek',
+    172800 => 'DoliCalBookingRemindTwoDays',
+    86400  => 'DoliCalBookingRemindDay',
+    7200   => 'DoliCalBookingRemindTwoHours',
+    3600   => 'DoliCalBookingRemindHour',
+];
+
+/**
+ * Reminders chosen in the setup (DOLICAL_BOOKING_REMINDERS), the shortest delay first
+ *
+ * @return int[] Delays before the start, in seconds
+ */
+function dolical_booking_reminder_delays(): array
+{
+    $delays = array_values(array_intersect(array_keys(DOLICAL_BOOKING_REMINDER_DELAYS), array_map('intval', explode(',', getDolGlobalString('DOLICAL_BOOKING_REMINDERS')))));
+    sort($delays);
+
+    return $delays;
 }
 
 /**
@@ -984,6 +1053,12 @@ function dolical_booking_create(User $owner, int $start, array $visitor, string 
 
     $event->fetch($eventId);
     dolical_save_reminders($event, dolical_reminder_default($event->type_code), $owner);
+    // The video call link of the person, on the appointment : it goes with the confirmation, and he may change it in
+    // the agenda for this appointment only
+    $visio = dolical_booking_person_visio((int) $owner->id);
+    if ($visio !== '' && dolical_set_visio($event, $visio, $owner) <= 0) {
+        dol_syslog(__FUNCTION__ . ' visio: ' . $event->error, LOG_WARNING);
+    }
     $langs = $savedLangs;
 
     $visitor['contactId'] = $contact['id'];
@@ -1013,15 +1088,16 @@ function dolical_booking_type_code(): string
 /**
  * Languages of a person who reads a mail of DoliCal : his own, else the one of the instance
  *
- * @param  User      $person User
+ * @param  User      $person   User
+ * @param  string    $language Language to use instead, the one of a contact : fr_FR...
  * @return Translate
  */
-function dolical_booking_langs(User $person): Translate
+function dolical_booking_langs(User $person, string $language = ''): Translate
 {
     global $conf;
 
     $outputLangs = new Translate('', $conf);
-    $outputLangs->setDefaultLang(dolical_mail_language($person));
+    $outputLangs->setDefaultLang($language !== '' ? $language : dolical_mail_language($person));
     $outputLangs->loadLangs(['main', 'agenda', 'companies', 'dolical@dolical']);
 
     return $outputLangs;
@@ -1064,6 +1140,7 @@ function dolical_booking_send_confirmation(ActionComm $event, User $owner, array
     $ownerName = $owner->getFullName($langs);
     $url       = dolical_booking_manage_url($event, (int) $visitor['contactId']);
     $when      = dolical_booking_when((int) $event->datep, (int) $event->datef);
+    $visio     = dolical_get_visio($event);
     $template  = dolical_mail_template('dolical_booking', $langs->defaultlang);
 
     if ($template !== null) {
@@ -1071,17 +1148,22 @@ function dolical_booking_send_confirmation(ActionComm $event, User $owner, array
             '__DOLICAL_EVENT_LABEL__'    => $view->label,
             '__DOLICAL_EVENT_DATE__'     => $when,
             '__DOLICAL_EVENT_LOCATION__' => (string) $event->location,
+            '__DOLICAL_EVENT_VISIO__'    => $visio,
             '__DOLICAL_ORGANIZER_NAME__' => $ownerName,
             '__DOLICAL_RECIPIENT_NAME__' => $visitor['name'],
             '__DOLICAL_ANSWER_LINK__'    => $url,
         ]);
         [$subject, $html] = dolical_mail_from_template($template, $substitutions, $langs);
     } else {
+        $rows = [[$langs->transnoentities('DoliCalMailWhen'), $when], [$langs->transnoentities('DoliCalBookingWith'), $ownerName]];
+        if ($visio !== '') {
+            $rows[] = dolical_visio_mail_row($visio, $langs);
+        }
         $subject = $langs->transnoentities('DoliCalBookingMailSubject', $ownerName, $when);
         $html    = dolical_mail_html([
             'title'     => $view->label,
             'intro'     => $langs->transnoentities('DoliCalBookingMailIntro', $visitor['name']),
-            'rows'      => [[$langs->transnoentities('DoliCalMailWhen'), $when], [$langs->transnoentities('DoliCalBookingWith'), $ownerName]],
+            'rows'      => $rows,
             'button'    => [$url, $langs->transnoentities('DoliCalBookingManage')],
             'secondary' => [dolical_booking_manage_url($event, (int) $visitor['contactId'], ['ics' => 1]), $langs->transnoentities('DoliCalAddToCalendar')],
             'note'      => $langs->transnoentities('DoliCalBookingMailNote'),
@@ -1134,6 +1216,10 @@ function dolical_booking_notify_owner(ActionComm $event, User $owner, array $vis
     }
     if (($visitor['message'] ?? '') !== '') {
         $rows[] = [$langs->transnoentities('DoliCalBookingMessage'), $visitor['message']];
+    }
+    $visio = $kind === 'new' ? dolical_get_visio($event) : '';
+    if ($visio !== '') {
+        $rows[] = dolical_visio_mail_row($visio, $langs);
     }
 
     $isNew   = $kind === 'new';
@@ -1207,4 +1293,164 @@ function dolical_booking_cancel(ActionComm $event, int $contactId): bool
     dolical_booking_notify_owner($event, $owner, $visitor, 'cancel');
 
     return true;
+}
+
+/**
+ * Remind the customers of their appointments booked online, once for each reminder chosen in the setup, when its
+ * moment has come. A reminder whose moment was already past when the appointment was booked is not sent (booked in the
+ * morning for the afternoon : the confirmation is enough), and several due at once (the job stopped a while) make one
+ * mail. Run by the scheduled job of the module, every few minutes
+ *
+ * @return array ['events' => int, 'sent' => int, 'errors' => string[]]
+ */
+function dolical_booking_send_due_reminders(): array
+{
+    global $db;
+
+    $summary = ['events' => 0, 'sent' => 0, 'errors' => []];
+    $delays  = dolical_booking_reminder_delays();
+    if (empty($delays)) {
+        return $summary;
+    }
+
+    $now  = dol_now();
+    $sql  = 'SELECT a.id, a.datep, a.datec FROM ' . MAIN_DB_PREFIX . 'actioncomm as a';
+    $sql .= " WHERE a.ref_ext = '" . $db->escape(DOLICAL_BOOKING_REF) . "' AND a.entity IN (" . getEntity('agenda') . ')';
+    $sql .= " AND a.datep > '" . $db->idate($now) . "' AND a.datep <= '" . $db->idate($now + max($delays)) . "'";
+    $sql .= ' AND a.percent < 100';
+    $resql = $db->query($sql);
+    if (!$resql) {
+        $summary['errors'][] = $db->lasterror();
+        return $summary;
+    }
+
+    // The moment of the latest reminder reached, for each appointment : the shortest delay already reached
+    $due = [];
+    while ($obj = $db->fetch_object($resql)) {
+        $start   = (int) $db->jdate($obj->datep);
+        $created = (int) $db->jdate($obj->datec);
+        foreach ($delays as $delay) {
+            if ($start - $delay <= $now) {
+                if ($start - $delay > $created) {
+                    $due[(int) $obj->id] = $start - $delay;
+                }
+                break;
+            }
+        }
+    }
+    $db->free($resql);
+
+    foreach ($due as $eventId => $moment) {
+        // Sent since that moment : this reminder is done
+        if (dolical_booking_last_reminder($eventId) >= $moment) {
+            continue;
+        }
+        $event = new ActionComm($db);
+        $owner = new User($db);
+        if ($event->fetch($eventId) <= 0 || $owner->fetch((int) $event->userownerid) <= 0) {
+            continue;
+        }
+        $sending = dolical_booking_send_reminder($event, $owner);
+        $summary['events']++;
+        $summary['sent']  += $sending['sent'];
+        $summary['errors'] = array_merge($summary['errors'], $sending['errors']);
+    }
+
+    return $summary;
+}
+
+/**
+ * When the customers of an appointment were last reminded of it
+ *
+ * @param  int $eventId Event
+ * @return int          Date of the last reminder, 0 when none was sent
+ */
+function dolical_booking_last_reminder(int $eventId): int
+{
+    global $db;
+
+    $sql   = 'SELECT MAX(datep) as last FROM ' . MAIN_DB_PREFIX . 'actioncomm';
+    $sql  .= ' WHERE fk_element = ' . $eventId . " AND elementtype = 'action' AND code = '" . $db->escape(DOLICAL_CODE_BOOKING_REMIND) . "'";
+    $resql = $db->query($sql);
+    $obj   = $resql ? $db->fetch_object($resql) : null;
+
+    return ($obj && !empty($obj->last)) ? (int) $db->jdate($obj->last) : 0;
+}
+
+/**
+ * Remind the customers of an appointment booked online, each one in his language : when, with whom, the video call,
+ * and the link to see or cancel it. The ones who declined it are left out
+ *
+ * @param  ActionComm $event Event, resources loaded
+ * @param  User       $owner Person booked
+ * @return array             ['sent' => int, 'errors' => string[]]
+ */
+function dolical_booking_send_reminder(ActionComm $event, User $owner): array
+{
+    global $db, $langs;
+
+    $result     = ['sent' => 0, 'errors' => []];
+    $savedLangs = $langs;
+    $visio      = dolical_get_visio($event);
+    // The trace is written in the language of the person, the days named in it too
+    $ownerLangs = dolical_booking_langs($owner);
+    $langs      = $ownerLangs;
+    $ownerWhen  = dolical_booking_when((int) $event->datep, (int) ($event->datef ?: $event->datep));
+
+    foreach ($event->socpeopleassigned as $contactId => $resource) {
+        $contact = new Contact($db);
+        if ((int) ($resource['answer_status'] ?? 0) === -1 || $contact->fetch((int) $contactId) <= 0 || !isValidEmail((string) $contact->email)) {
+            continue;
+        }
+
+        $langs     = dolical_booking_langs($owner, (string) ($contact->default_lang ?? ''));
+        $name      = $contact->getFullName($langs);
+        $ownerName = $owner->getFullName($langs);
+        $view      = dolical_booking_customer_view($event, $owner);
+        $when      = dolical_booking_when((int) $event->datep, (int) ($event->datef ?: $event->datep));
+        $url       = dolical_booking_manage_url($event, (int) $contactId);
+        $template  = dolical_mail_template('dolical_booking_reminder', $langs->defaultlang);
+
+        if ($template !== null) {
+            $substitutions = array_merge(getCommonSubstitutionArray($langs, 0, null, $event), [
+                '__DOLICAL_EVENT_LABEL__'    => $view->label,
+                '__DOLICAL_EVENT_DATE__'     => $when,
+                '__DOLICAL_EVENT_LOCATION__' => (string) $event->location,
+                '__DOLICAL_EVENT_VISIO__'    => $visio,
+                '__DOLICAL_ORGANIZER_NAME__' => $ownerName,
+                '__DOLICAL_RECIPIENT_NAME__' => $name,
+                '__DOLICAL_ANSWER_LINK__'    => $url,
+            ]);
+            [$subject, $html] = dolical_mail_from_template($template, $substitutions, $langs);
+        } else {
+            $rows = [[$langs->transnoentities('DoliCalMailWhen'), $when], [$langs->transnoentities('DoliCalBookingWith'), $ownerName]];
+            if (!empty($event->location)) {
+                $rows[] = [$langs->transnoentities('Location'), (string) $event->location];
+            }
+            if ($visio !== '') {
+                $rows[] = dolical_visio_mail_row($visio, $langs);
+            }
+            $subject = $langs->transnoentities('DoliCalBookingReminderSubject', $view->label, $when);
+            $html    = dolical_mail_html([
+                'title'     => $view->label,
+                'intro'     => $langs->transnoentities('DoliCalBookingReminderIntro', $name),
+                'rows'      => $rows,
+                'button'    => [$url, $langs->transnoentities('DoliCalBookingManage')],
+                'secondary' => [dolical_booking_manage_url($event, (int) $contactId, ['ics' => 1]), $langs->transnoentities('DoliCalAddToCalendar')],
+                'note'      => $langs->transnoentities('DoliCalBookingReminderNote'),
+            ]);
+        }
+
+        $error = dolical_send_mail((string) $contact->email, $subject, $html, (string) $owner->email, $ownerName, 'rea' . ((int) $event->id));
+        if ($error !== '') {
+            $result['errors'][] = $contact->email . ' : ' . strip_tags($error);
+            continue;
+        }
+        $result['sent']++;
+        // In the history of the event and of the contact, in the language of the person
+        dolical_log_invitation($event, $owner, DOLICAL_CODE_BOOKING_REMIND, $ownerLangs->transnoentities('DoliCalTraceBookingReminder', $name, $ownerWhen), (string) $contact->email, $subject, (int) $contactId);
+    }
+    $langs = $savedLangs;
+
+    return $result;
 }

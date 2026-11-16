@@ -441,6 +441,22 @@ button.dolical-card__action.dolical-card__action--danger {
   font-size: 12.5px;
 }
 
+/* Video call : the link to join, the address under it on one line */
+.dolical-card__visio {
+  display: flex;
+  flex-direction: column;
+}
+
+.dolical-card__visio a {
+  font-weight: 600;
+}
+
+.dolical-card__visio .dolical-card__muted {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .dolical-card__indent {
   margin-left: 30px;
 }
@@ -2675,6 +2691,11 @@ button.ra-list__date {
   margin-top: 4px;
   color: #718096;
   text-align: center;
+}
+
+/* The link to join the video call */
+.dolical-public-card__row a {
+  font-weight: 600;
 }
 
 .dolical-public-card__status {

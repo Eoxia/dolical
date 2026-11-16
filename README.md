@@ -204,8 +204,9 @@ liste des personnes proposées).
 
 - **Le client** choisit un créneau libre de la semaine (semaines suivantes en flèches), puis donne son nom, son e-mail
   et, s'il veut, son téléphone, sa société et un message.
-- **Créneaux libres** : les plages horaires découpées à la durée choisie, à partir de 2 heures après maintenant et sur
-  30 jours. Sont écartés les créneaux pris par un événement de la personne (organisatrice ou invitée, sauf si elle
+- **Créneaux libres** : les plages horaires découpées à la durée choisie, à partir de 2 heures après maintenant et
+  jusqu'au nombre de semaines choisi dans la configuration (« Réservable jusqu'à », 4 par défaut ; 5 semaines un
+  lundi : jusqu'au lundi 35 jours plus tard, compris). Sont écartés les créneaux pris par un événement de la personne (organisatrice ou invitée, sauf si elle
   l'a refusé ; les événements automatiques ne comptent pas), ses congés validés (module Congés) et les jours fériés
   du pays de l'entreprise. Un événement marqué *disponible* qui dure une journée ou plus ne bloque pas (journée de
   télétravail, tâche étalée sur des semaines) ; plus court, il bloque même marqué disponible.
@@ -217,7 +218,17 @@ liste des personnes proposées).
   revoir ou **annuler** son rendez-vous ; la personne reçoit « Nouveau rendez-vous », avec la réponse directe au
   client. Le texte de la confirmation est modifiable (modèle « DoliCal – Confirmation d'un rendez-vous pris en ligne »,
   `__DOLICAL_ANSWER_LINK__` étant le lien du client). Déplacer ou supprimer le rendez-vous dans le calendrier prévient
-  le client comme un invité.
+  le client comme un invité, sous le titre de sa page et avec le lien de son rendez-vous.
+- **Rappels au client** : cases de la configuration (1 semaine, 2 jours, 1 jour, 2 heures, 1 heure avant ; aucune par
+  défaut). La tâche planifiée « Rappels des rendez-vous en ligne » (toutes les 15 minutes, module Travaux planifiés)
+  envoie au client un e-mail avec la date, la visio et le lien pour annuler. Un rappel dont l'heure était passée quand
+  le rendez-vous a été pris n'est pas envoyé ; plusieurs dus d'un coup (tâche arrêtée un moment) n'en font qu'un.
+  Modèle modifiable « DoliCal – Rappel d'un rendez-vous pris en ligne » ; chaque envoi laisse une trace
+  `AC_DOLICAL_BOOKREMIND` sur le rendez-vous.
+- **Visio** : chaque personne donne le lien de sa salle (Teams, Meet, Zoom, Jitsi…) sur « Ma page de prise de
+  rendez-vous » ; il est mis sur chaque rendez-vous pris et envoyé dans la confirmation (« Rejoindre la visio », et
+  dans le `.ics`). Pour un seul rendez-vous, le champ « Lien de visio » du formulaire le change : enregistré avec
+  « Envoyer les invitations par e-mail » coché, le client reçoit l'e-mail « Lien de la visio ».
 - **Annulation par le client** : l'événement est supprimé, le créneau se libère, la personne est prévenue, le client
   reçoit le `.ics` qui retire le rendez-vous de son agenda, et une trace reste dans l'historique du contact.
 - **Protections** : deux visiteurs sur le même créneau, le second est renvoyé aux créneaux ; un double envoi rend le
@@ -237,10 +248,12 @@ liste des personnes proposées).
 | Rappels | `llx_actioncomm_reminder` |
 | Série | `llx_actioncomm.recurid`, `recurrule`, `recurdateend` |
 | Compte-rendu | champ complémentaire `dolical_report` de l'événement |
+| Lien de visio | champ complémentaire `dolical_visio` de l'événement (le lieu natif ne tient que 128 caractères) |
 | Événement créé sur un téléphone | `llx_actioncomm.ref_ext` : `dav:` + nom du fichier + `\|` + identifiant |
 | Import d'un agenda (.ics) | `llx_actioncomm.import_key` : même clé pour tous les événements d'un import |
 | Rendez-vous pris en ligne | `llx_actioncomm.ref_ext` = `dolical-booking` ; le client est un contact natif |
 | Textes de la page d'une personne | paramètres utilisateur `DOLICAL_BOOKING_TITLE`, `_INTRO`, `_FORM_TITLE` (communs : constantes du même nom) |
+| Lien de visio d'une personne | paramètre utilisateur `DOLICAL_BOOKING_VISIO` |
 | Lien court d'une page (avec Saturne) | table de Saturne `llx_saturne_object_redirection` |
 | Réservations récentes par adresse IP | `documents/dolical/temp/booking/` (quelques octets, oubliés après une heure) |
 | Agendas de collègues synchronisés | paramètre utilisateur `DOLICAL_CALDAV_SHARED` |
@@ -274,7 +287,6 @@ Constantes facultatives (*Configuration > Divers*), 0 pour lever une limite :
 | `DOLICAL_CALDAV_MAX_FAILS_IP` | 20 | Échecs de connexion CalDAV permis par adresse IP dans la fenêtre |
 | `DOLICAL_CALDAV_FAIL_WINDOW` | 15 | Fenêtre des échecs CalDAV, en minutes |
 | `DOLICAL_BOOKING_NOTICE_HOURS` | 2 | Heures entre maintenant et le premier créneau proposé en ligne |
-| `DOLICAL_BOOKING_HORIZON_DAYS` | 30 | Jours sur lesquels les créneaux sont proposés en ligne |
 | `DOLICAL_BOOKING_MAX_PER_EMAIL` | 3 | Rendez-vous à venir pris en ligne par une même adresse e-mail |
 | `DOLICAL_BOOKING_MAX_PER_IP` | 5 | Rendez-vous pris en ligne par heure depuis une même adresse IP |
 | `DOLICAL_BOOKING_CAPTCHA` | 0 | 1 : code anti-robot de Dolibarr sur le formulaire de prise de rendez-vous |
