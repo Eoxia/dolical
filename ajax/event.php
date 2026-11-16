@@ -689,12 +689,13 @@ switch ($action) {
         if (!dolical_can_edit_event($user, $event)) {
             dolical_json_exit(['success' => false, 'error' => $langs->trans('NotEnoughPermissions')], 403);
         }
-        $confirmed = dolical_confirm_event($event, $user);
+        // The slots kept : several may be, the others offered with them are removed
+        $confirmed = dolical_confirm_event($event, $user, GETPOST('keep', 'array:int'));
         $warnings  = $confirmed['errors'];
         if ($confirmed['kept'] > 0) {
             $warnings[] = $langs->trans('DoliCalSlotsKept', $confirmed['kept']);
         }
-        dolical_json_exit(['success' => $confirmed['success'], 'error' => implode(' ', $warnings), 'removed' => $confirmed['removed'], 'cancelled' => $confirmed['cancelled']]);
+        dolical_json_exit(['success' => $confirmed['success'], 'error' => implode(' ', $warnings), 'confirmed' => $confirmed['confirmed'], 'removed' => $confirmed['removed'], 'cancelled' => $confirmed['cancelled'], 'removedSelf' => $confirmed['removedSelf']]);
         break;
 
     case 'savereport':

@@ -309,8 +309,9 @@ window.dolical.util.save = function(key, value) {
  * Ask before an action, in a window of the calendar (core/tpl/dolical_ask_modal.tpl.php) : its title, what it does,
  * the button that does it, red for a deletion. Escape or « Cancel » close it, Enter confirms.
  *
- * @param   {Object}   options {title, text, confirm : label of the button, danger : a deletion, icon : classes}
- * @param   {Function} done    Called once confirmed
+ * @param   {Object}   options {title, text, confirm : label of the button, danger : a deletion, icon : classes,
+ *                             choices : [{value, label, checked}] boxes to tick}
+ * @param   {Function} done    Called once confirmed, with the values ticked when there are choices
  * @returns {void}
  */
 window.dolical.util.ask = function(options, done) {
@@ -331,13 +332,30 @@ window.dolical.util.ask = function(options, done) {
   $confirm.find('i').attr('class', danger ? 'fas fa-trash-alt' : 'fas fa-check');
   $confirm.find('span').text(options.confirm || '');
 
+  // Choices to tick : the values ticked go to done(), the button waits for one at least
+  const $choices = $modal.find('.dolical-ask__choices').empty().toggle(!!options.choices);
+  (options.choices || []).forEach(function(choice) {
+    const $choice = $('<label class="dolical-check dolical-ask__choice"><input type="checkbox"><span></span></label>');
+    $choice.find('input').val(choice.value).prop('checked', !!choice.checked);
+    $choice.find('span').text(choice.label);
+    $choices.append($choice);
+  });
+  const update = function() {
+    $confirm.prop('disabled', !!options.choices && !$choices.find('input:checked').length);
+  };
+  $choices.off('change').on('change', update);
+  update();
+
   const close = function() {
     $modal.removeClass('modal-active');
     $(document).off('keydown.dolicalask');
   };
   $confirm.off('click').on('click', function() {
+    const values = options.choices ? $choices.find('input:checked').map(function() {
+      return $(this).val();
+    }).get() : undefined;
     close();
-    done();
+    done(values);
   });
   $modal.find('.modal-close').off('click.dolicalask').on('click.dolicalask', close);
   $(document).off('keydown.dolicalask').on('keydown.dolicalask', function(event) {

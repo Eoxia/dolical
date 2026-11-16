@@ -95,7 +95,8 @@ $billingIcons  = ['paid' => 'fas fa-check-circle', 'unpaid' => 'fas fa-hourglass
                 <i class="far fa-question-circle"></i>
                 <span><?php echo $card['otherSlots'] > 0 ? $langs->trans('DoliCalToConfirmWithOthers', $card['otherSlots']) : $langs->trans('DoliCalToConfirmAlone'); ?></span>
                 <?php if ($card['canEdit']) : ?>
-                    <button type="button" class="dolical-btn dolical-btn--small dolical-btn--primary" data-action="confirm" data-others="<?php echo (int) $card['otherSlots']; ?>"><i class="fas fa-check"></i><?php echo $langs->trans('DoliCalConfirmSlot'); ?></button>
+                    <?php // The slots of the offer go to the window that chooses the ones kept ?>
+                    <button type="button" class="dolical-btn dolical-btn--small dolical-btn--primary" data-action="confirm" data-others="<?php echo (int) $card['otherSlots']; ?>" data-slots="<?php echo dol_escape_htmltag(json_encode($card['slots'])); ?>"><i class="fas fa-check"></i><?php echo $langs->trans($card['otherSlots'] > 0 ? 'DoliCalConfirmSlots' : 'DoliCalConfirmSlot'); ?></button>
                 <?php endif; ?>
             </div>
         <?php endif; ?>

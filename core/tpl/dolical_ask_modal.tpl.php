@@ -36,6 +36,7 @@
                 <div class="dolical-confirm__icon"><i class="fas fa-question"></i></div>
                 <div class="dolical-confirm__body">
                     <p class="dolical-confirm__text"></p>
+                    <div class="dolical-ask__choices"></div>
                 </div>
             </div>
         </div>

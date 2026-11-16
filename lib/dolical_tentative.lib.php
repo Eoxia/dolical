@@ -157,42 +157,90 @@ function dolical_tentative_siblings(ActionComm $event): array
 }
 
 /**
- * Confirm a slot : its mark is cleared, the other slots offered with it are removed (the people invited to them are
- * told, as by a deletion). A slot the user may not remove stays, to confirm.
+ * The slots offered together with an event, itself included, by date
  *
- * @param  ActionComm $event Event confirmed
- * @param  User       $user  Current user
- * @return array             ['success' => bool, 'removed' => int, 'kept' => int, 'cancelled' => int, 'errors' => string[]]
+ * @param  ActionComm $event Event
+ * @return array             [['id' => int, 'start' => int, 'end' => int, 'fullday' => bool]]
  */
-function dolical_confirm_event(ActionComm $event, User $user): array
+function dolical_tentative_slots(ActionComm $event): array
 {
-    $result   =['success' => false, 'removed' => 0, 'kept' => 0, 'cancelled' => 0, 'errors' => []];
-    $siblings = dolical_tentative_siblings($event);
-    if (dolical_set_tentative($event, '', $user) <= 0) {
-        $result['errors'][] = $event->error ?: 'Error';
-        return $result;
-    }
-    $result['success'] = true;
+    global $db;
 
-    foreach ($siblings as $id) {
+    $group = dolical_get_tentative($event);
+    if ($group === '') {
+        return [];
+    }
+
+    $sql   = 'SELECT a.id, a.datep, a.datep2, a.fulldayevent FROM ' . MAIN_DB_PREFIX . 'actioncomm as a';
+    $sql  .= ' INNER JOIN ' . MAIN_DB_PREFIX . 'actioncomm_extrafields as ef ON ef.fk_object = a.id';
+    $sql  .= " WHERE ef.dolical_tentative = '" . $db->escape($group) . "'";
+    $sql  .= ' AND a.entity IN (' . getEntity('agenda') . ')';
+    $sql  .= ' ORDER BY a.datep ASC, a.id ASC';
+    $resql = $db->query($sql);
+    $slots = [];
+    if ($resql) {
+        while ($obj = $db->fetch_object($resql)) {
+            $start   = (int) $db->jdate($obj->datep);
+            $slots[] = ['id' => (int) $obj->id, 'start' => $start, 'end' => $obj->datep2 ? max($start, (int) $db->jdate($obj->datep2)) : $start, 'fullday' => !empty($obj->fulldayevent)];
+        }
+        $db->free($resql);
+    }
+
+    return $slots;
+}
+
+/**
+ * Confirm slots offered together : the ones kept lose their mark, the others are removed (the people invited to them
+ * are told, as by a deletion). A slot the user may not change or remove stays as it is, to confirm.
+ *
+ * @param  ActionComm $event Event the confirmation is made from
+ * @param  User       $user  Current user
+ * @param  int[]      $keep  Slots kept, among the ones offered with the event ; empty for the event alone
+ * @return array             ['success' => bool, 'confirmed' => int, 'removed' => int, 'kept' => int, 'cancelled' => int, 'removedSelf' => bool, 'errors' => string[]]
+ */
+function dolical_confirm_event(ActionComm $event, User $user, array $keep = []): array
+{
+    $result = ['success' => false, 'confirmed' => 0, 'removed' => 0, 'kept' => 0, 'cancelled' => 0, 'removedSelf' => false, 'errors' => []];
+    $group  = array_merge([(int) $event->id], dolical_tentative_siblings($event));
+    // Only slots of this offer : an id of another event is not taken
+    $keep   = array_values(array_intersect(array_map('intval', $keep), $group));
+    if (empty($keep)) {
+        $keep = [(int) $event->id];
+    }
+
+    foreach ($group as $id) {
         // Read as the calendar reads an event : in the entities of the user, if he may see it
-        $other = dolical_load_event($id, $user);
-        if ($other === null) {
+        $slot = $id === (int) $event->id ? $event : dolical_load_event($id, $user);
+        if ($slot === null) {
             continue;
         }
-        if (!dolical_can_delete_event($user, $other)) {
+        if (in_array($id, $keep, true)) {
+            if ($id !== (int) $event->id && !dolical_can_edit_event($user, $slot)) {
+                $result['kept']++;
+                continue;
+            }
+            if (dolical_set_tentative($slot, '', $user) > 0) {
+                $result['confirmed']++;
+            } else {
+                $result['errors'][] = $slot->error ?: 'Error';
+            }
+            continue;
+        }
+        if (!dolical_can_delete_event($user, $slot)) {
             $result['kept']++;
             continue;
         }
-        $deleted = dolical_delete_event_series($other, 'one', $user);
+        $deleted = dolical_delete_event_series($slot, 'one', $user);
         if ($deleted['success']) {
             $result['removed']   += max(1, (int) $deleted['deleted']);
             $result['cancelled'] += (int) $deleted['cancelled'];
+            $result['removedSelf'] = $result['removedSelf'] || $id === (int) $event->id;
         } else {
             $result['kept']++;
         }
         $result['errors'] = array_merge($result['errors'], $deleted['errors']);
     }
+    $result['success'] = $result['confirmed'] > 0;
 
     return $result;
 }

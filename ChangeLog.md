@@ -59,6 +59,8 @@
 - Formulaire d'un événement : plus de bandeau « Nouvel événement », le titre saisi et la croix sur la première ligne,
   sans le cadre que le thème met autour du champ actif ; « Envoyer les invitations par e-mail » en interrupteur, comme
   « Me rappeler l'événement ».
+- Créneaux proposés : « Confirmer des créneaux » sur la fiche ouvre la liste des créneaux de la proposition, on coche
+  ceux qui sont retenus (plusieurs d'un coup), les autres sont retirés de l'agenda.
 - Confirmer un créneau, supprimer un événement ou une pièce jointe : une fenêtre de DoliCal (titre, ce que fait
   l'action, bouton rouge pour une suppression) au lieu de la question du navigateur.
 - Fuseau horaire affiché avec son écart à UTC (« Europe/Paris (UTC+01:00) ») : liste de la configuration, prise de

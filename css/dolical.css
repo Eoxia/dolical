@@ -4355,3 +4355,25 @@ button.dolical-form__add-date {
 .dolical-ask-modal .dolical-confirm {
   align-items: center;
 }
+
+/* Boxes to tick in the window that asks : the slots of an offer kept, one per line */
+.dolical-ask__choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+label.dolical-check.dolical-ask__choice {
+  display: flex;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid #e7edf2;
+  border-radius: 8px;
+  background: #fff;
+  color: #2d3748;
+  font-size: 14px;
+}
+label.dolical-check.dolical-ask__choice:hover {
+  border-color: #63acc9;
+  background: #f2f9fc;
+}

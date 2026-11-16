@@ -351,17 +351,22 @@ window.dolical.eventcard.action = function(event) {
       break;
     }
     case 'confirm': {
-      // A slot offered confirmed : the other slots offered with it leave the agenda
-      const others  = parseInt($btn.attr('data-others'), 10) || 0;
-      const confirm = function() {
+      // Slots offered : the ones ticked are confirmed, several at once if needed ; the others leave the agenda
+      let slots = [];
+      try {
+        slots = JSON.parse($btn.attr('data-slots') || '[]');
+      } catch (error) {
+        slots = [];
+      }
+      const confirm = function(keep) {
         $btn.prop('disabled', true);
-        U.post({action: 'confirm', id: id}).done(function(response) {
+        U.post({action: 'confirm', id: id, keep: keep && keep.length ? keep : [id]}).done(function(response) {
           if (!response.success) {
             U.toast(response.error || U.t('error'), 'error');
             $btn.prop('disabled', false);
             return;
           }
-          const parts = [U.t('slotConfirmed')];
+          const parts = [response.confirmed > 1 ? U.t('slotsConfirmed', response.confirmed) : U.t('slotConfirmed')];
           if (response.removed > 0) {
             parts.push(U.t('slotsRemoved', response.removed));
           }
@@ -372,17 +377,30 @@ window.dolical.eventcard.action = function(event) {
             parts.push(response.error);
           }
           U.toast(parts.join(' · '), response.error ? 'error' : '');
+          // The event of the card removed (another slot was kept) : the card goes with it
+          if (response.removedSelf) {
+            E.close();
+            $(document).trigger('dolical:changed');
+            return;
+          }
           $(document).trigger('dolical:changed', [id]);
         }).fail(function(xhr) {
           U.toast(U.xhrError(xhr), 'error');
           $btn.prop('disabled', false);
         });
       };
-      if (others === 0) {
-        confirm();
+      if (slots.length <= 1) {
+        confirm([id]);
         break;
       }
-      U.ask({title: U.t('confirmSlotTitle'), text: U.t('confirmSlot', others), confirm: U.t('confirmSlotTitle')}, confirm);
+      U.ask({
+        title: U.t('confirmSlotsTitle'),
+        text: U.t('confirmSlotsText'),
+        confirm: U.t('confirmSlotsButton'),
+        choices: slots.map(function(slot) {
+          return {value: slot.id, label: slot.label, checked: slot.current};
+        })
+      }, confirm);
       break;
     }
     case 'report':
