@@ -993,9 +993,20 @@ function dolical_get_event_card(ActionComm $event, User $user): array
     $card['report']     = dolical_get_report($event);
     $card['reportDue']  = dolical_report_due($event, $user);
     $card['canReport']  = dolical_can_report($user, $event);
-    // A slot offered with others : confirmed from the card, the others are removed
-    $card['toConfirm']  = dolical_get_tentative($event) !== '';
-    $card['otherSlots'] = $card['toConfirm'] ? count(dolical_tentative_siblings($event)) : 0;
+    // A slot offered with others : the ones kept are confirmed from the card, the others are removed
+    $card['toConfirm'] = dolical_get_tentative($event) !== '';
+    $card['slots']     = [];
+    foreach ($card['toConfirm'] ? dolical_tentative_slots($event) : [] as $slot) {
+        $slotLabel = dol_print_date($slot['start'], '%a %d %b', 'tzuserrel');
+        if (strpos((string) $langs->defaultlang, 'fr') === 0) {
+            $slotLabel = dol_strtolower($slotLabel);
+        }
+        if (!$slot['fullday']) {
+            $slotLabel .= ' · ' . dol_print_date($slot['start'], 'hour', 'tzuserrel') . ' – ' . dol_print_date($slot['end'], 'hour', 'tzuserrel');
+        }
+        $card['slots'][] = ['id' => $slot['id'], 'label' => $slotLabel, 'current' => $slot['id'] === (int) $event->id];
+    }
+    $card['otherSlots'] = max(0, count($card['slots']) - 1);
 
     // Third party and project : their name as on the native card, their details for whoever may see them
     $card['thirdparty'] = null;
@@ -1656,6 +1667,10 @@ function dolical_calendar_config(User $user, array $calendarUsers, array $calend
             'confirmDelete'  => $langs->transnoentities('DoliCalConfirmDelete'),
             'confirmSlot'    => $langs->transnoentities('DoliCalConfirmSlotAsk', '%COUNT%'),
             'confirmSlotTitle' => $langs->transnoentities('DoliCalConfirmSlot'),
+            'confirmSlotsTitle' => $langs->transnoentities('DoliCalConfirmSlots'),
+            'confirmSlotsText' => $langs->transnoentities('DoliCalConfirmSlotsText'),
+            'confirmSlotsButton' => $langs->transnoentities('DoliCalConfirmSlotsButton'),
+            'slotsConfirmed' => $langs->transnoentities('DoliCalSlotsConfirmed', '%COUNT%'),
             'deleteEventTitle' => $langs->transnoentities('DoliCalDeleteEventTitle'),
             'deleteEvent'    => $langs->transnoentities('Delete'),
             'deleteFileTitle' => $langs->transnoentities('DoliCalDeleteFileTitle'),
