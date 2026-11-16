@@ -397,6 +397,14 @@ function dolical_caldav_objects(User $user, int $calendarUserId): array
             $texts[(int) $obj->fk_object] = trim((string) $obj->dolical_report);
         }
     }
+    // The video call links : the phone offers to join from the event
+    $visios = [];
+    if (dolical_visio_available()) {
+        $resql = $db->query('SELECT fk_object, dolical_visio FROM ' . MAIN_DB_PREFIX . "actioncomm_extrafields WHERE fk_object IN (" . $idList . ") AND dolical_visio IS NOT NULL AND dolical_visio <> ''");
+        while ($resql && ($obj = $db->fetch_object($resql))) {
+            $visios[(int) $obj->fk_object] = trim((string) $obj->dolical_visio);
+        }
+    }
 
     $owners  = [];
     $objects = [];
@@ -406,7 +414,7 @@ function dolical_caldav_objects(User $user, int $calendarUserId): array
             $owner = new User($db);
             $owners[$ownerId] = $owner->fetch($ownerId) > 0 ? ['name' => $owner->getFullName($langs), 'email' => (string) $owner->email] : ['name' => '', 'email' => ''];
         }
-        $data = dolical_caldav_vcalendar($row, $people[$id] ?? [], $owners[$ownerId] ?? ['name' => '', 'email' => ''], array_keys($alarms[$id] ?? []), $texts[$id] ?? '');
+        $data = dolical_caldav_vcalendar($row, $people[$id] ?? [], $owners[$ownerId] ?? ['name' => '', 'email' => ''], array_keys($alarms[$id] ?? []), $texts[$id] ?? '', $visios[$id] ?? '');
         $uri  = dolical_caldav_uri($id, (string) $row->ref_ext);
 
         $objects[$uri] = [
@@ -432,9 +440,10 @@ function dolical_caldav_objects(User $user, int $calendarUserId): array
  * @param  array  $owner   ['name', 'email'] of the organizer
  * @param  int[]  $alarms  Delays of the reminders before the start, in seconds
  * @param  string $report  Report of the meeting
+ * @param  string $visio   Video call link : the place when there is none, and the conference of the standard
  * @return string
  */
-function dolical_caldav_vcalendar($row, array $people, array $owner, array $alarms, string $report): string
+function dolical_caldav_vcalendar($row, array $people, array $owner, array $alarms, string $report, string $visio = ''): string
 {
     global $db;
 
@@ -471,6 +480,12 @@ function dolical_caldav_vcalendar($row, array $people, array $owner, array $alar
 
     if (trim((string) $row->location) !== '') {
         $vevent->add('LOCATION', dol_html_entity_decode((string) $row->location, ENT_QUOTES | ENT_HTML5));
+    } elseif ($visio !== '') {
+        // Read back unchanged, the place stays empty : the way back only takes what the phone changed
+        $vevent->add('LOCATION', $visio);
+    }
+    if ($visio !== '') {
+        $vevent->add('CONFERENCE', $visio, ['VALUE' => 'URI', 'FEATURE' => ['AUDIO', 'VIDEO']]);
     }
     $description = dolical_caldav_description((string) $row->note, $report);
     if ($description !== '') {

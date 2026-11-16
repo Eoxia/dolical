@@ -22,7 +22,7 @@
  *          synchronization, whose script copies the link.
  *
  * Rendered by view/dolical_booking.php (inherits its scope). Expects: $title, $isSelf, $isOpen, $isOffered,
- * $publicUrl, $shortUrl, $ownTexts, $fields, $personId, $person, $user, $langs.
+ * $publicUrl, $shortUrl, $ownTexts, $ownVisio, $fields, $personId, $person, $user, $langs.
  */
 ?>
 <div class="dolical-sync dolical-booking-mine" data-config="<?php echo dol_escape_htmltag(json_encode(['i18n' => ['copied' => $langs->transnoentities('DoliCalCopied')]])); ?>">
@@ -62,6 +62,27 @@
                 </div>
             <?php endforeach; ?>
             <p class="dolical-card__muted"><?php echo $langs->trans('DoliCalBookingMineLinkHelp'); ?></p>
+        </div>
+    <?php endif; ?>
+
+    <?php if (dolical_visio_available()) : ?>
+        <div class="dolical-sync__card">
+            <h2><i class="fas fa-video pictofixedwidth"></i><?php echo $langs->trans('DoliCalBookingVisio'); ?></h2>
+            <p class="dolical-card__muted"><?php echo $langs->trans('DoliCalBookingVisioHelp'); ?></p>
+            <form method="POST" action="<?php echo dol_escape_htmltag($_SERVER['PHP_SELF']); ?>" class="dolical-booking-texts">
+                <input type="hidden" name="token" value="<?php echo newToken(); ?>">
+                <input type="hidden" name="action" value="savevisio">
+                <?php if (!$isSelf) : ?>
+                    <input type="hidden" name="id" value="<?php echo (int) $personId; ?>">
+                <?php endif; ?>
+                <label class="dolical-booking-texts__field">
+                    <span><?php echo $langs->trans('DoliCalVisio'); ?></span>
+                    <input type="text" inputmode="url" name="DOLICAL_BOOKING_VISIO" maxlength="<?php echo DOLICAL_VISIO_MAX; ?>" placeholder="<?php echo dol_escape_htmltag($langs->trans('DoliCalVisioPlaceholder')); ?>" value="<?php echo dol_escape_htmltag($ownVisio); ?>">
+                </label>
+                <div class="dolical-sync__actions">
+                    <button type="submit" class="dolical-btn dolical-btn--primary"><i class="fas fa-save"></i><?php echo $langs->trans('Save'); ?></button>
+                </div>
+            </form>
         </div>
     <?php endif; ?>
 

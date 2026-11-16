@@ -16,6 +16,18 @@
   pour 800 000 événements).
 - Formulaire d'un rendez-vous : choisir un contact d'un tiers remplit le champ « Tiers » quand il est encore vide (un
   tiers déjà choisi est gardé). Le texte des champs « Tiers » et « Projet » est centré dans le champ.
+- Lien de visio d'un rendez-vous (Teams, Meet, Zoom, Jitsi…) : un champ du formulaire, envoyé avec les invitations
+  (bouton « Rejoindre la visio », `.ics` avec le lien en lieu et en conférence, jeton `__DOLICAL_EVENT_VISIO__` des
+  modèles), sur la fiche, la page publique de réponse et le téléphone synchronisé. Ajouté ou changé seul, il part dans
+  un e-mail à lui (« Lien de la visio »). Prise de rendez-vous en ligne : chaque personne donne le lien de sa salle
+  sur sa page, il est mis sur chaque rendez-vous pris et envoyé dans la confirmation. Le client d'un rendez-vous pris
+  en ligne reçoit les modifications sous le titre de sa page et avec le lien de son rendez-vous. Champ complémentaire
+  `dolical_visio` créé à l'activation : **réactiver le module** après la mise à jour.
+- Prise de rendez-vous en ligne : « Réservable jusqu'à N semaines à l'avance » dans la configuration (4 par défaut),
+  à la place de la constante cachée `DOLICAL_BOOKING_HORIZON_DAYS` (30 jours).
+- Rappels au client avant un rendez-vous pris en ligne : 1 semaine, 2 jours, 1 jour, 2 heures ou 1 heure avant, au
+  choix dans la configuration (aucun par défaut), par la nouvelle tâche planifiée « Rappels des rendez-vous en ligne »
+  (toutes les 15 minutes, créée à l'activation du module), modèle d'e-mail modifiable.
 
 ## 1.3.0
 

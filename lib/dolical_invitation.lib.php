@@ -29,6 +29,7 @@
 
 require_once DOL_DOCUMENT_ROOT . '/core/class/CMailFile.class.php';
 require_once __DIR__ . '/dolical_event.lib.php';
+require_once __DIR__ . '/dolical_visio.lib.php';
 
 /**
  * Codes of the automatic events left by the invitations
@@ -38,6 +39,8 @@ const DOLICAL_CODE_UPDATE = 'AC_DOLICAL_UPDATE';
 const DOLICAL_CODE_REMIND = 'AC_DOLICAL_REMIND';
 const DOLICAL_CODE_CANCEL = 'AC_DOLICAL_CANCEL';
 const DOLICAL_CODE_ANSWER = 'AC_DOLICAL_ANSWER';
+// Reminder of an appointment booked online, before it starts : apart from the reminders of the guests without answer
+const DOLICAL_CODE_BOOKING_REMIND = 'AC_DOLICAL_BOOKREMIND';
 
 /**
  * What each kind of mail needs : its code of trace, its template type, its texts, whether it carries the answer
@@ -498,11 +501,24 @@ function dolical_build_ics(ActionComm $event, User $organizer, string $url, int 
         $lines[] = $event->fulldayevent ? 'RECURRENCE-ID;VALUE=DATE:' . dolical_print_date((int) $options['recurrenceId'], '%Y%m%d') : 'RECURRENCE-ID:' . $utc((int) $options['recurrenceId']);
     }
     $lines[] = 'SUMMARY:' . $escape(dol_html_entity_decode((string) $event->label, ENT_QUOTES | ENT_HTML5));
-    if (!empty($event->location)) {
-        $lines[] = 'LOCATION:' . $escape((string) $event->location);
+    // The video call link : the place when there is none (the calendars offer to join from it), the description, and
+    // the property of the standard (RFC 7986) for the calendars that read it
+    $visio = $method === 'CANCEL' ? '' : dolical_get_visio($event);
+    if (!empty($event->location) || $visio !== '') {
+        $lines[] = 'LOCATION:' . $escape(!empty($event->location) ? (string) $event->location : $visio);
+    }
+    $description = [];
+    if ($visio !== '') {
+        $description[] = $langs->transnoentities('DoliCalIcsVisio') . ' ' . $visio;
+        $lines[]       = 'CONFERENCE;VALUE=URI;FEATURE=AUDIO,VIDEO:' . $visio;
     }
     if ($url !== '') {
-        $lines[] = 'DESCRIPTION:' . $escape($langs->transnoentities($options['urlLabel'] ?? 'DoliCalIcsAnswerHere') . ' ' . $url);
+        $description[] = $langs->transnoentities($options['urlLabel'] ?? 'DoliCalIcsAnswerHere') . ' ' . $url;
+    }
+    if (!empty($description)) {
+        $lines[] = 'DESCRIPTION:' . $escape(implode("\n\n", $description));
+    }
+    if ($url !== '') {
         $lines[] = 'URL:' . $url;
     }
     if (!empty($organizer->email)) {
@@ -702,7 +718,7 @@ function dolical_delete_invitation_traces(int $eventId, User $user): void
 
     $sql  = 'SELECT id FROM ' . MAIN_DB_PREFIX . 'actioncomm';
     $sql .= ' WHERE fk_element = ' . $eventId . " AND elementtype = 'action'";
-    $sql .= " AND code IN ('" . DOLICAL_CODE_INVITE . "', '" . DOLICAL_CODE_UPDATE . "', '" . DOLICAL_CODE_REMIND . "', '" . DOLICAL_CODE_ANSWER . "')";
+    $sql .= " AND code IN ('" . DOLICAL_CODE_INVITE . "', '" . DOLICAL_CODE_UPDATE . "', '" . DOLICAL_CODE_REMIND . "', '" . DOLICAL_CODE_ANSWER . "', '" . DOLICAL_CODE_BOOKING_REMIND . "')";
 
     $resql = $db->query($sql);
     while ($resql && ($obj = $db->fetch_object($resql))) {
@@ -746,17 +762,34 @@ function dolical_send_invitations(ActionComm $event, User $sender, array $recipi
     $template      = dolical_mail_template($settings['template'], $langs->defaultlang);
     // Counted once : the traces of this sending would raise it from one mail to the next
     $sequence      = dolical_invitation_sequence($event) + $settings['bump'];
+    // A cancelled event has no call left to join
+    $visio         = $mode !== 'cancel' ? dolical_get_visio($event) : '';
+    // Only the video call link was added or changed : the mail gives it, nothing else to confirm
+    $visioOnly     = $mode === 'update' && !empty($options['visioOnly']) && $visio !== '';
+    // An appointment booked online : its customer gets it as he booked it, with the page of his appointment
+    require_once __DIR__ . '/dolical_booking.lib.php';
+    $isBooking     = dolical_booking_is_booking($event);
+    $customerView  = $isBooking ? dolical_booking_customer_view($event, $organizer) : null;
     $tempDir       = $conf->dolical->dir_temp ?? (DOL_DATA_ROOT . '/dolical/temp');
     dol_mkdir($tempDir);
 
     foreach ($recipients as $recipient) {
+        $forCustomer = $customerView !== null && $recipient['kind'] === 'c';
+        $mailEvent   = $forCustomer ? $customerView : $event;
+        $mailLabel   = $forCustomer ? dol_html_entity_decode((string) $customerView->label, ENT_QUOTES | ENT_HTML5) : $label;
         // A cancelled event has nothing left to answer
-        $url = $settings['answer'] ? dolical_invitation_url($event, $recipient['kind'], (int) $recipient['id']) : '';
+        $url = '';
+        $icsUrl = '';
+        if ($settings['answer']) {
+            $url    = $forCustomer ? dolical_booking_manage_url($event, (int) $recipient['id']) : dolical_invitation_url($event, $recipient['kind'], (int) $recipient['id']);
+            $icsUrl = $forCustomer ? dolical_booking_manage_url($event, (int) $recipient['id'], ['ics' => 1]) : dolical_invitation_url($event, $recipient['kind'], (int) $recipient['id'], true);
+        }
 
         $substitutions = array_merge(getCommonSubstitutionArray($langs, 0, null, $event), [
-            '__DOLICAL_EVENT_LABEL__'    => $label,
+            '__DOLICAL_EVENT_LABEL__'    => $mailLabel,
             '__DOLICAL_EVENT_DATE__'     => $when,
             '__DOLICAL_EVENT_LOCATION__' => (string) $event->location,
+            '__DOLICAL_EVENT_VISIO__'    => $visio,
             '__DOLICAL_ORGANIZER_NAME__' => $organizerName,
             '__DOLICAL_RECIPIENT_NAME__' => $recipient['name'],
             '__DOLICAL_ANSWER_LINK__'    => $url,
@@ -765,24 +798,27 @@ function dolical_send_invitations(ActionComm $event, User $sender, array $recipi
         if ($template !== null) {
             [$subject, $html] = dolical_mail_from_template($template, $substitutions, $langs);
         } else {
-            $subject = $langs->transnoentities($settings['subject'], $label);
+            $subject = $langs->transnoentities($visioOnly ? 'DoliCalMailVisioSubject' : $settings['subject'], $mailLabel);
             $rows    = [[$langs->transnoentities('DoliCalMailWhen'), $when]];
             if (!empty($event->location)) {
                 $rows[] = [$langs->transnoentities('Location'), (string) $event->location];
             }
-            $rows[] = [$langs->transnoentities('DoliCalOrganizer'), $organizerName];
+            $rows[] = [$langs->transnoentities($forCustomer ? 'DoliCalBookingWith' : 'DoliCalOrganizer'), $organizerName];
+            if ($visio !== '') {
+                $rows[] = dolical_visio_mail_row($visio, $langs);
+            }
             $html   = dolical_mail_html([
-                'title'     => $label,
-                'intro'     => $langs->transnoentities($settings['intro'], $recipient['name'], $organizerName),
+                'title'     => $mailLabel,
+                'intro'     => $langs->transnoentities($visioOnly ? 'DoliCalMailVisioIntro' : $settings['intro'], $recipient['name'], $organizerName),
                 'rows'      => $rows,
-                'button'    => $settings['answer'] ? [$url, $langs->transnoentities('DoliCalMailAnswerButton')] : [],
-                'secondary' => $settings['answer'] ? [dolical_invitation_url($event, $recipient['kind'], (int) $recipient['id'], true), $langs->transnoentities('DoliCalAddToCalendar')] : [],
-                'note'      => $langs->transnoentities($settings['note']),
+                'button'    => $settings['answer'] ? [$url, $langs->transnoentities($forCustomer ? 'DoliCalBookingManage' : 'DoliCalMailAnswerButton')] : [],
+                'secondary' => $settings['answer'] ? [$icsUrl, $langs->transnoentities('DoliCalAddToCalendar')] : [],
+                'note'      => $langs->transnoentities($forCustomer && $settings['answer'] ? 'DoliCalBookingMailNote' : $settings['note']),
             ]);
         }
 
         $icsFile = $tempDir . '/invitation-' . ((int) $event->id) . '-' . $recipient['kind'] . ((int) $recipient['id']) . '.ics';
-        file_put_contents($icsFile, dolical_build_ics($event, $organizer, $url, $sequence, $settings['method'], $options));
+        file_put_contents($icsFile, dolical_build_ics($mailEvent, $organizer, $url, $sequence, $settings['method'], $forCustomer ? $options + ['urlLabel' => 'DoliCalBookingIcsManage'] : $options));
 
         $error = dolical_send_mail($recipient['email'], $subject, $html, $replyTo, $organizerName, 'rea' . ((int) $event->id), [['path' => $icsFile, 'mime' => 'text/calendar', 'name' => 'invitation.ics']]);
         dol_delete_file($icsFile, 0, 1, 0, null, false, 0);

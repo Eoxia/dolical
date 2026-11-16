@@ -110,6 +110,14 @@ $title = $isNew ? $langs->trans('DoliCalNewEvent') : $langs->trans('DoliCalEditE
                 </div>
             <?php endif; ?>
 
+            <?php if (dolical_visio_available()) : ?>
+                <?php // Sent with the invitations : the people invited join from their mail ?>
+                <div class="dolical-field dolical-field--wide">
+                    <label for="dolical-visio"><i class="fas fa-video pictofixedwidth"></i><?php echo $langs->trans('DoliCalVisio'); ?></label>
+                    <input type="text" inputmode="url" id="dolical-visio" name="visio" maxlength="<?php echo DOLICAL_VISIO_MAX; ?>" placeholder="<?php echo dol_escape_htmltag($langs->trans('DoliCalVisioPlaceholder')); ?>" value="<?php echo dol_escape_htmltag($formValues['visio'] ?? ''); ?>">
+                </div>
+            <?php endif; ?>
+
             <div class="dolical-field">
                 <label for="dolical-owner"><i class="fas fa-crown pictofixedwidth"></i><?php echo $langs->trans('DoliCalOrganizer'); ?></label>
                 <select id="dolical-owner" name="owner_id" class="dolical-select"<?php echo $canAssignAll ? '' : ' disabled'; ?>>

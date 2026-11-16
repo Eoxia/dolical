@@ -59,6 +59,7 @@ window.dolical.eventform.event = function() {
   $(document).on('change', '#dolical-event-modal #dolical-users, #dolical-event-modal #dolical-contacts', F.peopleChanged);
   $(document).on('select2:select', '#dolical-event-modal #dolical-contacts', F.contactChosen);
   $(document).on('change', '#dolical-event-modal input[name="start_at"], #dolical-event-modal input[name="end_at"], #dolical-event-modal input[name="start_day"], #dolical-event-modal input[name="end_day"], #dolical-event-modal input[name="fullday"], #dolical-event-modal input[name="location"]', F.placeChanged);
+  $(document).on('change', '#dolical-event-modal input[name="visio"]', F.visioChanged);
   $(document).on('click', '#dolical-event-modal input[name="notify"]', F.notifyTouched);
   $(document).on('change', '#dolical-event-modal select[name="owner_id"]', function() {
     F.scheduleAvailability($(this).closest('.dolical-form'));
@@ -295,6 +296,17 @@ window.dolical.eventform.checkAvailability = function($form) {
 window.dolical.eventform.placeChanged = function() {
   const $form = $(this).closest('.dolical-form');
   window.dolical.eventform.scheduleAvailability($form);
+  window.dolical.eventform.visioChanged.call(this);
+};
+
+/**
+ * The place or the video call link of an existing event changed : telling the participants is proposed, the link
+ * goes to them in the mail.
+ *
+ * @returns {void}
+ */
+window.dolical.eventform.visioChanged = function() {
+  const $form  = $(this).closest('.dolical-form');
   const people = ($form.find('#dolical-users').val() || []).length + ($form.find('#dolical-contacts').val() || []).length;
   if (parseInt($form.attr('data-id'), 10) > 0 && people > 0) {
     window.dolical.eventform.proposeNotify($form);

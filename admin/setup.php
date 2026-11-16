@@ -88,6 +88,10 @@ if ($action == 'update' && $permissionToWrite && dolical_valid_post()) {
     dolibarr_set_const($db, 'DOLICAL_BOOKING', GETPOSTINT('DOLICAL_BOOKING') ? 1 : 0, 'integer', 0, '', $conf->entity);
     dolibarr_set_const($db, 'DOLICAL_BOOKING_USERS', implode(',', $bookingUsers), 'chaine', 0, '', $conf->entity);
     dolibarr_set_const($db, 'DOLICAL_BOOKING_DURATION', min(480, max(5, GETPOSTINT('DOLICAL_BOOKING_DURATION'))), 'integer', 0, '', $conf->entity);
+    dolibarr_set_const($db, 'DOLICAL_BOOKING_HORIZON_WEEKS', min(52, max(1, GETPOSTINT('DOLICAL_BOOKING_HORIZON_WEEKS'))), 'integer', 0, '', $conf->entity);
+    // The reminders of the customers : none chosen is a choice too, the empty list sends nothing
+    $bookingReminders = array_values(array_intersect(array_keys(DOLICAL_BOOKING_REMINDER_DELAYS), array_map('intval', GETPOST('DOLICAL_BOOKING_REMINDERS', 'array:int'))));
+    dolibarr_set_const($db, 'DOLICAL_BOOKING_REMINDERS', implode(',', $bookingReminders), 'chaine', 0, '', $conf->entity);
     // No day at all is a choice too : 0 keeps it from falling back on the days by default
     dolibarr_set_const($db, 'DOLICAL_BOOKING_DAYS', !empty($bookingDays) ? implode(',', $bookingDays) : '0', 'chaine', 0, '', $conf->entity);
     $bookingHours = dolical_booking_hours(GETPOST('DOLICAL_BOOKING_HOURS', 'alphanohtml'));
@@ -219,6 +223,22 @@ foreach (range(1, 7) as $isoDay) {
     print '<label class="nowraponall marginrightonly"><input type="checkbox" name="DOLICAL_BOOKING_DAYS[]" value="' . $isoDay . '"' . (in_array($isoDay, dolical_booking_days(), true) ? ' checked' : '') . '> ' . $langs->trans('Day' . ($isoDay % 7)) . '</label> ';
 }
 print '<br><input type="text" name="DOLICAL_BOOKING_HOURS" class="minwidth200 margintoponly" placeholder="' . dol_escape_htmltag(DOLICAL_BOOKING_DEFAULT_HOURS) . '" value="' . dol_escape_htmltag(dolical_booking_format_hours(dolical_booking_hours())) . '">';
+print '</td></tr>';
+
+// How far ahead : the last day open today, in words
+print '<tr class="oddeven"><td>' . $langs->trans('DoliCalBookingHorizon') . '</td><td>' . dol_escape_htmltag($langs->transnoentities('DoliCalBookingHorizonHelp', dolical_booking_day(dolical_booking_window()[1] - 1))) . '</td><td class="center nowraponall">';
+print '<input type="number" name="DOLICAL_BOOKING_HORIZON_WEEKS" class="width50" min="1" max="52" value="' . dolical_booking_horizon_weeks() . '"> ' . $langs->trans('DoliCalBookingHorizonUnit');
+print '</td></tr>';
+
+// Reminders of the customers before their appointment, sent by a scheduled job
+print '<tr class="oddeven"><td>' . $langs->trans('DoliCalBookingReminders') . '</td><td>' . $langs->trans('DoliCalBookingRemindersHelp');
+if (!isModEnabled('cron')) {
+    print '<br><span class="warning">' . img_picto('', 'warning', 'class="pictofixedwidth"') . $langs->trans('DoliCalBookingRemindersNoCron') . '</span>';
+}
+print '</td><td class="center">';
+foreach (DOLICAL_BOOKING_REMINDER_DELAYS as $delay => $labelKey) {
+    print '<label class="nowraponall marginrightonly"><input type="checkbox" name="DOLICAL_BOOKING_REMINDERS[]" value="' . $delay . '"' . (in_array($delay, dolical_booking_reminder_delays(), true) ? ' checked' : '') . '> ' . $langs->trans($labelKey) . '</label> ';
+}
 print '</td></tr>';
 
 // Texts of the page : a title, a presentation of several lines, a title above the slots

@@ -78,6 +78,20 @@ if ($action === 'savetexts' && dolical_valid_post()) {
     exit;
 }
 
+if ($action === 'savevisio' && dolical_valid_post()) {
+    $typed = GETPOST('DOLICAL_BOOKING_VISIO', 'nohtml');
+    $visio = dolical_visio_clean($typed);
+    if ($visio === '' && trim($typed) !== '') {
+        setEventMessages($langs->trans('DoliCalVisioInvalid'), null, 'errors');
+    } elseif (dolical_booking_save_person_visio($person, $visio)) {
+        setEventMessages($langs->trans($visio !== '' ? 'DoliCalBookingVisioSaved' : 'DoliCalBookingVisioRemoved'), null);
+    } else {
+        setEventMessages($langs->trans('Error'), null, 'errors');
+    }
+    header('Location: ' . $selfUrl);
+    exit;
+}
+
 /*
  * View
  */
@@ -88,6 +102,7 @@ $publicUrl = dolical_booking_public_url($personId);
 // The short link to share, when Saturne makes them : made once, only for a page that is open
 $shortUrl  = $isOpen && $isOffered ? dolical_booking_short_url($personId, $user) : '';
 $ownTexts  = dolical_booking_person_texts($personId);
+$ownVisio  = dolical_booking_person_visio($personId);
 $fields    = [
     'DOLICAL_BOOKING_TITLE'      => 'DoliCalBookingPageTitle',
     'DOLICAL_BOOKING_INTRO'      => 'DoliCalBookingIntro',

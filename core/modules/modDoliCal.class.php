@@ -222,6 +222,22 @@ class modDoliCal extends DolibarrModules
                 'test'          => 'isModEnabled(\'dolical\')',
                 'priority'      => 50
             ],
+            // Every quarter of an hour : the reminder « an hour before » leaves within a few minutes of its moment ;
+            // nothing is sent while the setup chooses no reminder
+            1 => [
+                'label'         => $langs->transnoentities('DoliCalCronBookingRemind'),
+                'jobtype'       => 'method',
+                'class'         => '/dolical/class/dolicalcron.class.php',
+                'objectname'    => 'DoliCalCron',
+                'method'        => 'remindBookings',
+                'parameters'    => '',
+                'comment'       => $langs->transnoentities('DoliCalCronBookingRemindComment'),
+                'frequency'     => 15,
+                'unitfrequency' => 60,
+                'status'        => 1,
+                'test'          => 'isModEnabled(\'dolical\')',
+                'priority'      => 50
+            ],
         ];
 
         // Permissions provided by this module
@@ -404,6 +420,12 @@ class modDoliCal extends DolibarrModules
         require_once DOL_DOCUMENT_ROOT . '/core/class/extrafields.class.php';
         $extrafields = new ExtraFields($this->db);
         $result      = $extrafields->addExtraField('dolical_report', 'DoliCalReport', 'text', (int) ($this->numero . '10'), '2000', 'actioncomm', 0, 0, '', '', 1, '', '1', '', '', '0', 'dolical@dolical', "isModEnabled('dolical')");
+        if ($result < 0) {
+            $this->error = $extrafields->error;
+            return 0;
+        }
+        // The video call link of an event : the native place holds 128 characters, too few for the link of a Teams meeting
+        $result = $extrafields->addExtraField('dolical_visio', 'DoliCalVisio', 'varchar', (int) ($this->numero . '11'), '1024', 'actioncomm', 0, 0, '', '', 1, '', '1', '', '', '0', 'dolical@dolical', "isModEnabled('dolical')");
         if ($result < 0) {
             $this->error = $extrafields->error;
             return 0;

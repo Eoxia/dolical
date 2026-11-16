@@ -47,6 +47,10 @@ $answers = [
                 <?php if (!empty($event->location)) : ?>
                     <div class="dolical-public-card__row"><i class="fas fa-map-marker-alt"></i><span><?php echo dol_escape_htmltag($event->location); ?></span></div>
                 <?php endif; ?>
+                <?php $visio = $isPast ? '' : dolical_get_visio($event); ?>
+                <?php if ($visio !== '') : ?>
+                    <div class="dolical-public-card__row"><i class="fas fa-video"></i><a href="<?php echo dol_escape_htmltag($visio); ?>" target="_blank" rel="noopener noreferrer"><?php echo $langs->trans('DoliCalVisioJoin'); ?></a></div>
+                <?php endif; ?>
                 <?php if ($organizerName !== '') : ?>
                     <div class="dolical-public-card__row"><i class="fas fa-crown"></i><span><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalOrganizedBy', $organizerName)); ?></span></div>
                 <?php endif; ?>

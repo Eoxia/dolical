@@ -38,6 +38,7 @@ require_once __DIR__ . '/dolical.lib.php';
 require_once __DIR__ . '/dolical_recurrence.lib.php';
 require_once __DIR__ . '/dolical_reminder.lib.php';
 require_once __DIR__ . '/dolical_report.lib.php';
+require_once __DIR__ . '/dolical_visio.lib.php';
 
 /**
  * Where a phone keeps an event it created : the name of its file in the calendar and its identifier, kept in the
@@ -954,6 +955,7 @@ function dolical_get_event_card(ActionComm $event, User $user): array
         'status'    => $event->getLibStatut(4),
         'percent'   => (int) $event->percentage,
         'location'  => (string) $event->location,
+        'visio'     => dolical_get_visio($event),
         'note'      => trim((string) $event->note_private) !== '' ? dolPrintHTML($event->note_private) : '',
         'canEdit'   => dolical_can_edit_event($user, $event),
         'canDelete' => dolical_can_delete_event($user, $event),
@@ -1345,6 +1347,13 @@ function dolical_save_event(ActionComm $event, array $data, User $user): int
         $event->error = $langs->trans('ErrorFieldRequired', $langs->transnoentities('DateStart'));
         return -1;
     }
+    // The video call link, when the form has it : an address of the web, or nothing
+    $hasVisio = array_key_exists('visio', $data) && dolical_visio_available();
+    $visio    = $hasVisio ? dolical_visio_clean((string) $data['visio']) : '';
+    if ($hasVisio && $visio === '' && trim((string) $data['visio']) !== '') {
+        $event->error = $langs->trans('DoliCalVisioInvalid');
+        return -1;
+    }
 
     // Type : the dictionary when the agenda uses it, the generic "Other" otherwise
     $typeCode = 'AC_OTH';
@@ -1499,6 +1508,11 @@ function dolical_save_event(ActionComm $event, array $data, User $user): int
         if ($key !== $primaryKey && !isset($existing[$key])) {
             $error += $event->add_object_linked($link['element'], $link['id']) > 0 ? 0 : 1;
         }
+    }
+
+    // Its own column, written alone : update() would write back the other extra fields as the object holds them
+    if ($hasVisio) {
+        $error += dolical_set_visio($event, $visio, $user) > 0 ? 0 : 1;
     }
 
     if ($error) {

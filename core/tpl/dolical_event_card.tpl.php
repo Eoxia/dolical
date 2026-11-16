@@ -127,6 +127,17 @@ $billingIcons  = ['paid' => 'fas fa-check-circle', 'unpaid' => 'fas fa-hourglass
             </div>
         <?php endif; ?>
 
+        <?php if ($card['visio'] !== '') : ?>
+            <div class="dolical-card__row">
+                <i class="fas fa-video dolical-card__row-icon"></i>
+                <div class="dolical-card__grow dolical-card__visio">
+                    <a href="<?php echo dol_escape_htmltag($card['visio']); ?>" target="_blank" rel="noopener noreferrer"><?php echo $langs->trans('DoliCalVisioJoin'); ?></a>
+                    <span class="dolical-card__muted"><?php echo dol_escape_htmltag($card['visio']); ?></span>
+                </div>
+                <button type="button" class="dolical-icon-btn dolical-copy" data-copy="<?php echo dol_escape_htmltag($card['visio']); ?>" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalCopy')); ?>"><i class="far fa-copy"></i></button>
+            </div>
+        <?php endif; ?>
+
         <?php if ($card['isMine'] && $card['owner']['id'] != $user->id) : ?>
             <div class="dolical-card__answer">
                 <span><?php echo $langs->trans('DoliCalWillYouAttend'); ?></span>
