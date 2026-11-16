@@ -232,6 +232,18 @@ window.dolical.eventcard.clickOutside = function(event) {
     return;
   }
   E.close();
+  // The click of this press only closes the card : the calendar must not open a form with it (closedByPress())
+  E.closedAt = Date.now();
+};
+
+/**
+ * Whether the card was just closed by the press of the click being handled : a click beside an open card closes it,
+ * the press closes it before the click comes.
+ *
+ * @returns {Boolean}
+ */
+window.dolical.eventcard.closedByPress = function() {
+  return Date.now() - (window.dolical.eventcard.closedAt || 0) < 1000;
 };
 
 /**
@@ -319,49 +331,58 @@ window.dolical.eventcard.action = function(event) {
           U.toast(U.xhrError(xhr), 'error');
         });
       };
+      const askDelete = function(scope) {
+        U.ask({title: U.t('deleteEventTitle'), text: invited > 0 ? U.t('confirmDeleteInvited', invited) : U.t('confirmDelete'), confirm: U.t('deleteEvent'), danger: true}, function() {
+          remove(scope);
+        });
+      };
       if ((parseInt($card.attr('data-series'), 10) || 0) > 1) {
+        // The dates of the series chosen, the people invited are asked about only : the scope already said it
         U.chooseScope('delete', true, function(scope) {
-          if (invited === 0 || window.confirm(U.t('confirmDeleteInvited', invited))) {
+          if (invited === 0) {
             remove(scope);
+            return;
           }
+          askDelete(scope);
         });
         break;
       }
-      if (!window.confirm(invited > 0 ? U.t('confirmDeleteInvited', invited) : U.t('confirmDelete'))) {
-        return;
-      }
-      remove('one');
+      askDelete('one');
       break;
     }
     case 'confirm': {
       // A slot offered confirmed : the other slots offered with it leave the agenda
-      const others = parseInt($btn.attr('data-others'), 10) || 0;
-      if (others > 0 && !window.confirm(U.t('confirmSlot', others))) {
-        return;
-      }
-      $btn.prop('disabled', true);
-      U.post({action: 'confirm', id: id}).done(function(response) {
-        if (!response.success) {
-          U.toast(response.error || U.t('error'), 'error');
+      const others  = parseInt($btn.attr('data-others'), 10) || 0;
+      const confirm = function() {
+        $btn.prop('disabled', true);
+        U.post({action: 'confirm', id: id}).done(function(response) {
+          if (!response.success) {
+            U.toast(response.error || U.t('error'), 'error');
+            $btn.prop('disabled', false);
+            return;
+          }
+          const parts = [U.t('slotConfirmed')];
+          if (response.removed > 0) {
+            parts.push(U.t('slotsRemoved', response.removed));
+          }
+          if (response.cancelled > 0) {
+            parts.push(U.t('cancelledSent', response.cancelled));
+          }
+          if (response.error) {
+            parts.push(response.error);
+          }
+          U.toast(parts.join(' · '), response.error ? 'error' : '');
+          $(document).trigger('dolical:changed', [id]);
+        }).fail(function(xhr) {
+          U.toast(U.xhrError(xhr), 'error');
           $btn.prop('disabled', false);
-          return;
-        }
-        const parts = [U.t('slotConfirmed')];
-        if (response.removed > 0) {
-          parts.push(U.t('slotsRemoved', response.removed));
-        }
-        if (response.cancelled > 0) {
-          parts.push(U.t('cancelledSent', response.cancelled));
-        }
-        if (response.error) {
-          parts.push(response.error);
-        }
-        U.toast(parts.join(' · '), response.error ? 'error' : '');
-        $(document).trigger('dolical:changed', [id]);
-      }).fail(function(xhr) {
-        U.toast(U.xhrError(xhr), 'error');
-        $btn.prop('disabled', false);
-      });
+        });
+      };
+      if (others === 0) {
+        confirm();
+        break;
+      }
+      U.ask({title: U.t('confirmSlotTitle'), text: U.t('confirmSlot', others), confirm: U.t('confirmSlotTitle')}, confirm);
       break;
     }
     case 'report':
@@ -489,12 +510,12 @@ window.dolical.eventcard.drop = function(event) {
  * @returns {void}
  */
 window.dolical.eventcard.deleteFile = function() {
-  const E = window.dolical.eventcard;
-  const U = window.dolical.util;
-  if (!window.confirm(U.t('confirmFile'))) {
-    return;
-  }
-  U.post({action: 'deletefile', id: E.currentId, file: $(this).attr('data-file')}).always(function() {
-    E.reload();
+  const E    = window.dolical.eventcard;
+  const U    = window.dolical.util;
+  const file = $(this).attr('data-file');
+  U.ask({title: U.t('deleteFileTitle'), text: U.t('confirmFile'), confirm: U.t('deleteFile'), danger: true}, function() {
+    U.post({action: 'deletefile', id: E.currentId, file: file}).always(function() {
+      E.reload();
+    });
   });
 };

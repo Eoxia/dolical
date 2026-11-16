@@ -54,6 +54,12 @@
   entre eux. « Confirmer ce créneau » sur la fiche de l'un retire les autres de l'agenda (les invités prévenus comme
   pour une suppression). La case « À confirmer » du formulaire vaut aussi pour un rendez-vous seul. Champ
   complémentaire `dolical_tentative` créé à l'activation : **réactiver le module** après la mise à jour.
+- Calendrier : un clic à côté de la fiche ouverte d'un événement la ferme sans ouvrir le formulaire d'un nouvel
+  événement (la fiche se fermait à l'appui, le clic qui suivait ouvrait le formulaire).
+- Formulaire d'un événement : titre précédé d'une pastille bleue (« + » pour un nouvel événement, crayon pour une
+  modification) ; « Envoyer les invitations par e-mail » en interrupteur, comme « Me rappeler l'événement ».
+- Confirmer un créneau, supprimer un événement ou une pièce jointe : une fenêtre de DoliCal (titre, ce que fait
+  l'action, bouton rouge pour une suppression) au lieu de la question du navigateur.
 - Fuseau horaire affiché avec son écart à UTC (« Europe/Paris (UTC+01:00) ») : liste de la configuration, prise de
   rendez-vous, modèle hebdomadaire et pages publiques ; l'écart est celui du jour du créneau ou du rendez-vous (heure
   d'été comprise).

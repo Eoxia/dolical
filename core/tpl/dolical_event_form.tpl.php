@@ -43,7 +43,7 @@ if (!isset($percentOptions[$formValues['percent']])) {
 $title = $isNew ? $langs->trans('DoliCalNewEvent') : $langs->trans('DoliCalEditEvent');
 ?>
 <div class="modal-header">
-    <h2 class="modal-title"><i class="far fa-calendar-plus pictofixedwidth"></i><?php echo $title; ?></h2>
+    <h2 class="modal-title"><span class="dolical-form__title-icon"><i class="fas <?php echo $isNew ? 'fa-plus' : 'fa-pen'; ?>"></i></span><?php echo $title; ?></h2>
     <div class="modal-close"><i class="fas fa-times"></i></div>
 </div>
 <div class="modal-content">
@@ -297,8 +297,10 @@ $title = $isNew ? $langs->trans('DoliCalNewEvent') : $langs->trans('DoliCalEditE
             <?php endif; ?>
 
             <div class="dolical-field dolical-field--wide dolical-form__notify">
-                <label class="dolical-check">
+                <?php // A switch, as the one of the reminder : both turn a sending on or off ?>
+                <label class="dolical-switch">
                     <input type="checkbox" name="notify" value="1">
+                    <span class="dolical-switch__track"></span>
                     <i class="far fa-paper-plane"></i>
                     <span><?php echo $langs->trans('DoliCalNotifyParticipants'); ?></span>
                 </label>

@@ -1428,8 +1428,8 @@ window.dolical.calendar.clickEmpty = function(event) {
   if (!config.canCreate || C.justDragged || $(event.target).closest('.dolical-event, [data-goto]').length) {
     return;
   }
-  // An open card is closed by this click, not replaced by a form
-  if (window.dolical.eventcard.isOpen()) {
+  // An open card is closed by this click, not replaced by a form ; the press of the click may have closed it already
+  if (window.dolical.eventcard.isOpen() || window.dolical.eventcard.closedByPress()) {
     window.dolical.eventcard.close();
     return;
   }

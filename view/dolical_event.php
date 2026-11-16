@@ -105,6 +105,7 @@ dolical_header($title, 'dolical-page dolical-page--single');
 </div>
 
 <?php require __DIR__ . '/../core/tpl/dolical_scope_modal.tpl.php'; ?>
+<?php require __DIR__ . '/../core/tpl/dolical_ask_modal.tpl.php'; ?>
 <?php
 llxFooter();
 $db->close();
