@@ -81,10 +81,24 @@ $billingIcons  = ['paid' => 'fas fa-check-circle', 'unpaid' => 'fas fa-hourglass
             <?php if ($card['isPast']) : ?>
                 <span class="dolical-chip dolical-chip--late"><i class="fas fa-exclamation-circle"></i><?php echo $langs->trans('DoliCalLate'); ?></span>
             <?php endif; ?>
+            <?php if ($card['toConfirm']) : ?>
+                <span class="dolical-chip dolical-chip--confirm"><i class="far fa-question-circle"></i><?php echo $langs->trans('DoliCalToConfirm'); ?></span>
+            <?php endif; ?>
             <?php foreach ($card['tags'] as $tag) : ?>
                 <span class="dolical-chip dolical-chip--tag" data-color="<?php echo dol_escape_htmltag($tag['color']); ?>"><i class="fas fa-tag"></i><?php echo dol_escape_htmltag($tag['label']); ?></span>
             <?php endforeach; ?>
         </div>
+
+        <?php if ($card['toConfirm']) : ?>
+            <?php // A slot offered : confirmed here, the other slots offered with it leave the agenda ?>
+            <div class="dolical-card__confirm">
+                <i class="far fa-question-circle"></i>
+                <span><?php echo $card['otherSlots'] > 0 ? $langs->trans('DoliCalToConfirmWithOthers', $card['otherSlots']) : $langs->trans('DoliCalToConfirmAlone'); ?></span>
+                <?php if ($card['canEdit']) : ?>
+                    <button type="button" class="dolical-btn dolical-btn--small dolical-btn--primary" data-action="confirm" data-others="<?php echo (int) $card['otherSlots']; ?>"><i class="fas fa-check"></i><?php echo $langs->trans('DoliCalConfirmSlot'); ?></button>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
 
         <div class="dolical-card__row">
             <i class="far fa-calendar dolical-card__row-icon"></i>

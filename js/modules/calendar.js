@@ -846,6 +846,9 @@ window.dolical.calendar.stateClasses = function(event, userId) {
   if (event.editable) {
     classes += ' is-editable';
   }
+  if (event.toConfirm) {
+    classes += ' is-to-confirm';
+  }
   return classes;
 };
 
@@ -932,6 +935,9 @@ window.dolical.calendar.chipHtml = function(event, userId, withTime) {
 window.dolical.calendar.flagsHtml = function(event) {
   const U  = window.dolical.util;
   let html = '';
+  if (event.toConfirm) {
+    html += '<i class="far fa-question-circle ra-flag ra-flag--confirm" title="' + U.esc(U.t('toConfirm')) + '"></i>';
+  }
   if (event.recurring) {
     html += '<i class="fas fa-redo-alt ra-flag" title="' + U.esc(U.t('repeating')) + '"></i>';
   }

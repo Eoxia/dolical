@@ -333,6 +333,37 @@ window.dolical.eventcard.action = function(event) {
       remove('one');
       break;
     }
+    case 'confirm': {
+      // A slot offered confirmed : the other slots offered with it leave the agenda
+      const others = parseInt($btn.attr('data-others'), 10) || 0;
+      if (others > 0 && !window.confirm(U.t('confirmSlot', others))) {
+        return;
+      }
+      $btn.prop('disabled', true);
+      U.post({action: 'confirm', id: id}).done(function(response) {
+        if (!response.success) {
+          U.toast(response.error || U.t('error'), 'error');
+          $btn.prop('disabled', false);
+          return;
+        }
+        const parts = [U.t('slotConfirmed')];
+        if (response.removed > 0) {
+          parts.push(U.t('slotsRemoved', response.removed));
+        }
+        if (response.cancelled > 0) {
+          parts.push(U.t('cancelledSent', response.cancelled));
+        }
+        if (response.error) {
+          parts.push(response.error);
+        }
+        U.toast(parts.join(' · '), response.error ? 'error' : '');
+        $(document).trigger('dolical:changed', [id]);
+      }).fail(function(xhr) {
+        U.toast(U.xhrError(xhr), 'error');
+        $btn.prop('disabled', false);
+      });
+      break;
+    }
     case 'report':
       window.dolical.report.open(id);
       break;

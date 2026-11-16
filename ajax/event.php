@@ -40,6 +40,7 @@ if (file_exists('../dolical.main.inc.php')) {
 require_once __DIR__ . '/../lib/dolical_event.lib.php';
 require_once __DIR__ . '/../lib/dolical_invitation.lib.php';
 require_once __DIR__ . '/../lib/dolical_series.lib.php';
+require_once __DIR__ . '/../lib/dolical_maildates.lib.php';
 
 global $conf, $db, $langs, $user;
 
@@ -115,8 +116,9 @@ if ($view === 'card' && $event !== null) {
 }
 
 if ($view === 'form') {
-    $cloneId = GETPOSTINT('clone');
-    $source  = $event;
+    $cloneId   = GETPOSTINT('clone');
+    $source    = $event;
+    $mailDates = [];
     if ($event === null && $cloneId > 0) {
         $source = dolical_load_event($cloneId, $user);
     }
@@ -193,6 +195,29 @@ if ($view === 'form') {
         $formValues['emails']      = array_slice(array_values(array_unique(array_filter(array_map(function ($email) {
             return dol_strtolower(trim($email));
         }, explode(',', GETPOST('emails', 'alphanohtml'))), 'isValidEmail'))), 0, 20);
+
+        // The dates written in the mail (module Inbox) : all of them offered under the dates of the form, the first one
+        // with its hours fills them, unless the calendar gave a slot
+        $mailDates = $formValues['email_msgid'] !== '' ? dolical_mail_dates($formValues['email_msgid'], $user) : [];
+        if (!empty($mailDates) && GETPOSTINT('start') <= 0) {
+            $withTime  = array_keys(array_filter($mailDates, function ($mailDate) {
+                return $mailDate['hasTime'];
+            }));
+            $chosen    = $withTime[0] ?? 0;
+            $mailStart = $mailDates[$chosen]['start'];
+            $mailEnd   = $mailDates[$chosen]['end'];
+            // A day without hours : the hours of the form on that day
+            if (!$mailDates[$chosen]['hasTime']) {
+                $zone      = new DateTimeZone(dolical_reference_timezone());
+                $hours     = (new DateTimeImmutable('@' . $formValues['start']))->setTimezone($zone);
+                $mailStart = (new DateTimeImmutable('@' . $mailStart))->setTimezone($zone)->setTime((int) $hours->format('G'), (int) $hours->format('i'))->getTimestamp();
+                $mailEnd   = $mailStart + ($formValues['end'] - $formValues['start']);
+            }
+            $formValues['start']    = $mailStart;
+            $formValues['end']      = $mailEnd;
+            $formValues['fullday']  = 0;
+            $formValues['mailDate'] = $chosen;
+        }
     }
 
     // What comes from the browser or from a cloned event is kept only when the user may see it
@@ -206,6 +231,9 @@ if ($view === 'form') {
             return preg_match('/^([a-z_]+):(\d+)$/', (string) $key, $matches) && dolical_can_see_object($user, $matches[1], (int) $matches[2]);
         }));
     }
+
+    // To confirm : the event as it is ; a copy of a slot offered is a new event, confirmed
+    $formValues['tentative'] = $event !== null && dolical_get_tentative($event) !== '';
 
     // Labels of what is already chosen, the selects only search the rest
     $selectedContacts = [];
@@ -419,12 +447,43 @@ if ($action === 'save') {
     if (GETPOSTISSET('visio')) {
         $data['visio'] = GETPOST('visio', 'nohtml');
     }
+    // To confirm, when the form has the box : a slot keeps the key of the slots offered with it, a new one gets a key.
+    // Never a series : confirming one date would remove the others
+    $repeats = $data['recurrence'] !== '' || (!$isNew && (string) $event->recurid !== '');
+    if (GETPOSTISSET('tentative_field') && dolical_tentative_available() && !$repeats) {
+        $currentGroup      = $isNew ? '' : dolical_get_tentative($event);
+        $data['tentative'] = GETPOSTINT('tentative') ? ($currentGroup !== '' ? $currentGroup : dolical_tentative_new_group()) : '';
+    }
+
+    // The other dates of a new event : as many events, the same but for their dates, offered with it (10 at most)
+    $extraDates = [];
+    if ($isNew && !$repeats) {
+        $extraEnds = GETPOST('extra_end', 'array:int');
+        foreach (array_slice(GETPOST('extra_start', 'array:int'), 0, 10, true) as $index => $extraStart) {
+            if ((int) $extraStart > 0) {
+                $extraDates[] = [(int) $extraStart, max((int) $extraStart, (int) ($extraEnds[$index] ?? 0))];
+            }
+        }
+    }
 
     $saved  = dolical_save_event_series($event, $data, $user);
     $result = $saved['id'];
     if ($result <= 0) {
         dolical_delete_new_contacts($createdContacts, $user);
         dolical_json_exit(['success' => false, 'error' => $saved['error'] ?: $langs->trans('Error')]);
+    }
+
+    // The other dates : the same event on each of them, to confirm with it when it is
+    $extraIds    = [];
+    $extraErrors = [];
+    foreach ($extraDates as [$extraStart, $extraEnd]) {
+        $extra      = new ActionComm($db);
+        $extraSaved = dolical_save_event_series($extra, array_merge($data, ['start' => $extraStart, 'end' => $extraEnd, 'recurrence' => '']), $user);
+        if ($extraSaved['id'] > 0) {
+            $extraIds[] = (int) $extraSaved['id'];
+        } else {
+            $extraErrors[] = dol_print_date($extraStart, 'dayhour', 'tzuserrel') . ' : ' . ($extraSaved['error'] ?: $langs->trans('Error'));
+        }
     }
 
     // Attachments chosen in the form go with it, into the documents of the event
@@ -487,6 +546,18 @@ if ($action === 'save') {
             $mail['errors']    = array_merge($mail['errors'], $sending['errors']);
         }
 
+        // The other dates are invitations too, each with its own date
+        foreach ($extraIds as $extraId) {
+            $extraEvent = new ActionComm($db);
+            if ($extraEvent->fetch($extraId) <= 0) {
+                continue;
+            }
+            $recipients     = dolical_throttle_recipients($extraEvent, $user, dolical_invitation_recipients($extraEvent), false, $mail['errors']);
+            $sending        = dolical_send_invitations($extraEvent, $user, $recipients, 'invitation');
+            $mail['sent']  += $sending['sent'];
+            $mail['errors'] = array_merge($mail['errors'], $sending['errors']);
+        }
+
         // Cut in two : the dates before keep the old series, which now ends sooner
         if ($saved['oldSeriesFirst'] > 0) {
             $oldSeries = new ActionComm($db);
@@ -501,7 +572,10 @@ if ($action === 'save') {
         'success'   => true,
         'id'        => $result,
         // The dates of the series the user may not change were left as they are : he is told
-        'warnings'  => array_merge(!empty($saved['refused']) ? [$langs->trans('DoliCalSeriesRefused', $saved['refused'])] : [], $uploadErrors, $mail['errors']),
+        'warnings'  => array_merge(!empty($saved['refused']) ? [$langs->trans('DoliCalSeriesRefused', $saved['refused'])] : [], $extraErrors, $uploadErrors, $mail['errors']),
+        // The other dates saved with it : one more event each
+        'slots'     => count($extraIds),
+        'toConfirm' => !empty($data['tentative']),
         'sent'      => $mail['sent'],
         'cancelled' => $mail['cancelled'],
         'created'   => $saved['created'],
@@ -608,6 +682,19 @@ switch ($action) {
         $scope   = GETPOST('scope', 'aZ09');
         $deleted = dolical_delete_event_series($event, in_array($scope, ['one', 'following', 'all'], true) ? $scope : 'one', $user);
         dolical_json_exit(['success' => $deleted['success'], 'error' => $deleted['success'] ? implode(' ', $deleted['errors']) : (implode(' ', $deleted['errors']) ?: $langs->trans('Error')), 'cancelled' => $deleted['cancelled'], 'deleted' => $deleted['deleted']]);
+        break;
+
+    case 'confirm':
+        // A slot offered confirmed : the mark goes, the other slots offered with it are removed
+        if (!dolical_can_edit_event($user, $event)) {
+            dolical_json_exit(['success' => false, 'error' => $langs->trans('NotEnoughPermissions')], 403);
+        }
+        $confirmed = dolical_confirm_event($event, $user);
+        $warnings  = $confirmed['errors'];
+        if ($confirmed['kept'] > 0) {
+            $warnings[] = $langs->trans('DoliCalSlotsKept', $confirmed['kept']);
+        }
+        dolical_json_exit(['success' => $confirmed['success'], 'error' => implode(' ', $warnings), 'removed' => $confirmed['removed'], 'cancelled' => $confirmed['cancelled']]);
         break;
 
     case 'savereport':

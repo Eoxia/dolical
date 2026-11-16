@@ -22,7 +22,8 @@
  *
  * Rendered by ajax/event.php (inherits its scope). Expects: $event (null for a new event), $isNew, $formValues,
  * $calendarUsers, $eventTypes, $canAssignAll, $selectedContacts, $selectedThirdparty, $selectedProject,
- * $selectedElements, $eventFiles, $recurrenceChoices, $seriesSize, $reminderTypes, $reminder, $langs.
+ * $selectedElements, $eventFiles, $recurrenceChoices, $seriesSize, $reminderTypes, $reminder, $mailDates (dates of the
+ * mail the event is planned from, see dolical_find_dates()), $langs.
  * Dates are written in the format of the HTML date inputs, the JavaScript sends them back as timestamps.
  */
 
@@ -52,7 +53,7 @@ $title = $isNew ? $langs->trans('DoliCalNewEvent') : $langs->trans('DoliCalEditE
         <div class="dolical-form__grid">
             <div class="dolical-field dolical-field--wide dolical-form__when">
                 <i class="far fa-clock dolical-field__icon"></i>
-                <div class="dolical-form__dates">
+                <div class="dolical-form__dates" data-chip="<?php echo isset($formValues['mailDate']) ? (int) $formValues['mailDate'] : ''; ?>">
                     <input type="datetime-local" name="start_at" class="dolical-form__time" value="<?php echo $startValue; ?>">
                     <input type="date" name="start_day" class="dolical-form__day" value="<?php echo $startDay; ?>">
                     <span class="dolical-form__arrow"><i class="fas fa-long-arrow-alt-right"></i></span>
@@ -62,8 +63,54 @@ $title = $isNew ? $langs->trans('DoliCalNewEvent') : $langs->trans('DoliCalEditE
                         <input type="checkbox" name="fullday" value="1"<?php echo $formValues['fullday'] ? ' checked' : ''; ?>>
                         <span><?php echo $langs->trans('DoliCalAllDay'); ?></span>
                     </label>
+                    <?php if (dolical_tentative_available() && ($isNew || empty($event->recurid))) : ?>
+                        <input type="hidden" name="tentative_field" value="1">
+                        <label class="dolical-check dolical-form__tentative" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalToConfirmHelp')); ?>">
+                            <input type="checkbox" name="tentative" value="1"<?php echo $formValues['tentative'] ? ' checked' : ''; ?>>
+                            <span><?php echo $langs->trans('DoliCalToConfirm'); ?></span>
+                        </label>
+                    <?php endif; ?>
                 </div>
             </div>
+
+            <?php if ($isNew) : ?>
+                <?php // Other dates : the same event on each of them, offered together to confirm ; drawn by the script ?>
+                <div class="dolical-field dolical-field--wide dolical-form__extras">
+                    <i class="far fa-calendar-plus dolical-field__icon" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalOtherDatesHelp')); ?>"></i>
+                    <div class="dolical-form__extras-list">
+                        <button type="button" class="dolical-link dolical-form__add-date"><i class="fas fa-plus pictofixedwidth"></i><?php echo $langs->trans('DoliCalOtherDate'); ?></button>
+                        <span class="dolical-field__help dolical-form__extras-help"><?php echo $langs->trans('DoliCalOtherDatesHelp'); ?></span>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($mailDates)) : ?>
+                <?php // The dates written in the mail the event is planned from : one click puts one in the dates above ?>
+                <div class="dolical-field dolical-field--wide dolical-form__maildates">
+                    <i class="far fa-envelope-open dolical-field__icon" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalMailDatesHelp')); ?>"></i>
+                    <div class="dolical-form__maildates-list">
+                        <span class="dolical-form__maildates-label"><?php echo $langs->trans('DoliCalMailDates'); ?></span>
+                        <?php foreach ($mailDates as $index => $mailDate) : ?>
+                            <?php
+                            $zone      = dolical_reference_timezone();
+                            $dateLabel = dolical_print_date($mailDate['start'], '%a %d %b', $zone);
+                            // French writes the day and the month in small letters
+                            if (strpos((string) $langs->defaultlang, 'fr') === 0) {
+                                $dateLabel = dol_strtolower($dateLabel);
+                            }
+                            if ($mailDate['hasTime']) {
+                                $dateLabel .= ' · ' . dolical_print_date($mailDate['start'], '%H:%M', $zone) . ' – ' . dolical_print_date($mailDate['end'], '%H:%M', $zone);
+                            }
+                            ?>
+                            <button type="button" class="dolical-form__maildate<?php echo isset($formValues['mailDate']) && $formValues['mailDate'] === $index ? ' is-active' : ''; ?>" data-index="<?php echo (int) $index; ?>"
+                                    data-start="<?php echo dolical_print_date($mailDate['start'], '%Y-%m-%dT%H:%M', $zone); ?>"
+                                    data-end="<?php echo dolical_print_date($mailDate['end'], '%Y-%m-%dT%H:%M', $zone); ?>"
+                                    data-has-time="<?php echo $mailDate['hasTime'] ? 1 : 0; ?>"
+                                    title="<?php echo dol_escape_htmltag('« ' . $mailDate['excerpt'] . ' »'); ?>"><?php echo dol_escape_htmltag($dateLabel); ?></button>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <div class="dolical-field dolical-field--wide dolical-form__repeat<?php echo $formValues['recurrence'] !== '' ? ' is-repeating' : ''; ?>">
                 <i class="fas fa-redo-alt dolical-field__icon" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalRepeat')); ?>"></i>
