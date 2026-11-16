@@ -39,7 +39,7 @@ $answers = [
         </div>
     <?php else : ?>
         <div class="dolical-public-card">
-            <div class="dolical-public-card__kicker"><i class="far fa-envelope-open pictofixedwidth"></i><?php echo $langs->trans('DoliCalInvitationFor', dol_escape_htmltag($personName)); ?></div>
+            <div class="dolical-public-card__kicker"><i class="far fa-envelope-open pictofixedwidth"></i><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalInvitationFor', $personName)); ?></div>
             <h1><?php echo dol_escape_htmltag($title); ?></h1>
 
             <div class="dolical-public-card__rows">
@@ -48,7 +48,7 @@ $answers = [
                     <div class="dolical-public-card__row"><i class="fas fa-map-marker-alt"></i><span><?php echo dol_escape_htmltag($event->location); ?></span></div>
                 <?php endif; ?>
                 <?php if ($organizerName !== '') : ?>
-                    <div class="dolical-public-card__row"><i class="fas fa-crown"></i><span><?php echo $langs->trans('DoliCalOrganizedBy', dol_escape_htmltag($organizerName)); ?></span></div>
+                    <div class="dolical-public-card__row"><i class="fas fa-crown"></i><span><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalOrganizedBy', $organizerName)); ?></span></div>
                 <?php endif; ?>
             </div>
 

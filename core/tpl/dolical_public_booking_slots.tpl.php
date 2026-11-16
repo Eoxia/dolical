@@ -58,14 +58,14 @@ $formTitle = dolical_booking_text('DOLICAL_BOOKING_FORM_TITLE', $userId);
             <span class="dolical-booking-avatar<?php echo $pageTitle !== '' ? '' : ' dolical-booking-avatar--large'; ?> dolical-booking-avatar--<?php echo abs($person['id']) % 12; ?>"><?php echo dol_escape_htmltag($person['initials']); ?></span>
             <div>
                 <?php if ($pageTitle !== '') : ?>
-                    <div class="dolical-booking-who__name"><?php echo $langs->trans('DoliCalBookingWithName', '<strong>' . dol_escape_htmltag($person['name']) . '</strong>') . ($person['job'] !== '' ? ' <span class="dolical-booking-who__job">· ' . dol_escape_htmltag($person['job']) . '</span>' : ''); ?></div>
+                    <div class="dolical-booking-who__name"><?php echo str_replace('%NAME%', '<strong>' . dol_escape_htmltag($person['name']) . '</strong>', dol_escape_htmltag($langs->transnoentities('DoliCalBookingWithName', '%NAME%'))) . ($person['job'] !== '' ? ' <span class="dolical-booking-who__job">· ' . dol_escape_htmltag($person['job']) . '</span>' : ''); ?></div>
                 <?php else : ?>
                     <div class="dolical-public-card__kicker"><?php echo $langs->trans('DoliCalBookingWithPerson'); ?></div>
                     <h1><?php echo dol_escape_htmltag($person['name']); ?></h1>
                 <?php endif; ?>
                 <div class="dolical-booking-who__meta">
                     <span><i class="far fa-clock pictofixedwidth"></i><?php echo dol_escape_htmltag(dolical_format_duration(dolical_booking_duration() * 60)); ?></span>
-                    <span><i class="fas fa-globe-europe pictofixedwidth"></i><?php echo $langs->trans('DoliCalBookingTimezone', dol_escape_htmltag($zone)); ?></span>
+                    <span><i class="fas fa-globe-europe pictofixedwidth"></i><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalBookingTimezone', $zone)); ?></span>
                 </div>
             </div>
         </div>
