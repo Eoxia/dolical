@@ -182,7 +182,7 @@ $phoneModes = ['optional' => 'DoliCalBookingPhoneOptional', 'required' => 'DoliC
                 <?php echo $setting('DoliCalBookingEventLabelModel', $langs->trans('DoliCalBookingEventLabelModelHelp'), $text('DOLICAL_BOOKING_EVENT_LABEL', 'DoliCalBookingEventLabelModelExample'), 'stacked'); ?>
                 <?php echo $setting('DoliCalBookingRedirect', $langs->trans('DoliCalBookingRedirectHelp'), $text('DOLICAL_BOOKING_REDIRECT_URL', 'DoliCalBookingRedirectExample'), 'stacked'); ?>
             </div>
-            <?php echo $setting('DoliCalBookingTimezoneLabel', $langs->trans('DoliCalBookingTimezoneHelp'), '<span class="dolical-setting__value">' . dol_escape_htmltag(dolical_booking_timezone()) . '</span><a class="dolical-btn dolical-btn--small" href="' . dol_buildpath('/dolical/admin/setup.php', 1) . '">' . $langs->trans('DoliCalBookingTimezoneLink') . '</a>'); ?>
+            <?php echo $setting('DoliCalBookingTimezoneLabel', $langs->trans('DoliCalBookingTimezoneHelp'), '<span class="dolical-setting__value">' . dol_escape_htmltag(dolical_timezone_label(dolical_booking_timezone())) . '</span><a class="dolical-btn dolical-btn--small" href="' . dol_buildpath('/dolical/admin/setup.php', 1) . '">' . $langs->trans('DoliCalBookingTimezoneLink') . '</a>'); ?>
         </section>
 
         <?php if (!empty($links)) : ?>

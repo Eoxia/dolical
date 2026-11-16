@@ -59,6 +59,26 @@ function dolical_admin_prepare_head(): array
 }
 
 /**
+ * A time zone and its gap with UTC : « Europe/Paris (UTC+01:00) ». The gap is the one of the date given, summer time
+ * changes it
+ *
+ * @param  string $zone Time zone, Europe/Paris...
+ * @param  int    $at   Date of the gap, now by default
+ * @return string       Plain text
+ */
+function dolical_timezone_label(string $zone, int $at = 0): string
+{
+    try {
+        $offset = (new DateTimeZone($zone))->getOffset(new DateTimeImmutable('@' . ($at > 0 ? $at : dol_now())));
+    } catch (Exception $exception) {
+        return $zone;
+    }
+    $utc = 'UTC' . ($offset < 0 ? '-' : '+') . sprintf('%02d:%02d', intdiv(abs($offset), 3600), intdiv(abs($offset) % 3600, 60));
+
+    return $zone === 'UTC' ? $zone : $zone . ' (' . $utc . ')';
+}
+
+/**
  * A line of a setup page of DoliCal : the name of the setting and a line of help, its field beside them or under them
  *
  * @param  string $name     Name, translated

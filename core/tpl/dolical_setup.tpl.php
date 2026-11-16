@@ -47,7 +47,7 @@ $viewSelect .= '</select>';
 
 $zoneSelect = '<select name="DOLICAL_TIMEZONE" class="dolical-select">';
 foreach (timezone_identifiers_list() as $zone) {
-    $zoneSelect .= '<option value="' . dol_escape_htmltag($zone) . '"' . (getDolGlobalString('DOLICAL_TIMEZONE', 'Europe/Paris') === $zone ? ' selected' : '') . '>' . dol_escape_htmltag($zone) . '</option>';
+    $zoneSelect .= '<option value="' . dol_escape_htmltag($zone) . '"' . (getDolGlobalString('DOLICAL_TIMEZONE', 'Europe/Paris') === $zone ? ' selected' : '') . '>' . dol_escape_htmltag(dolical_timezone_label($zone)) . '</option>';
 }
 $zoneSelect .= '</select>';
 

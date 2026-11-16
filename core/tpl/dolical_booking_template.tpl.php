@@ -35,7 +35,7 @@
             <h2 class="dolical-toolbar__period"><?php echo $langs->trans('DoliCalTemplate'); ?></h2>
             <span class="dolical-badge dolical-template__count"></span>
             <div class="dolical-toolbar__spacer"></div>
-            <span class="dolical-template__zone" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalBookingTimezoneHelp')); ?>"><i class="fas fa-globe-europe"></i><?php echo dol_escape_htmltag(dolical_booking_timezone()); ?></span>
+            <span class="dolical-template__zone" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalBookingTimezoneHelp')); ?>"><i class="fas fa-globe-europe"></i><?php echo dol_escape_htmltag(dolical_timezone_label(dolical_booking_timezone())); ?></span>
             <?php if ($permissionToWrite) : ?>
                 <a class="dolical-btn dolical-template-cancel" href="<?php echo dol_escape_htmltag($_SERVER['PHP_SELF']); ?>"><?php echo $langs->trans('Cancel'); ?></a>
                 <button type="submit" class="dolical-btn dolical-btn--primary"><i class="fas fa-save"></i><?php echo $langs->trans('Save'); ?></button>
