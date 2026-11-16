@@ -179,7 +179,7 @@ if ($showScreen === 'slots') {
             $errors[] = $langs->trans('ErrorFieldRequired', $langs->transnoentities('DoliCalBookingName'));
         }
         if (!isValidEmail($visitor['email'])) {
-            $errors[] = $langs->trans('ErrorBadEMail', dol_escape_htmltag($visitor['email']));
+            $errors[] = dol_escape_htmltag($langs->transnoentities('ErrorBadEMail', $visitor['email']));
         }
         if (is_object($captchaObject) && method_exists($captchaObject, 'validateCodeAfterLoginSubmit') && !$captchaObject->validateCodeAfterLoginSubmit()) {
             $errors[] = $langs->trans('ErrorBadValueForCode');

@@ -214,7 +214,7 @@ print '<tr class="oddeven"><td>' . $langs->trans('DoliCalBookingDuration') . '</
 print '<input type="number" name="DOLICAL_BOOKING_DURATION" class="width75" min="5" max="480" step="5" value="' . dolical_booking_duration() . '"> ' . $langs->trans('Minutes');
 print '</td></tr>';
 
-print '<tr class="oddeven"><td>' . $langs->trans('DoliCalBookingOpening') . '</td><td>' . $langs->trans('DoliCalBookingOpeningHelp', dol_escape_htmltag(dolical_booking_timezone())) . '</td><td class="center">';
+print '<tr class="oddeven"><td>' . $langs->trans('DoliCalBookingOpening') . '</td><td>' . dol_escape_htmltag($langs->transnoentities('DoliCalBookingOpeningHelp', dolical_booking_timezone())) . '</td><td class="center">';
 foreach (range(1, 7) as $isoDay) {
     print '<label class="nowraponall marginrightonly"><input type="checkbox" name="DOLICAL_BOOKING_DAYS[]" value="' . $isoDay . '"' . (in_array($isoDay, dolical_booking_days(), true) ? ' checked' : '') . '> ' . $langs->trans('Day' . ($isoDay % 7)) . '</label> ';
 }
@@ -235,7 +235,7 @@ foreach (['DOLICAL_BOOKING_TITLE' => 'DoliCalBookingPageTitle', 'DOLICAL_BOOKING
 if (dolical_booking_enabled()) {
     print '<tr class="oddeven"><td>' . $langs->trans('DoliCalBookingLinks') . '</td><td>' . $langs->trans('DoliCalBookingLinksHelp') . '</td><td>';
     // One link for each person ; the list of everybody only when the hidden setting DOLICAL_BOOKING_HUB asks for it
-    $links = dolical_booking_hub_enabled() ? [0 => $langs->trans('DoliCalBookingLinkAll')] : [];
+    $links = dolical_booking_hub_enabled() ? [0 => $langs->transnoentities('DoliCalBookingLinkAll')] : [];
     foreach (dolical_booking_people() as $person) {
         $links[$person['id']] = $person['name'];
     }

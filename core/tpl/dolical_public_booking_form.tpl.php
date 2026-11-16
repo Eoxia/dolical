@@ -32,15 +32,15 @@ $pageTitle = dolical_booking_text('DOLICAL_BOOKING_TITLE', $userId);
     <div class="dolical-public-card">
         <a class="dolical-booking-back" href="<?php echo dol_escape_htmltag($slotsUrl); ?>"><i class="fas fa-chevron-left pictofixedwidth"></i><?php echo $langs->trans('DoliCalBookingOtherSlot'); ?></a>
 
-        <div class="dolical-public-card__kicker"><?php echo $pageTitle !== '' ? dol_escape_htmltag($pageTitle) : $langs->trans('DoliCalBookingWithName', dol_escape_htmltag($person['name'])); ?></div>
+        <div class="dolical-public-card__kicker"><?php echo $pageTitle !== '' ? dol_escape_htmltag($pageTitle) : dol_escape_htmltag($langs->transnoentities('DoliCalBookingWithName', $person['name'])); ?></div>
         <h1><?php echo dol_escape_htmltag(dolical_booking_day($slot)); ?></h1>
 
         <div class="dolical-public-card__rows">
             <?php if ($pageTitle !== '') : ?>
-                <div class="dolical-public-card__row"><i class="far fa-user"></i><span><?php echo $langs->trans('DoliCalBookingWithName', dol_escape_htmltag($person['name'])); ?></span></div>
+                <div class="dolical-public-card__row"><i class="far fa-user"></i><span><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalBookingWithName', $person['name'])); ?></span></div>
             <?php endif; ?>
             <div class="dolical-public-card__row"><i class="far fa-clock"></i><span><?php echo dolical_booking_hour($slot) . ' – ' . dolical_booking_hour($slot + $duration * 60); ?> <span class="dolical-public-card__muted">(<?php echo dol_escape_htmltag(dolical_format_duration($duration * 60)); ?>)</span></span></div>
-            <div class="dolical-public-card__row"><i class="fas fa-globe-europe"></i><span><?php echo $langs->trans('DoliCalBookingTimezone', dol_escape_htmltag(dolical_booking_timezone())); ?></span></div>
+            <div class="dolical-public-card__row"><i class="fas fa-globe-europe"></i><span><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalBookingTimezone', dolical_booking_timezone())); ?></span></div>
         </div>
 
         <?php foreach ($errors as $error) : ?>

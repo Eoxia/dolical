@@ -94,7 +94,8 @@ $fields    = [
     'DOLICAL_BOOKING_FORM_TITLE' => 'DoliCalBookingFormTitle',
 ];
 
-$title = $isSelf ? $langs->trans('DoliCalBookingMyPage') : $langs->trans('DoliCalBookingPageOf', $person->getFullName($langs));
+// Plain text, escaped once where it is shown : a name with accents would show its entities
+$title = $isSelf ? $langs->transnoentities('DoliCalBookingMyPage') : $langs->transnoentities('DoliCalBookingPageOf', $person->getFullName($langs));
 
 dolical_header($title, 'dolical-page');
 

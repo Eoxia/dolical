@@ -47,7 +47,7 @@
             <h1><?php echo dol_escape_htmltag(dolical_booking_customer_view($event, $owner)->label); ?></h1>
 
             <?php if (GETPOSTINT('done')) : ?>
-                <div class="dolical-public-notice dolical-public-notice--ok"><i class="fas fa-check-circle"></i><span><?php echo $langs->trans('DoliCalBookingDone', dol_escape_htmltag((string) $contact->email)); ?></span></div>
+                <div class="dolical-public-notice dolical-public-notice--ok"><i class="fas fa-check-circle"></i><span><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalBookingDone', (string) $contact->email)); ?></span></div>
             <?php elseif (GETPOSTINT('failed')) : ?>
                 <div class="dolical-public-notice dolical-public-notice--error"><i class="fas fa-exclamation-circle"></i><?php echo $langs->trans('DoliCalBookingCancelFailed'); ?></div>
             <?php endif; ?>
@@ -60,7 +60,7 @@
                 <?php if (!empty($owner->job) || dolical_booking_text('DOLICAL_BOOKING_TITLE', (int) $owner->id) !== '') : ?>
                     <div class="dolical-public-card__row"><i class="far fa-user"></i><span><?php echo dol_escape_htmltag($owner->getFullName($langs) . (!empty($owner->job) ? ', ' . $owner->job : '')); ?></span></div>
                 <?php endif; ?>
-                <div class="dolical-public-card__row"><i class="fas fa-globe-europe"></i><span><?php echo $langs->trans('DoliCalBookingTimezone', dol_escape_htmltag(dolical_booking_timezone())); ?></span></div>
+                <div class="dolical-public-card__row"><i class="fas fa-globe-europe"></i><span><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalBookingTimezone', dolical_booking_timezone())); ?></span></div>
             </div>
 
             <?php if ($isPast) : ?>
