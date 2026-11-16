@@ -38,6 +38,7 @@ require_once __DIR__ . '/dolical.lib.php';
 require_once __DIR__ . '/dolical_recurrence.lib.php';
 require_once __DIR__ . '/dolical_reminder.lib.php';
 require_once __DIR__ . '/dolical_report.lib.php';
+require_once __DIR__ . '/dolical_tentative.lib.php';
 require_once __DIR__ . '/dolical_visio.lib.php';
 
 /**
@@ -342,6 +343,7 @@ function dolical_fetch_events(User $user, int $start, int $end, array $userIds, 
             'project'   => (string) $obj->project_ref,
             'recurring' => !empty($obj->recurid),
             'report'    => false,
+            'toConfirm' => false,
         ];
     }
     $db->free($resql);
@@ -384,6 +386,10 @@ function dolical_fetch_events(User $user, int $start, int $end, array $userIds, 
     // The meetings already written up : the calendar tells them from the ones whose report is awaited
     foreach (dolical_events_with_report(array_keys($events)) as $id) {
         $events[$id]['report'] = true;
+    }
+    // The slots offered for a meeting, not confirmed yet
+    foreach (array_keys(dolical_events_tentative(array_keys($events))) as $id) {
+        $events[$id]['toConfirm'] = true;
     }
 
     $canEditAll = $user->hasRight('agenda', 'allactions', 'create');
@@ -987,6 +993,9 @@ function dolical_get_event_card(ActionComm $event, User $user): array
     $card['report']     = dolical_get_report($event);
     $card['reportDue']  = dolical_report_due($event, $user);
     $card['canReport']  = dolical_can_report($user, $event);
+    // A slot offered with others : confirmed from the card, the others are removed
+    $card['toConfirm']  = dolical_get_tentative($event) !== '';
+    $card['otherSlots'] = $card['toConfirm'] ? count(dolical_tentative_siblings($event)) : 0;
 
     // Third party and project : their name as on the native card, their details for whoever may see them
     $card['thirdparty'] = null;
@@ -1514,6 +1523,10 @@ function dolical_save_event(ActionComm $event, array $data, User $user): int
     if ($hasVisio) {
         $error += dolical_set_visio($event, $visio, $user) > 0 ? 0 : 1;
     }
+    // To confirm : the key of the slots offered together, '' once confirmed ; untouched when the form has no box for it
+    if (array_key_exists('tentative', $data) && dolical_tentative_available()) {
+        $error += dolical_set_tentative($event, (string) $data['tentative'], $user) > 0 ? 0 : 1;
+    }
 
     if ($error) {
         // The database tells the log, not the browser
@@ -1641,6 +1654,12 @@ function dolical_calendar_config(User $user, array $calendarUsers, array $calend
             'more'           => $langs->transnoentities('DoliCalMoreEvents', '%COUNT%'),
             'week'           => $langs->transnoentities('DoliCalWeekShort'),
             'confirmDelete'  => $langs->transnoentities('DoliCalConfirmDelete'),
+            'confirmSlot'    => $langs->transnoentities('DoliCalConfirmSlotAsk', '%COUNT%'),
+            'toConfirm'      => $langs->transnoentities('DoliCalToConfirm'),
+            'slotConfirmed'  => $langs->transnoentities('DoliCalSlotConfirmed'),
+            'slotsRemoved'   => $langs->transnoentities('DoliCalSlotsRemoved', '%COUNT%'),
+            'slotsCreated'   => $langs->transnoentities('DoliCalSlotsCreated', '%COUNT%'),
+            'removeDate'     => $langs->transnoentities('DoliCalRemoveDate'),
             'confirmFile'    => $langs->transnoentities('DoliCalConfirmDeleteFile'),
             'copied'         => $langs->transnoentities('DoliCalCopied'),
             'saved'          => $langs->transnoentities('DoliCalSaved'),

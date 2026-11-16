@@ -4180,3 +4180,130 @@ label.dolical-setup__chip {
   color: #a0aec0;
   font-size: 11px;
 }
+
+/* Dates written in the mail an event is planned from : a chip for each, the one in the dates lit */
+.dolical-field.dolical-form__maildates {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 12px;
+  padding: 0 12px;
+}
+
+.dolical-form__maildates-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.dolical-form__maildates-label {
+  margin-right: 2px;
+  color: #718096;
+  font-size: 12.5px;
+}
+
+button.dolical-form__maildate {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid #d5dde5;
+  border-radius: 999px;
+  background: #fff;
+  color: #4a5568;
+  font-family: inherit;
+  font-size: 12.5px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+button.dolical-form__maildate:hover {
+  border-color: #63acc9;
+  background: #f2f9fc;
+}
+button.dolical-form__maildate.is-active {
+  border-color: #63acc9;
+  background: #eaf4f9;
+  color: #014751;
+  font-weight: 600;
+}
+
+/* Other dates of a new event : a line each, under its dates ; a word on them once there is one */
+.dolical-field.dolical-form__extras {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 4px 12px;
+  padding: 0 12px;
+}
+.dolical-form__extras > .dolical-field__icon {
+  margin-top: 6px;
+}
+
+.dolical-form__extras-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.dolical-form__extra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.dolical-form__extra input.dolical-form__extra-at {
+  width: auto;
+}
+
+button.dolical-form__add-date {
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.dolical-form__extras-help {
+  display: none;
+}
+.dolical-form.has-extra-dates .dolical-form__extras-help {
+  display: block;
+}
+
+/* Slots to confirm : the chip and the line of the card, the events of the calendar hatched with a dashed edge */
+.dolical-chip.dolical-chip--confirm {
+  background: #fdf3e1;
+  color: #8a5a00;
+}
+
+.dolical-card__confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin: 10px 0 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fdf3e1;
+  color: #8a5a00;
+  font-size: 13px;
+}
+.dolical-card__confirm > span {
+  flex: 1;
+  min-width: 180px;
+}
+
+.ra-block.is-to-confirm,
+.ra-chip.is-to-confirm {
+  border-left-style: dashed;
+  background-image: repeating-linear-gradient(135deg, transparent 0, transparent 6px, rgba(255, 255, 255, 0.6) 6px, rgba(255, 255, 255, 0.6) 12px);
+}
+.dolical-event.is-to-confirm .ra-block__label,
+.dolical-event.is-to-confirm .ra-chip__label {
+  font-style: italic;
+}
+
+.ra-flag.ra-flag--confirm {
+  color: #b7791f;
+}

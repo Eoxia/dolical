@@ -68,6 +68,39 @@ window.dolical.eventform.event = function() {
     F.relabelRepeat($(this).closest('.dolical-form'));
   });
   $(document).on('change', '#dolical-event-modal select[name="recurrence"]', F.recurrenceChanged);
+  $(document).on('click', '#dolical-event-modal .dolical-form__maildate', F.useMailDate);
+  $(document).on('click', '#dolical-event-modal .dolical-form__add-date', function() {
+    const $form = $(this).closest('.dolical-form');
+    F.addDate($form, '', '', '');
+    F.datesChanged($form);
+  });
+  $(document).on('click', '#dolical-event-modal .dolical-form__extra-remove', function() {
+    const $form = $(this).closest('.dolical-form');
+    $(this).closest('.dolical-form__extra').remove();
+    F.datesChanged($form);
+  });
+  // Another date typed : no more the one of the mail ; its end follows its start, the length stays
+  $(document).on('focus', '#dolical-event-modal .dolical-form__extra-at[data-extra="start"]', F.rememberStart);
+  $(document).on('change', '#dolical-event-modal .dolical-form__extra-at', function() {
+    const $row = $(this).closest('.dolical-form__extra');
+    if ($(this).attr('data-extra') === 'start') {
+      const previous = new Date($(this).attr('data-previous') || '');
+      const current  = new Date($(this).val());
+      const end      = new Date($row.find('[data-extra="end"]').val());
+      $(this).attr('data-previous', $(this).val());
+      if (!isNaN(previous) && !isNaN(current) && !isNaN(end)) {
+        $row.find('[data-extra="end"]').val(F.localValue(new Date(end.getTime() + (current - previous))));
+      }
+    }
+    $row.attr('data-chip', '');
+    F.datesChanged($(this).closest('.dolical-form'));
+  });
+  // The dates of the form typed : no more the ones of a date of the mail
+  $(document).on('change', '#dolical-event-modal input[name="start_at"], #dolical-event-modal input[name="end_at"], #dolical-event-modal input[name="start_day"], #dolical-event-modal input[name="end_day"]', function() {
+    const $form = $(this).closest('.dolical-form');
+    $form.attr('data-dates-touched', 1).find('.dolical-form__dates').attr('data-chip', '');
+    F.datesChanged($form);
+  });
   $(document).on('change', '#dolical-event-modal input[name="reminder"]', F.toggleReminder);
   $(document).on('change', '#dolical-event-modal input[name="reminder_types[]"]', function() {
     F.askNotification($(this).closest('.dolical-form__reminder'));
@@ -445,6 +478,7 @@ window.dolical.eventform.setup = function($box) {
     $reminder.toggleClass('is-blocked', $reminder.find('input[name="reminder"]').is(':checked') && $reminder.find('input[name="reminder_types[]"][value="browser"]').is(':checked'));
   }
 
+  F.datesChanged($form);
   F.checkAvailability($form);
 };
 
@@ -458,6 +492,170 @@ window.dolical.eventform.toggleFullday = function() {
     return;
   }
   $(this).closest('.dolical-form').toggleClass('is-fullday', this.checked);
+};
+
+/**
+ * A date written as the inputs of the form take it : « 2026-11-24T14:30 ».
+ *
+ * @param   {Date} date Date
+ * @returns {String}
+ */
+window.dolical.eventform.localValue = function(date) {
+  const pad = function(value) {
+    return String(value).padStart(2, '0');
+  };
+  return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+};
+
+/**
+ * Dates of a chip of the mail : a day without hours takes the hours and the length of the dates of the form.
+ *
+ * @param   {jQuery} $form Form
+ * @param   {jQuery} $chip Chip
+ * @returns {Object}       {start, end} as the inputs take them
+ */
+window.dolical.eventform.chipDates = function($form, $chip) {
+  const F   = window.dolical.eventform;
+  let start = $chip.attr('data-start');
+  let end   = $chip.attr('data-end');
+  if ($chip.attr('data-has-time') !== '1') {
+    const from   = new Date($form.find('input[name="start_at"]').val());
+    const to     = new Date($form.find('input[name="end_at"]').val());
+    const length = !isNaN(from) && !isNaN(to) && to > from ? to - from : 3600000;
+    start = start.slice(0, 10) + 'T' + (!isNaN(from) ? F.localValue(from).slice(11) : '09:00');
+    end   = F.localValue(new Date(new Date(start).getTime() + length));
+  }
+  return {start: start, end: end};
+};
+
+/**
+ * Put dates in the dates of the form.
+ *
+ * @param   {jQuery}  $form    Form
+ * @param   {String}  start    Start, as the inputs take it
+ * @param   {String}  end      End
+ * @param   {String}  chip     Chip of the mail they come from, '' when typed
+ * @param   {Boolean} withTime Whether they have hours : the event is no more a whole day
+ * @returns {void}
+ */
+window.dolical.eventform.setMainDates = function($form, start, end, chip, withTime) {
+  const F = window.dolical.eventform;
+  $form.find('input[name="start_at"]').val(start).attr('data-previous', start);
+  $form.find('input[name="end_at"]').val(end);
+  $form.find('input[name="start_day"]').val(start.slice(0, 10)).attr('data-previous', start.slice(0, 10));
+  $form.find('input[name="end_day"]').val(end.slice(0, 10));
+  $form.find('.dolical-form__dates').attr('data-chip', chip);
+  if (withTime) {
+    $form.find('input[name="fullday"]').prop('checked', false);
+  }
+  $form.find('input[name="fullday"]').trigger('change');
+  F.relabelRepeat($form);
+};
+
+/**
+ * A date of the mail clicked : chosen, it is one more date of the event ; chosen again, it goes (the next date takes
+ * the place of the first one, the only date stays).
+ *
+ * @returns {void}
+ */
+window.dolical.eventform.useMailDate = function() {
+  const F     = window.dolical.eventform;
+  const $chip = $(this);
+  const $form = $chip.closest('.dolical-form');
+  const index = $chip.attr('data-index');
+  const $main = $form.find('.dolical-form__dates');
+
+  if ($chip.hasClass('is-active')) {
+    const $row = $form.find('.dolical-form__extra[data-chip="' + index + '"]');
+    if ($row.length) {
+      $row.remove();
+    } else if ($main.attr('data-chip') === index) {
+      const $next = $form.find('.dolical-form__extra').first();
+      if (!$next.length) {
+        return;
+      }
+      F.setMainDates($form, $next.find('[data-extra="start"]').val(), $next.find('[data-extra="end"]').val(), $next.attr('data-chip') || '', true);
+      $next.remove();
+    }
+  } else if ($main.attr('data-chip') === '' && !$form.find('.dolical-form__extra').length && !$form.attr('data-dates-touched')) {
+    // The dates of the form were not chosen yet : the first date of the mail takes their place
+    const dates = F.chipDates($form, $chip);
+    F.setMainDates($form, dates.start, dates.end, index, $chip.attr('data-has-time') === '1');
+  } else {
+    const dates = F.chipDates($form, $chip);
+    F.addDate($form, dates.start, dates.end, index);
+  }
+  F.datesChanged($form);
+};
+
+/**
+ * One more date for the event : given (a date of the mail), or the day after the last one, at the same hours.
+ *
+ * @param   {jQuery} $form Form
+ * @param   {String} start Start, as the inputs take it ('' for the day after the last date)
+ * @param   {String} end   End
+ * @param   {String} chip  Chip of the mail it comes from, '' when typed
+ * @returns {void}
+ */
+window.dolical.eventform.addDate = function($form, start, end, chip) {
+  const F = window.dolical.eventform;
+  const U = window.dolical.util;
+  if (!start) {
+    const $last = $form.find('.dolical-form__extra').last();
+    const from  = new Date($last.length ? $last.find('[data-extra="start"]').val() : $form.find('input[name="start_at"]').val());
+    const to    = new Date($last.length ? $last.find('[data-extra="end"]').val() : $form.find('input[name="end_at"]').val());
+    if (isNaN(from) || isNaN(to)) {
+      return;
+    }
+    start = F.localValue(new Date(from.getTime() + 86400000));
+    end   = F.localValue(new Date(to.getTime() + 86400000));
+  }
+  const $row = $('<div class="dolical-form__extra">'
+    + '<input type="datetime-local" class="dolical-form__extra-at" data-extra="start">'
+    + '<span class="dolical-form__arrow"><i class="fas fa-long-arrow-alt-right"></i></span>'
+    + '<input type="datetime-local" class="dolical-form__extra-at" data-extra="end">'
+    + '<button type="button" class="dolical-icon-btn dolical-form__extra-remove" title="' + U.esc(U.t('removeDate')) + '" aria-label="' + U.esc(U.t('removeDate')) + '"><i class="fas fa-times"></i></button>'
+    + '</div>');
+  $row.attr('data-chip', chip || '');
+  $row.find('[data-extra="start"]').val(start);
+  $row.find('[data-extra="end"]').val(end);
+  $row.insertBefore($form.find('.dolical-form__add-date'));
+};
+
+/**
+ * The dates changed : the chips of the mail lit as chosen ; several dates are offered to confirm, never repeated.
+ *
+ * @param   {jQuery} $form Form
+ * @returns {void}
+ */
+window.dolical.eventform.datesChanged = function($form) {
+  const $rows   = $form.find('.dolical-form__extra');
+  const chosen  = {};
+  const mainKey = $form.find('.dolical-form__dates').attr('data-chip') || '';
+  if (mainKey !== '') {
+    chosen[mainKey] = true;
+  }
+  $rows.each(function() {
+    if ($(this).attr('data-chip')) {
+      chosen[$(this).attr('data-chip')] = true;
+    }
+  });
+  $form.find('.dolical-form__maildate').each(function() {
+    $(this).toggleClass('is-active', chosen[$(this).attr('data-index')] === true);
+  });
+
+  const several = $rows.length > 0;
+  $form.toggleClass('has-extra-dates', several);
+  // Turned to several dates : offered to confirm (the box stays as the user leaves it afterwards)
+  if (several && !$form.data('several')) {
+    $form.find('input[name="tentative"]').prop('checked', true);
+  }
+  $form.data('several', several);
+  const $recurrence = $form.find('select[name="recurrence"]');
+  if (several && $recurrence.val() !== '') {
+    $recurrence.val('').trigger('change');
+  }
+  $recurrence.prop('disabled', several);
 };
 
 /**
@@ -645,6 +843,27 @@ window.dolical.eventform.submit = function() {
   const start   = period.start;
   const end     = period.end;
 
+  // The other dates : whole days too when the event is
+  const extras = [];
+  let badExtra = false;
+  $form.find('.dolical-form__extra').each(function() {
+    let from = new Date($(this).find('[data-extra="start"]').val());
+    let to   = new Date($(this).find('[data-extra="end"]').val());
+    if (fullday && !isNaN(from) && !isNaN(to)) {
+      from = U.startOfDay(from);
+      to   = new Date(U.startOfDay(to).getTime() + 86399000);
+    }
+    if (isNaN(from) || isNaN(to) || to < from) {
+      badExtra = true;
+      return false;
+    }
+    extras.push([from, to]);
+  });
+  if (badExtra) {
+    F.error(U.t('datesInvalid'));
+    return;
+  }
+
   const id   = parseInt($form.attr('data-id'), 10) || 0;
   const data = new FormData(form);
   ['start_at', 'end_at', 'start_day', 'end_day', 'fullday', 'busy', 'recur_until_day'].forEach(function(name) {
@@ -656,6 +875,10 @@ window.dolical.eventform.submit = function() {
   data.append('end', Math.floor(end.getTime() / 1000));
   data.append('fullday', fullday ? 1 : 0);
   data.append('busy', $form.find('input[name="busy"]').is(':checked') ? 1 : 0);
+  extras.forEach(function(dates) {
+    data.append('extra_start[]', Math.floor(dates[0].getTime() / 1000));
+    data.append('extra_end[]', Math.floor(dates[1].getTime() / 1000));
+  });
 
   // The last day of a series, at noon : the same day in every time zone close to the one of the user
   const recurrence = $form.find('select[name="recurrence"]').val() || '';
@@ -714,6 +937,9 @@ window.dolical.eventform.send = function(data, id) {
       message = U.t('saved');
       if (response.created > 0) {
         message += ' · ' + U.t(response.truncated ? 'occurrencesTruncated' : 'occurrencesCreated', response.created + 1);
+      }
+      if (response.slots > 0) {
+        message += ' · ' + U.t('slotsCreated', response.slots + 1);
       }
       if (response.sent > 0) {
         message += ' · ' + U.t('invitationsSent', response.sent);

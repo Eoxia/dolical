@@ -45,6 +45,15 @@
 - Pages de configuration (générale et prise de rendez-vous) au design de DoliCal : une carte par section, une ligne
   par réglage avec une aide courte, interrupteurs, sections listées sur le côté et bouton « Enregistrer » toujours
   visible ; un réglage qui dépend d'un autre n'apparaît que lorsqu'il sert.
+- Rendez-vous planifié depuis un mail du module Inbox : les dates écrites dans le mail (« mardi 24 novembre à 14h30 »,
+  « 26/11 de 9h à 10h30 », « demain 15h », « jeudi prochain », « November 19th at 2:30 pm »…) sont proposées sous les
+  dates du formulaire, la première avec ses heures déjà reprise. Seul le dernier message compte (pas les réponses citées
+  dessous), une date passée n'est pas proposée. Le mail est lu par Inbox avec le droit « lire un mail » de l'utilisateur.
+- Plusieurs dates pour un nouveau rendez-vous : les dates du mail se cochent ensemble, « Autre date » en ajoute à la
+  main. Chaque date donne un événement, et plusieurs dates sont « à confirmer » : hachurés dans le calendrier, liés
+  entre eux. « Confirmer ce créneau » sur la fiche de l'un retire les autres de l'agenda (les invités prévenus comme
+  pour une suppression). La case « À confirmer » du formulaire vaut aussi pour un rendez-vous seul. Champ
+  complémentaire `dolical_tentative` créé à l'activation : **réactiver le module** après la mise à jour.
 - Fuseau horaire affiché avec son écart à UTC (« Europe/Paris (UTC+01:00) ») : liste de la configuration, prise de
   rendez-vous, modèle hebdomadaire et pages publiques ; l'écart est celui du jour du créneau ou du rendez-vous (heure
   d'été comprise).

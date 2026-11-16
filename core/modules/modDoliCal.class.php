@@ -430,6 +430,13 @@ class modDoliCal extends DolibarrModules
             $this->error = $extrafields->error;
             return 0;
         }
+        // The slots offered for one meeting, to confirm : the key that joins them, empty once confirmed. Not shown by
+        // the native card : the calendar marks them and confirms them
+        $result = $extrafields->addExtraField('dolical_tentative', 'DoliCalToConfirm', 'varchar', (int) ($this->numero . '12'), '32', 'actioncomm', 0, 0, '', '', 1, '', '0', '', '', '0', 'dolical@dolical', "isModEnabled('dolical')");
+        if ($result < 0) {
+            $this->error = $extrafields->error;
+            return 0;
+        }
 
         // Permissions
         $this->remove($options);
