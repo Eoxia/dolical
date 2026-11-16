@@ -806,28 +806,11 @@ button.dolical-card__invite-all {
   border-bottom: 1px solid #e7edf2;
 }
 .dolical-modal .modal-container .modal-header .modal-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   margin: 0;
   color: #2d3748;
   font-size: 17px;
   font-weight: 700;
   white-space: normal;
-}
-/* Icon of the form of an event : a tile of the color of the agenda */
-.dolical-form__title-icon {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: #63acc9;
-  box-shadow: 0 2px 6px rgba(99, 172, 201, 0.35);
-  color: #fff;
-  font-size: 13px;
 }
 .dolical-modal .modal-container .modal-header .modal-close {
   margin-left: auto;
@@ -3673,6 +3656,40 @@ button.dolical-btn.dolical-btn--destructive:hover {
   color: #a0aec0;
   font-size: 32px;
 }
+/* Form of an event : no head, the title typed and the close on the first line ; the text of the head stays, hidden,
+   for the window of a mail application (single.js) */
+#dolical-event-modal .modal-header {
+  display: none;
+}
+#dolical-event-modal .modal-content {
+  padding: 20px 24px;
+}
+.dolical-form__top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+.dolical-form .dolical-form__top input.dolical-form__label {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  margin: 0;
+  padding: 6px 2px 8px;
+}
+.dolical-form input.dolical-form__label::placeholder {
+  color: #a0aec0;
+  font-weight: 500;
+}
+button.dolical-icon-btn.dolical-form__close {
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+}
+.dolical-embedded .dolical-form__close {
+  display: none;
+}
+
 /* Embedded in a window that has its own title and close : the head of the form and the close of the card would
    say it twice */
 .dolical-embedded #dolical-event-modal .modal-header,

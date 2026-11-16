@@ -43,12 +43,16 @@ if (!isset($percentOptions[$formValues['percent']])) {
 $title = $isNew ? $langs->trans('DoliCalNewEvent') : $langs->trans('DoliCalEditEvent');
 ?>
 <div class="modal-header">
-    <h2 class="modal-title"><span class="dolical-form__title-icon"><i class="fas <?php echo $isNew ? 'fa-plus' : 'fa-pen'; ?>"></i></span><?php echo $title; ?></h2>
+    <h2 class="modal-title"><?php echo $title; ?></h2>
     <div class="modal-close"><i class="fas fa-times"></i></div>
 </div>
 <div class="modal-content">
     <form class="dolical-form" data-id="<?php echo $isNew ? 0 : (int) $event->id; ?>" data-series="<?php echo (int) $seriesSize; ?>" data-recurrence="<?php echo dol_escape_htmltag($formValues['recurrence']); ?>" data-until="<?php echo $untilDay; ?>" autocomplete="off" novalidate>
-        <input type="text" name="label" class="dolical-form__label" maxlength="255" placeholder="<?php echo dol_escape_htmltag($langs->trans('DoliCalAddTitle')); ?>" value="<?php echo dol_escape_htmltag($formValues['label']); ?>">
+        <?php // The title typed and the close on one line : the head of the window stays hidden (its text names the window of a mail application) ?>
+        <div class="dolical-form__top">
+            <input type="text" name="label" class="dolical-form__label noborderfocus" maxlength="255" placeholder="<?php echo dol_escape_htmltag($langs->trans('DoliCalAddTitle')); ?>" value="<?php echo dol_escape_htmltag($formValues['label']); ?>">
+            <button type="button" class="dolical-icon-btn modal-close dolical-form__close" title="<?php echo dol_escape_htmltag($langs->trans('Close')); ?>" aria-label="<?php echo dol_escape_htmltag($langs->trans('Close')); ?>"><i class="fas fa-times"></i></button>
+        </div>
 
         <div class="dolical-form__grid">
             <div class="dolical-field dolical-field--wide dolical-form__when">

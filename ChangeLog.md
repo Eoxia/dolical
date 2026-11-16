@@ -56,8 +56,9 @@
   complémentaire `dolical_tentative` créé à l'activation : **réactiver le module** après la mise à jour.
 - Calendrier : un clic à côté de la fiche ouverte d'un événement la ferme sans ouvrir le formulaire d'un nouvel
   événement (la fiche se fermait à l'appui, le clic qui suivait ouvrait le formulaire).
-- Formulaire d'un événement : titre précédé d'une pastille bleue (« + » pour un nouvel événement, crayon pour une
-  modification) ; « Envoyer les invitations par e-mail » en interrupteur, comme « Me rappeler l'événement ».
+- Formulaire d'un événement : plus de bandeau « Nouvel événement », le titre saisi et la croix sur la première ligne,
+  sans le cadre que le thème met autour du champ actif ; « Envoyer les invitations par e-mail » en interrupteur, comme
+  « Me rappeler l'événement ».
 - Confirmer un créneau, supprimer un événement ou une pièce jointe : une fenêtre de DoliCal (titre, ce que fait
   l'action, bouton rouge pour une suppression) au lieu de la question du navigateur.
 - Fuseau horaire affiché avec son écart à UTC (« Europe/Paris (UTC+01:00) ») : liste de la configuration, prise de
