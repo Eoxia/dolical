@@ -306,6 +306,53 @@ window.dolical.util.save = function(key, value) {
 };
 
 /**
+ * Ask before an action, in a window of the calendar (core/tpl/dolical_ask_modal.tpl.php) : its title, what it does,
+ * the button that does it, red for a deletion. Escape or « Cancel » close it, Enter confirms.
+ *
+ * @param   {Object}   options {title, text, confirm : label of the button, danger : a deletion, icon : classes}
+ * @param   {Function} done    Called once confirmed
+ * @returns {void}
+ */
+window.dolical.util.ask = function(options, done) {
+  const $modal = $('#dolical-ask-modal');
+  // A page without the window : the question of the browser, rather than nothing
+  if (!$modal.length) {
+    if (window.confirm(options.text)) {
+      done();
+    }
+    return;
+  }
+  const danger = !!options.danger;
+  $modal.find('.modal-title').text(options.title || '');
+  $modal.find('.dolical-confirm__text').text(options.text || '');
+  $modal.find('.dolical-confirm__icon').toggleClass('is-safe', !danger).find('i').attr('class', options.icon || (danger ? 'fas fa-trash-alt' : 'fas fa-check'));
+  const $confirm = $modal.find('.dolical-ask__confirm');
+  $confirm.toggleClass('dolical-btn--destructive', danger).toggleClass('dolical-btn--primary', !danger);
+  $confirm.find('i').attr('class', danger ? 'fas fa-trash-alt' : 'fas fa-check');
+  $confirm.find('span').text(options.confirm || '');
+
+  const close = function() {
+    $modal.removeClass('modal-active');
+    $(document).off('keydown.dolicalask');
+  };
+  $confirm.off('click').on('click', function() {
+    close();
+    done();
+  });
+  $modal.find('.modal-close').off('click.dolicalask').on('click.dolicalask', close);
+  $(document).off('keydown.dolicalask').on('keydown.dolicalask', function(event) {
+    if (event.key === 'Escape') {
+      event.stopPropagation();
+      close();
+    }
+  });
+  $modal.addClass('modal-active');
+  setTimeout(function() {
+    $confirm.trigger('focus');
+  }, 50);
+};
+
+/**
  * Ask which dates of a series a change or a deletion is for.
  *
  * @param   {String}   kind     'edit' or 'delete'

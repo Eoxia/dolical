@@ -163,3 +163,4 @@
 </div>
 
 <?php require __DIR__ . '/dolical_scope_modal.tpl.php'; ?>
+<?php require __DIR__ . '/dolical_ask_modal.tpl.php'; ?>

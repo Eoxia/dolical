@@ -806,11 +806,28 @@ button.dolical-card__invite-all {
   border-bottom: 1px solid #e7edf2;
 }
 .dolical-modal .modal-container .modal-header .modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin: 0;
   color: #2d3748;
   font-size: 17px;
   font-weight: 700;
   white-space: normal;
+}
+/* Icon of the form of an event : a tile of the color of the agenda */
+.dolical-form__title-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: #63acc9;
+  box-shadow: 0 2px 6px rgba(99, 172, 201, 0.35);
+  color: #fff;
+  font-size: 13px;
 }
 .dolical-modal .modal-container .modal-header .modal-close {
   margin-left: auto;
@@ -1026,11 +1043,9 @@ button.dolical-card__invite-all {
   border-radius: 10px;
   background: #f2f9fc;
 }
-.dolical-field.dolical-form__notify .dolical-check {
-  font-weight: 600;
-}
-.dolical-field.dolical-form__notify .dolical-check i {
-  color: #4f9ab8;
+/* The help under the switch, from its text : the track and the icon before it */
+.dolical-field.dolical-form__notify .dolical-field__help {
+  padding-left: 46px;
 }
 
 .dolical-form__arrow {
@@ -4306,4 +4321,20 @@ button.dolical-form__add-date {
 
 .ra-flag.ra-flag--confirm {
   color: #b7791f;
+}
+
+/* The window that asks before an action of the calendar : the round icon of the undoing of an import, blue when
+   nothing is deleted */
+.dolical-confirm__icon.is-safe {
+  background: #eaf4f9;
+  color: #4f9ab8;
+}
+.dolical-ask-modal .dolical-confirm__body p {
+  margin: 0;
+  color: #4a5568;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.dolical-ask-modal .dolical-confirm {
+  align-items: center;
 }

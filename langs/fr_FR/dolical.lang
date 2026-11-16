@@ -117,8 +117,8 @@ DoliCalShowMore         = Afficher tout
 DoliCalMoreDetails      = Plus de détails
 DoliCalCreatedBy        = Créé par %s le %s
 DoliCalModifiedBy       = modifié par %s le %s
-DoliCalConfirmDelete    = Supprimer définitivement cet événement ?
-DoliCalConfirmDeleteFile = Supprimer ce fichier ?
+DoliCalConfirmDelete    = L'événement sera supprimé définitivement.
+DoliCalConfirmDeleteFile = Le fichier sera retiré des pièces jointes de l'événement.
 
 #
 # Form - Formulaire
@@ -205,7 +205,7 @@ DoliCalNobodyToRemind            = Toutes les personnes invitées ont déjà ré
 DoliCalMailTooSoon               = %s a déjà reçu un e-mail pour cet événement il y a moins de %s minutes.
 DoliCalMailHourlyLimit           = Limite d'e-mails par heure atteinte : %s e-mail(s) non envoyé(s), réessayez plus tard.
 DoliCalCancellationsSent         = %s annulation(s) envoyée(s)
-DoliCalConfirmDeleteInvited      = Supprimer définitivement cet événement ? Une annulation partira vers les personnes invitées par e-mail (%s).
+DoliCalConfirmDeleteInvited      = L'événement sera supprimé définitivement. Une annulation partira vers les personnes invitées par e-mail (%s).
 DoliCalRemindersSent             = %s relance(s) envoyée(s)
 DoliCalBusyWarning               = Déjà pris sur ce créneau :
 DoliCalBusyOther                 = Occupé
@@ -673,7 +673,9 @@ DoliCalOtherDate           = Autre date
 DoliCalOtherDatesHelp      = Chaque date donne un rendez-vous ; en confirmer un retire les autres.
 DoliCalRemoveDate          = Retirer cette date
 DoliCalConfirmSlot         = Confirmer ce créneau
-DoliCalConfirmSlotAsk      = Confirmer ce créneau ? Les %s autres créneaux proposés seront retirés de l'agenda.
+DoliCalConfirmSlotAsk      = Les %s autres créneaux proposés avec celui-ci seront retirés de l'agenda.
+DoliCalDeleteEventTitle    = Supprimer l'événement
+DoliCalDeleteFileTitle     = Supprimer le fichier
 DoliCalSlotConfirmed       = Créneau confirmé
 DoliCalSlotsRemoved        = %s autre(s) créneau(x) retiré(s)
 DoliCalSlotsCreated        = %s rendez-vous ajoutés

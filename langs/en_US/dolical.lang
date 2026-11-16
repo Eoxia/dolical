@@ -117,8 +117,8 @@ DoliCalShowMore         = Show all
 DoliCalMoreDetails      = More details
 DoliCalCreatedBy        = Created by %s on %s
 DoliCalModifiedBy       = modified by %s on %s
-DoliCalConfirmDelete    = Delete this event for good?
-DoliCalConfirmDeleteFile = Delete this file?
+DoliCalConfirmDelete    = The event will be deleted for good.
+DoliCalConfirmDeleteFile = The file will be removed from the attachments of the event.
 
 #
 # Form - Formulaire
@@ -205,7 +205,7 @@ DoliCalNobodyToRemind            = Every guest has already answered
 DoliCalMailTooSoon               = %s already got an email for this event less than %s minutes ago.
 DoliCalMailHourlyLimit           = Limit of emails per hour reached: %s email(s) not sent, try again later.
 DoliCalCancellationsSent         = %s cancellation(s) sent
-DoliCalConfirmDeleteInvited      = Delete this event for good? A cancellation will go to the people invited by email (%s).
+DoliCalConfirmDeleteInvited      = The event will be deleted for good. A cancellation will go to the people invited by email (%s).
 DoliCalRemindersSent             = %s reminder(s) sent
 DoliCalBusyWarning               = Already taken during this slot:
 DoliCalBusyOther                 = Busy
@@ -673,7 +673,9 @@ DoliCalOtherDate           = Another date
 DoliCalOtherDatesHelp      = Each date gives an appointment; confirming one removes the others.
 DoliCalRemoveDate          = Remove this date
 DoliCalConfirmSlot         = Confirm this slot
-DoliCalConfirmSlotAsk      = Confirm this slot? The %s other slots offered will be removed from the agenda.
+DoliCalConfirmSlotAsk      = The %s other slots offered with this one will be removed from the agenda.
+DoliCalDeleteEventTitle    = Delete the event
+DoliCalDeleteFileTitle     = Delete the file
 DoliCalSlotConfirmed       = Slot confirmed
 DoliCalSlotsRemoved        = %s other slot(s) removed
 DoliCalSlotsCreated        = %s appointments added

@@ -772,14 +772,17 @@ window.dolical.eventform.deleteFile = function() {
   const U     = window.dolical.util;
   const $item = $(this).closest('.dolical-file');
   const id    = parseInt($(this).closest('.dolical-files').attr('data-id'), 10);
-  if (!id || !window.confirm(U.t('confirmFile'))) {
+  const file  = $(this).attr('data-file');
+  if (!id) {
     return;
   }
-  U.post({action: 'deletefile', id: id, file: $(this).attr('data-file')}).done(function(response) {
-    if (response.success) {
-      $item.remove();
-      $(document).trigger('dolical:changed', [id]);
-    }
+  U.ask({title: U.t('deleteFileTitle'), text: U.t('confirmFile'), confirm: U.t('deleteFile'), danger: true}, function() {
+    U.post({action: 'deletefile', id: id, file: file}).done(function(response) {
+      if (response.success) {
+        $item.remove();
+        $(document).trigger('dolical:changed', [id]);
+      }
+    });
   });
 };
 
