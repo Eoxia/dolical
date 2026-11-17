@@ -175,7 +175,7 @@ function dolical_header(string $title, string $morecssonbody = ''): void
 /**
  * Address of the logo of the company for the public pages, or nothing when it has none : never the logo of Dolibarr
  *
- * @return string Absolute URL, empty without logo
+ * @return string Absolute URL or data URI, empty without logo
  */
 function dolical_company_logo_url(): string
 {
@@ -184,11 +184,114 @@ function dolical_company_logo_url(): string
     // The logo itself rather than its thumbnail, sharp on the screens of the phones
     foreach (['logos/' => (string) ($mysoc->logo ?? ''), 'logos/thumbs/' => (string) ($mysoc->logo_small ?? '')] as $dir => $file) {
         if ($file !== '' && is_readable($conf->mycompany->dir_output . '/' . $dir . $file)) {
+            $trimmed = dolical_trimmed_logo_uri($conf->mycompany->dir_output . '/' . $dir . $file);
+            if ($trimmed !== '') {
+                return $trimmed;
+            }
             return $dolibarr_main_url_root . '/viewimage.php?modulepart=mycompany&entity=' . ((int) $conf->entity) . '&file=' . urlencode($dir . $file);
         }
     }
 
     return '';
+}
+
+/**
+ * A PNG logo without its transparent margins, as a data URI : drawn in the middle of a large transparent canvas, it
+ * would look tiny at the height of the header. Made once per version of the file, kept in the documents of DoliCal.
+ *
+ * @param  string $path Logo file
+ * @return string       Data URI, empty when the logo is not a PNG, has no margin to remove or GD is missing
+ */
+function dolical_trimmed_logo_uri(string $path): string
+{
+    global $conf;
+
+    $info = @getimagesize($path);
+    if (empty($info) || $info[2] !== IMAGETYPE_PNG || !function_exists('imagecreatefrompng') || empty($conf->dolical->dir_output)) {
+        return '';
+    }
+
+    $cacheDir = $conf->dolical->dir_output . '/logo';
+    $cache    = $cacheDir . '/' . md5($path . '|' . filemtime($path) . '|' . filesize($path)) . '.png';
+    $none     = $cache . '.none';
+    if (is_file($none)) {
+        return '';
+    }
+    if (!is_readable($cache)) {
+        dol_mkdir($cacheDir);
+        // The copies of the former logos
+        foreach (glob($cacheDir . '/*.png*') ?: [] as $former) {
+            @unlink($former);
+        }
+
+        $image = @imagecreatefrompng($path);
+        $box   = $image ? dolical_drawn_box($image) : null;
+        if (!$box || ($box[2] === imagesx($image) && $box[3] === imagesy($image))) {
+            @file_put_contents($none, '');
+            return '';
+        }
+
+        // Twice the width of the header at most : sharp on the phones, light in the page
+        $width  = min($box[2], 600);
+        $height = max(1, (int) round($box[3] * $width / $box[2]));
+        $copy   = imagecreatetruecolor($width, $height);
+        imagealphablending($copy, false);
+        imagesavealpha($copy, true);
+        imagecopyresampled($copy, $image, 0, 0, $box[0], $box[1], $width, $height, $box[2], $box[3]);
+        if (!@imagepng($copy, $cache, 9)) {
+            return '';
+        }
+    }
+
+    $data = @file_get_contents($cache);
+
+    return $data ? 'data:image/png;base64,' . base64_encode($data) : '';
+}
+
+/**
+ * Box of what is drawn in an image : its pixels other than transparent (almost invisible ones count as transparent).
+ * imagecropauto() cannot do it, it knows only the transparent colour of a palette.
+ *
+ * @param  GdImage|resource $image Image
+ * @return int[]|null              [left, top, width, height], null when nothing is drawn
+ */
+function dolical_drawn_box($image): ?array
+{
+    if (!imageistruecolor($image)) {
+        imagepalettetotruecolor($image);
+    }
+    $width  = imagesx($image);
+    $height = imagesy($image);
+    $drawn  = function (int $x, int $y) use ($image): bool {
+        return ((imagecolorat($image, $x, $y) >> 24) & 0x7F) < 120;
+    };
+    $rowDrawn = function (int $y, int $from, int $to) use ($drawn): bool {
+        for ($x = $from; $x <= $to; $x++) {
+            if ($drawn($x, $y)) {
+                return true;
+            }
+        }
+        return false;
+    };
+    $colDrawn = function (int $x, int $from, int $to) use ($drawn): bool {
+        for ($y = $from; $y <= $to; $y++) {
+            if ($drawn($x, $y)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    // From each side inwards, up to the first line with something drawn
+    for ($top = 0; $top < $height && !$rowDrawn($top, 0, $width - 1); $top++);
+    if ($top === $height) {
+        return null;
+    }
+    for ($bottom = $height - 1; $bottom > $top && !$rowDrawn($bottom, 0, $width - 1); $bottom--);
+    for ($left = 0; $left < $width - 1 && !$colDrawn($left, $top, $bottom); $left++);
+    for ($right = $width - 1; $right > $left && !$colDrawn($right, $top, $bottom); $right--);
+
+    return [$left, $top, $right - $left + 1, $bottom - $top + 1];
 }
 
 /**
