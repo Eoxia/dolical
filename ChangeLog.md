@@ -75,6 +75,9 @@
 - Fuseau horaire affiché avec son écart à UTC (« Europe/Paris (UTC+01:00) ») : liste de la configuration, prise de
   rendez-vous, modèle hebdomadaire et pages publiques ; l'écart est celui du jour du créneau ou du rendez-vous (heure
   d'été comprise).
+- Pages publiques : le logo de la société est rogné de ses marges transparentes (un logo dessiné au milieu d'un grand
+  fond transparent paraissait minuscule dans l'en-tête), copie gardée dans `documents/dolical/logo/` ; jusqu'à
+  280 px de large.
 - Import d'un agenda : un rendez-vous déjà dans l'agenda d'un collègue (son import, son téléphone) ou créé dans
   DoliCal n'est plus copié. La personne de l'agenda importé est ajoutée à ses participants, avec sa réponse quand
   c'est elle qui importe, et les personnes trouvées complètent le rendez-vous (bilan : « Déjà dans l'agenda d'un
