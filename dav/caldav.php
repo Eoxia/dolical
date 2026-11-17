@@ -67,6 +67,7 @@ global $conf, $db, $langs, $user;
 
 require_once DOL_DOCUMENT_ROOT . '/core/lib/security2.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/includes/sabre/autoload.php';
+require_once __DIR__ . '/../class/dolicalcaldavauthbackend.class.php';
 require_once __DIR__ . '/../class/dolicalcaldavbackend.class.php';
 require_once __DIR__ . '/../class/dolicalprincipalbackend.class.php';
 
@@ -112,8 +113,8 @@ function dolical_caldav_login_failed(string $login): void
 
 // Login of Dolibarr and the synchronization password of the person (never his Dolibarr password), with the hooks of
 // the login page, so that the security modules (two factors, bans, limits) apply, and a limit of failures per login and
-// per address
-$authBackend = new \Sabre\DAV\Auth\Backend\BasicCallBack(static function ($login, $password) {
+// per address. The principal is then named after the login stored in Dolibarr, whatever the case typed on the phone
+$authBackend = new DoliCalCalDavAuthBackend(static function ($login, $password) {
     global $db, $hookmanager, $langs, $user;
 
     $login = (string) $login;
@@ -153,7 +154,7 @@ $authBackend = new \Sabre\DAV\Auth\Backend\BasicCallBack(static function ($login
     $langs->loadLangs(['main', 'agenda', 'dolical@dolical']);
 
     return true;
-});
+}, $user);
 $authBackend->setRealm('DoliCal');
 
 $server = new \Sabre\DAV\Server([
@@ -165,6 +166,9 @@ $server->setBaseUri(dol_buildpath('/dolical/dav/caldav.php', 1) . '/');
 $server->addPlugin(new \Sabre\DAV\Auth\Plugin($authBackend));
 $aclPlugin                        = new \Sabre\DAVACL\Plugin();
 $aclPlugin->hideNodesFromListings = true;
+// Nothing is served without a login : a wrong password gets a 401 the phone tells as such. Let through, the request went
+// on unauthenticated and the agendas of nobody answered a 404 on each of them
+$aclPlugin->allowUnauthenticatedAccess = false;
 $server->addPlugin($aclPlugin);
 $server->addPlugin(new \Sabre\CalDAV\Plugin());
 
