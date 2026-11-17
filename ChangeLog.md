@@ -90,6 +90,8 @@
   collègue »). La copie faisait apparaître le rendez-vous deux fois pour le collègue. Seulement pour qui peut modifier
   ce rendez-vous, sinon il est importé comme avant. Un rendez-vous venu d'un téléphone ou une série est aussi
   retrouvé par son identifiant (invitation lue dans Inbox, import) : la requête échouait.
+- E-mails (invitation, prise de rendez-vous en ligne) : la ligne « Visio » ne garde que le lien « Rejoindre la
+  visio ». L'adresse écrite en dessous devenait un second lien dans les messageries.
 
 ## 1.3.0
 

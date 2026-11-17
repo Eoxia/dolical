@@ -105,7 +105,7 @@ function dolical_get_visio(ActionComm $event, bool $reload = false): string
 }
 
 /**
- * Line of the link in the body of a mail : « Visio : Join the video call », the link under it
+ * Line of the link in the body of a mail : « Visio : Join the video call », the text linking to the call
  *
  * @param  string    $url         Link
  * @param  Translate $outputLangs Language of the mail
