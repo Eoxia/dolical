@@ -281,6 +281,7 @@ emojis sont gardés, même sur une base en latin1 : ils sont enregistrés en ent
 | Textes de la page d'une personne | paramètres utilisateur `DOLICAL_BOOKING_TITLE`, `_INTRO`, `_FORM_TITLE` (communs : constantes du même nom) |
 | Lien de visio d'une personne | paramètre utilisateur `DOLICAL_BOOKING_VISIO` (commun : constante du même nom) |
 | Modèle hebdomadaire des créneaux | constante `DOLICAL_BOOKING_SLOTS` : `{"<jour ISO>": [[début en minutes, durée en minutes], …]}` |
+| Agendas qui bloquent les créneaux | constante `DOLICAL_BOOKING_CONFLICT_USERS` (tout le monde) et paramètre utilisateur du même nom (une personne) : ids d'utilisateurs séparés par des virgules |
 | Réglages de la prise de rendez-vous | constantes `DOLICAL_BOOKING_*` de l'entité ; textes en entités numériques pour les emojis |
 | Lien court d'une page (avec Saturne) | table de Saturne `llx_saturne_object_redirection` |
 | Réservations récentes par adresse IP | `documents/dolical/temp/booking/` (quelques octets, oubliés après une heure) |

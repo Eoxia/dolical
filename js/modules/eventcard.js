@@ -358,9 +358,20 @@ window.dolical.eventcard.action = function(event) {
       } catch (error) {
         slots = [];
       }
-      const confirm = function(keep) {
+      const confirm = function(kept) {
+        // The slots kept, with their dates as the window left them
+        const data = {action: 'confirm', id: id, keep: [id], start: {}, end: {}};
+        if (kept && kept.length) {
+          data.keep = kept.map(function(slot) {
+            if (slot.start) {
+              data.start[slot.value] = Math.floor(slot.start.getTime() / 1000);
+              data.end[slot.value]   = Math.floor(slot.end.getTime() / 1000);
+            }
+            return slot.value;
+          });
+        }
         $btn.prop('disabled', true);
-        U.post({action: 'confirm', id: id, keep: keep && keep.length ? keep : [id]}).done(function(response) {
+        U.post(data).done(function(response) {
           if (!response.success) {
             U.toast(response.error || U.t('error'), 'error');
             $btn.prop('disabled', false);
@@ -390,7 +401,7 @@ window.dolical.eventcard.action = function(event) {
         });
       };
       if (slots.length <= 1) {
-        confirm([id]);
+        confirm();
         break;
       }
       U.ask({
@@ -398,7 +409,7 @@ window.dolical.eventcard.action = function(event) {
         text: U.t('confirmSlotsText'),
         confirm: U.t('confirmSlotsButton'),
         choices: slots.map(function(slot) {
-          return {value: slot.id, label: slot.label, checked: slot.current};
+          return {value: slot.id, label: slot.label, checked: slot.current, dates: {start: slot.start, end: slot.end, fullday: slot.fullday}};
         })
       }, confirm);
       break;

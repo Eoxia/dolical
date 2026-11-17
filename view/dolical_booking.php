@@ -32,6 +32,7 @@ if (file_exists('../dolical.main.inc.php')) {
     die('Include of dolical main fails');
 }
 
+require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
 require_once __DIR__ . '/../lib/dolical_booking.lib.php';
 
 global $conf, $db, $langs, $user;
@@ -78,6 +79,18 @@ if ($action === 'savetexts' && dolical_valid_post()) {
     exit;
 }
 
+// The agendas that take the slots of this page too : active users, the person left out
+if ($action === 'saveconflicts' && dolical_valid_post()) {
+    $conflicts = dolical_filter_active_users(GETPOST('DOLICAL_BOOKING_CONFLICT_USERS', 'array:int'));
+    if (dolical_booking_save_person_conflicts($person, $conflicts)) {
+        setEventMessages($langs->trans('DoliCalBookingConflictsSaved'), null);
+    } else {
+        setEventMessages($langs->trans('Error'), null, 'errors');
+    }
+    header('Location: ' . $selfUrl);
+    exit;
+}
+
 if ($action === 'savevisio' && dolical_valid_post()) {
     $typed = GETPOST('DOLICAL_BOOKING_VISIO', 'nohtml');
     $visio = dolical_visio_clean($typed);
@@ -103,6 +116,12 @@ $publicUrl = dolical_booking_public_url($personId);
 $shortUrl  = $isOpen && $isOffered ? dolical_booking_short_url($personId, $user) : '';
 $ownTexts  = dolical_booking_person_texts($personId);
 $ownVisio  = dolical_booking_person_visio($personId);
+// The agendas that take the slots of the page : the ones of the person, those of the setup told beside
+$candidates      = dolical_booking_candidates();
+unset($candidates[$personId]);
+$ownConflicts    = dolical_booking_person_conflict_ids($personId);
+$globalConflicts = array_values(array_intersect_key($candidates + dolical_booking_candidates(), array_flip(dolical_booking_conflict_user_ids())));
+$form            = new Form($db);
 $fields    = [
     'DOLICAL_BOOKING_TITLE'      => 'DoliCalBookingPageTitle',
     'DOLICAL_BOOKING_INTRO'      => 'DoliCalBookingIntro',

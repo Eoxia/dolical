@@ -310,8 +310,10 @@ window.dolical.util.save = function(key, value) {
  * the button that does it, red for a deletion. Escape or « Cancel » close it, Enter confirms.
  *
  * @param   {Object}   options {title, text, confirm : label of the button, danger : a deletion, icon : classes,
- *                             choices : [{value, label, checked}] boxes to tick}
- * @param   {Function} done    Called once confirmed, with the values ticked when there are choices
+ *                             choices : [{value, label, checked, dates : {start, end, fullday}}] boxes to tick, their
+ *                             dates to be changed when they have some}
+ * @param   {Function} done    Called once confirmed, with the values ticked when there are choices ({value, start, end}
+ *                             for choices with dates)
  * @returns {void}
  */
 window.dolical.util.ask = function(options, done) {
@@ -332,18 +334,73 @@ window.dolical.util.ask = function(options, done) {
   $confirm.find('i').attr('class', danger ? 'fas fa-trash-alt' : 'fas fa-check');
   $confirm.find('span').text(options.confirm || '');
 
-  // Choices to tick : the values ticked go to done(), the button waits for one at least
+  // Choices to tick : the values ticked go to done(), the button waits for one at least. A choice with dates shows
+  // them to be changed : its day and its hours, a change ticks it
+  const U        = window.dolical.util;
   const $choices = $modal.find('.dolical-ask__choices').empty().toggle(!!options.choices);
+  $modal.toggleClass('has-dates', (options.choices || []).some(function(choice) {
+    return !!choice.dates;
+  }));
   (options.choices || []).forEach(function(choice) {
-    const $choice = $('<label class="dolical-check dolical-ask__choice"><input type="checkbox"><span></span></label>');
-    $choice.find('input').val(choice.value).prop('checked', !!choice.checked);
-    $choice.find('span').text(choice.label);
+    if (!choice.dates) {
+      const $choice = $('<label class="dolical-check dolical-ask__choice"><input type="checkbox"><span></span></label>');
+      $choice.find('input').val(choice.value).prop('checked', !!choice.checked);
+      $choice.find('span').text(choice.label);
+      $choices.append($choice);
+      return;
+    }
+    const dates   = choice.dates;
+    const $choice = $('<div class="dolical-ask__choice dolical-ask__choice--dates">'
+      + '<input type="checkbox">'
+      + '<span class="dolical-ask__weekday"></span>'
+      + '<input type="date" class="dolical-ask__day">'
+      + (dates.fullday ? '' : '<input type="time" class="dolical-ask__from" step="300"><span class="dolical-ask__dash">–</span><input type="time" class="dolical-ask__to" step="300">')
+      + '</div>');
+    $choice.find('input[type="checkbox"]').val(choice.value).prop('checked', !!choice.checked).attr('aria-label', choice.label);
+    $choice.find('.dolical-ask__day').val(dates.start.slice(0, 10));
+    $choice.find('.dolical-ask__from').val(dates.start.slice(11, 16));
+    $choice.find('.dolical-ask__to').val(dates.end.slice(11, 16));
+    // Days between its start and its end, kept when its day changes
+    $choice.attr('data-span', Math.round((new Date(dates.end.slice(0, 10) + 'T12:00:00') - new Date(dates.start.slice(0, 10) + 'T12:00:00')) / 86400000));
+    $choice.attr('data-fullday', dates.fullday ? 1 : 0);
     $choices.append($choice);
   });
-  const update = function() {
-    $confirm.prop('disabled', !!options.choices && !$choices.find('input:checked').length);
+
+  // Dates of a choice as they are typed : null when they are not dates
+  const datesOf = function($choice) {
+    const day = $choice.find('.dolical-ask__day').val();
+    if (!day) {
+      return null;
+    }
+    const endDay = new Date(day + 'T12:00:00');
+    endDay.setDate(endDay.getDate() + (parseInt($choice.attr('data-span'), 10) || 0));
+    const endKey = endDay.getFullYear() + '-' + String(endDay.getMonth() + 1).padStart(2, '0') + '-' + String(endDay.getDate()).padStart(2, '0');
+    const start  = new Date(day + 'T' + ($choice.attr('data-fullday') === '1' ? '00:00:00' : ($choice.find('.dolical-ask__from').val() || '') + ':00'));
+    const end    = new Date(endKey + 'T' + ($choice.attr('data-fullday') === '1' ? '23:59:59' : ($choice.find('.dolical-ask__to').val() || '') + ':00'));
+    // Hours : the end after the start ; a whole day may end the day it starts
+    return isNaN(start) || isNaN(end) || end < start || (end.getTime() === start.getTime() && $choice.attr('data-fullday') !== '1') ? null : {start: start, end: end};
   };
-  $choices.off('change').on('change', update);
+  const update = function() {
+    let valid = true;
+    $choices.find('.dolical-ask__choice--dates').each(function() {
+      const $choice = $(this);
+      const dates   = datesOf($choice);
+      const day     = $choice.find('.dolical-ask__day').val();
+      $choice.find('.dolical-ask__weekday').text(day ? U.format(new Date(day + 'T12:00:00'), {weekday: 'short'}) : '');
+      $choice.toggleClass('is-invalid', dates === null);
+      if (dates === null && $choice.find('input[type="checkbox"]').is(':checked')) {
+        valid = false;
+      }
+    });
+    $confirm.prop('disabled', !!options.choices && (!valid || !$choices.find('input[type="checkbox"]:checked').length));
+  };
+  $choices.off('change input').on('change input', function(event) {
+    // A date changed : it is one kept
+    if (!$(event.target).is('[type="checkbox"]')) {
+      $(event.target).closest('.dolical-ask__choice').find('input[type="checkbox"]').prop('checked', true);
+    }
+    update();
+  });
   update();
 
   const close = function() {
@@ -351,8 +408,10 @@ window.dolical.util.ask = function(options, done) {
     $(document).off('keydown.dolicalask');
   };
   $confirm.off('click').on('click', function() {
-    const values = options.choices ? $choices.find('input:checked').map(function() {
-      return $(this).val();
+    // The values ticked ; with their dates, as dates, when the choices have some
+    const values = options.choices ? $choices.find('input[type="checkbox"]:checked').map(function() {
+      const $choice = $(this).closest('.dolical-ask__choice');
+      return $choice.hasClass('dolical-ask__choice--dates') ? $.extend({value: $(this).val()}, datesOf($choice)) : $(this).val();
     }).get() : undefined;
     close();
     done(values);

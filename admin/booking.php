@@ -87,6 +87,9 @@ if ($action === 'update' && $permissionToWrite && dolical_valid_post()) {
 
     $bookingUsers = dolical_filter_active_users(GETPOST('DOLICAL_BOOKING_USERS', 'array:int'));
     dolibarr_set_const($db, 'DOLICAL_BOOKING_USERS', implode(',', $bookingUsers), 'chaine', 0, '', $conf->entity);
+    // The agendas whose events take everybody (an agenda of the team) : none chosen is a choice too
+    $conflictUsers = dolical_filter_active_users(GETPOST('DOLICAL_BOOKING_CONFLICT_USERS', 'array:int'));
+    dolibarr_set_const($db, 'DOLICAL_BOOKING_CONFLICT_USERS', implode(',', $conflictUsers), 'chaine', 0, '', $conf->entity);
     // The reminders of the customers : none chosen is a choice too, the empty list sends nothing
     $reminders = array_values(array_intersect(array_keys(DOLICAL_BOOKING_REMINDER_DELAYS), array_map('intval', GETPOST('DOLICAL_BOOKING_REMINDERS', 'array:int'))));
     dolibarr_set_const($db, 'DOLICAL_BOOKING_REMINDERS', implode(',', $reminders), 'chaine', 0, '', $conf->entity);

@@ -783,6 +783,60 @@ function dolical_booking_busy(int $userId, int $from, int $to): array
 }
 
 /**
+ * Agendas whose events take a person of the online booking too, as the agendas checked for conflicts by the
+ * appointments of Nextcloud : the ones of the setup take everybody (DOLICAL_BOOKING_CONFLICT_USERS), the ones of the
+ * page of a person take him (parameter of the user of the same name)
+ *
+ * @param  int   $userId Person, 0 for the agendas of the setup only
+ * @return int[]         Active users
+ */
+function dolical_booking_conflict_user_ids(int $userId = 0): array
+{
+    $ids = array_map('intval', explode(',', getDolGlobalString('DOLICAL_BOOKING_CONFLICT_USERS')));
+    if ($userId > 0) {
+        $ids = array_merge($ids, dolical_booking_person_conflict_ids($userId));
+    }
+    $ids = array_values(array_unique(array_filter($ids)));
+
+    return empty($ids) ? [] : array_map('intval', dolical_filter_active_users($ids));
+}
+
+/**
+ * Agendas a person chose on his page : their events take his slots too
+ *
+ * @param  int   $userId Person
+ * @return int[]         Users, as saved
+ */
+function dolical_booking_person_conflict_ids(int $userId): array
+{
+    global $conf, $db;
+
+    $sql   = 'SELECT value FROM ' . MAIN_DB_PREFIX . 'user_param';
+    $sql  .= ' WHERE fk_user = ' . $userId . ' AND entity = ' . ((int) $conf->entity) . " AND param = 'DOLICAL_BOOKING_CONFLICT_USERS'";
+    $resql = $db->query($sql);
+    $obj   = $resql ? $db->fetch_object($resql) : null;
+
+    return $obj ? array_values(array_filter(array_map('intval', explode(',', (string) $obj->value)))) : [];
+}
+
+/**
+ * Save the agendas that take the slots of a person ; none removes the parameter
+ *
+ * @param  User  $person Person whose page it is
+ * @param  int[] $ids    Users, active, the person left out
+ * @return bool
+ */
+function dolical_booking_save_person_conflicts(User $person, array $ids): bool
+{
+    global $conf, $db;
+
+    require_once DOL_DOCUMENT_ROOT . '/core/lib/functions2.lib.php';
+    $ids = array_values(array_diff(array_map('intval', $ids), [(int) $person->id]));
+
+    return dol_set_user_param($db, $conf, $person, ['DOLICAL_BOOKING_CONFLICT_USERS' => implode(',', $ids)], (int) $conf->entity) > 0;
+}
+
+/**
  * Days a person is away over a period : public holidays of the country of the company, and his approved leaves when
  * the Leave module is on
  *
@@ -852,6 +906,13 @@ function dolical_booking_slots(int $userId, DateTimeImmutable $from, int $days):
     [$first, $last]    = dolical_booking_window();
     $closed            = dolical_booking_closed_days($userId, $from, $days);
     $busy              = dolical_booking_busy($userId, $from->getTimestamp() - $after, $from->modify('+' . $days . ' days')->getTimestamp() + $before);
+    // The agendas that take everybody (the agenda of a team, of a room) and the ones of his page : their events take
+    // this person too
+    foreach (dolical_booking_conflict_user_ids($userId) as $conflictUserId) {
+        if ($conflictUserId !== $userId) {
+            $busy = array_merge($busy, dolical_booking_busy($conflictUserId, $from->getTimestamp() - $after, $from->modify('+' . $days . ' days')->getTimestamp() + $before));
+        }
+    }
 
     $result = [];
     for ($i = 0; $i < $days; $i++) {

@@ -22,7 +22,8 @@
  *          synchronization, whose script copies the link.
  *
  * Rendered by view/dolical_booking.php (inherits its scope). Expects: $title, $isSelf, $isOpen, $isOffered,
- * $publicUrl, $shortUrl, $ownTexts, $ownVisio, $fields, $personId, $person, $user, $langs.
+ * $publicUrl, $shortUrl, $ownTexts, $ownVisio, $fields, $personId, $person, $candidates, $ownConflicts, $globalConflicts,
+ * $form, $user, $langs.
  */
 ?>
 <div class="dolical-sync dolical-booking-mine" data-config="<?php echo dol_escape_htmltag(json_encode(['i18n' => ['copied' => $langs->transnoentities('DoliCalCopied')]])); ?>">
@@ -85,6 +86,29 @@
             </form>
         </div>
     <?php endif; ?>
+
+    <div class="dolical-sync__card">
+        <h2><i class="far fa-calendar-times pictofixedwidth"></i><?php echo $langs->trans('DoliCalBookingPersonConflicts'); ?></h2>
+        <p class="dolical-card__muted"><?php echo $langs->trans('DoliCalBookingPersonConflictsHelp'); ?></p>
+        <form method="POST" action="<?php echo dol_escape_htmltag($_SERVER['PHP_SELF']); ?>" class="dolical-booking-texts">
+            <input type="hidden" name="token" value="<?php echo newToken(); ?>">
+            <input type="hidden" name="action" value="saveconflicts">
+            <?php if (!$isSelf) : ?>
+                <input type="hidden" name="id" value="<?php echo (int) $personId; ?>">
+            <?php endif; ?>
+            <div class="dolical-booking-texts__field">
+                <span><?php echo $langs->trans('DoliCalBookingPersonConflictsField'); ?></span>
+                <?php echo $form->multiselectarray('DOLICAL_BOOKING_CONFLICT_USERS', $candidates, $ownConflicts, 0, 0, 'centpercent', 0, 0, '', '', $langs->trans('DoliCalBookingConflictsPlaceholder')); ?>
+            </div>
+            <?php if (!empty($globalConflicts)) : ?>
+                <?php // The agendas of the setup take every page already : told, not chosen here ?>
+                <p class="dolical-card__muted"><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalBookingConflictsGlobal', implode(', ', $globalConflicts))); ?></p>
+            <?php endif; ?>
+            <div class="dolical-sync__actions">
+                <button type="submit" class="dolical-btn dolical-btn--primary"><i class="fas fa-save"></i><?php echo $langs->trans('Save'); ?></button>
+            </div>
+        </form>
+    </div>
 
     <div class="dolical-sync__card">
         <h2><i class="fas fa-pen pictofixedwidth"></i><?php echo $langs->trans('DoliCalBookingMineTexts'); ?></h2>

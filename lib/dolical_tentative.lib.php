@@ -196,9 +196,10 @@ function dolical_tentative_slots(ActionComm $event): array
  * @param  ActionComm $event Event the confirmation is made from
  * @param  User       $user  Current user
  * @param  int[]      $keep  Slots kept, among the ones offered with the event ; empty for the event alone
+ * @param  array      $dates New dates of slots kept, changed when they were confirmed : [id => [start, end]]
  * @return array             ['success' => bool, 'confirmed' => int, 'removed' => int, 'kept' => int, 'cancelled' => int, 'removedSelf' => bool, 'errors' => string[]]
  */
-function dolical_confirm_event(ActionComm $event, User $user, array $keep = []): array
+function dolical_confirm_event(ActionComm $event, User $user, array $keep = [], array $dates = []): array
 {
     $result = ['success' => false, 'confirmed' => 0, 'removed' => 0, 'kept' => 0, 'cancelled' => 0, 'removedSelf' => false, 'errors' => []];
     $group  = array_merge([(int) $event->id], dolical_tentative_siblings($event));
@@ -218,6 +219,15 @@ function dolical_confirm_event(ActionComm $event, User $user, array $keep = []):
             if ($id !== (int) $event->id && !dolical_can_edit_event($user, $slot)) {
                 $result['kept']++;
                 continue;
+            }
+            // Its dates changed in the window : moved as by a drag in the calendar, its reminders with it
+            [$start, $end] = array_map('intval', (array) ($dates[$id] ?? [0, 0])) + [0, 0];
+            if ($start > 0 && $end >= $start && ($start !== (int) $slot->datep || $end !== (int) ($slot->datef ?: $slot->datep))) {
+                if (dolical_move_event($slot, $start, $end, !empty($slot->fulldayevent), 0, 0, $user) > 0) {
+                    dolical_shift_reminders($slot);
+                } else {
+                    $result['errors'][] = $slot->error ?: 'Error';
+                }
             }
             if (dolical_set_tentative($slot, '', $user) > 0) {
                 $result['confirmed']++;
