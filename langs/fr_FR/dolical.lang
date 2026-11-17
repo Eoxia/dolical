@@ -629,6 +629,7 @@ DoliCalImportCreated             = Rendez-vous importés dans l'agenda de %s : %
 DoliCalImportSeries              = , dont %s en série (%s dates en tout)
 DoliCalImportDuplicates          = Déjà dans l'agenda : %s
 DoliCalImportLinked              = Déjà dans l'agenda, complétés de participants ou d'un tiers : %s
+DoliCalImportJoined              = Déjà dans l'agenda d'un collègue (ou créés dans DoliCal), la personne ajoutée à leurs participants : %s
 DoliCalImportIgnored             = Laissés de côté (annulés, sans date ou illisibles) : %s
 DoliCalImportFailed              = Non importés : %s
 DoliCalImportUnknown             = Personnes introuvables dans Dolibarr (%s), entre parenthèses le nombre de rendez-vous. Renseignez leur adresse sur leur fiche d'utilisateur ou de contact, puis réimportez le fichier pour les relier :

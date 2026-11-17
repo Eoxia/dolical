@@ -629,6 +629,7 @@ DoliCalImportCreated             = Meetings imported into the agenda of %s: %s
 DoliCalImportSeries              = , %s of them as series (%s dates in all)
 DoliCalImportDuplicates          = Already in the agenda: %s
 DoliCalImportLinked              = Already in the agenda, completed with people or a third party: %s
+DoliCalImportJoined              = Already in the agenda of a colleague (or made in DoliCal), the person added to their participants: %s
 DoliCalImportIgnored             = Left out (cancelled, without a date or unreadable): %s
 DoliCalImportFailed              = Not imported: %s
 DoliCalImportUnknown             = People not found in Dolibarr (%s), in brackets the number of meetings. Fill in their address on their user or contact card, then import the file again to link them:

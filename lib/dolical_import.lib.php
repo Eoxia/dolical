@@ -168,6 +168,42 @@ function dolical_import_complete(int $id, array $people, User $user): bool
 }
 
 /**
+ * The same meeting already in this Dolibarr outside the agenda of the person : in the agenda of a colleague (his own
+ * import, his phone) or made here and sent to the calendar the file comes from. The person joins it, with the people
+ * found, rather than getting a copy of it : the copy showed the meeting twice for everyone in both. Only by whoever
+ * may change that event, else the meeting is imported as before
+ *
+ * @param  string $uid    Identifier of the meeting, as kept (cut to the size of the field)
+ * @param  User   $owner  Person whose agenda gets the meeting
+ * @param  array  $read   From dolical_caldav_read()
+ * @param  array  $people From dolical_caldav_people()
+ * @param  User   $user   Person importing
+ * @return int            Event joined, 0 when the meeting is not here or may not be changed
+ */
+function dolical_import_join(string $uid, User $owner, array $read, array $people, User $user): int
+{
+    if ($uid === '') {
+        return 0;
+    }
+    $event = dolical_event_from_uid($uid, $user);
+    if ($event === null || !dolical_can_edit_event($user, $event)) {
+        return 0;
+    }
+
+    // The person among its people, with his answer when he is the one importing (as for a meeting created) ; its
+    // owner already is
+    $ownerId = (int) $event->userownerid;
+    unset($people['answers']['user'][$ownerId]);
+    if ((int) $owner->id !== $ownerId && !isset($people['answers']['user'][(int) $owner->id])) {
+        $people['answers']['user'][(int) $owner->id] = (int) $owner->id === (int) $user->id ? (int) ($read['answer'] ?? 0) : 0;
+    }
+    $people['users'] = array_keys($people['answers']['user']);
+    dolical_import_complete((int) $event->id, $people, $user);
+
+    return (int) $event->id;
+}
+
+/**
  * Import the events of an iCalendar file into the agenda of a person. No mail is sent : the people taking part are
  * found by their address or their name and keep the answer they gave. An event already imported gets the people
  * and the third party found since
@@ -176,7 +212,8 @@ function dolical_import_complete(int $id, array $people, User $user): bool
  * @param  User   $owner Person whose agenda gets the events
  * @param  User   $user  Person importing
  * @return array         ['key' => import key of the events created, 'events', 'series', 'dates', 'duplicates', 'linked',
- *                       'ignored' => int, 'failed' => string[], 'unknown' => [address => number of meetings],
+ *                       'joined' (meetings of a colleague the person joined), 'ignored' => int, 'failed' => string[],
+ *                       'unknown' => [address => number of meetings],
  *                       'truncated' => the most appointments read when the file held more, else 0], or
  *                       ['error' => message] when the file is not an agenda
  */
@@ -198,7 +235,7 @@ function dolical_import_ics(string $file, User $owner, User $user): array
         fclose($handle);
     }
 
-    $result = ['key' => dolical_import_new_key(), 'events' => 0, 'series' => 0, 'dates' => 0, 'duplicates' => 0, 'linked' => 0, 'ignored' => 0, 'failed' => [], 'unknown' => [], 'truncated' => 0];
+    $result = ['key' => dolical_import_new_key(), 'events' => 0, 'series' => 0, 'dates' => 0, 'duplicates' => 0, 'linked' => 0, 'joined' => 0, 'ignored' => 0, 'failed' => [], 'unknown' => [], 'truncated' => 0];
     $owned  = array_fill_keys(array_filter([dol_strtolower((string) $owner->email), dol_strtolower((string) $owner->personal_email)]), true);
     $known  = dolical_import_known_uids($owner);
     $ahead  = (new DateTimeImmutable('@' . dol_now()))->modify('+1 year')->getTimestamp();
@@ -243,6 +280,12 @@ function dolical_import_ics(string $file, User $owner, User $user): array
             if (dolical_import_complete($known[$uid], $people, $user)) {
                 $result['linked']++;
             }
+            continue;
+        }
+        $joined = dolical_import_join($uid, $owner, $read, $people, $user);
+        if ($joined > 0) {
+            $known[$uid] = $joined;
+            $result['joined']++;
             continue;
         }
 

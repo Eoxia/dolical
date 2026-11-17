@@ -41,7 +41,7 @@ $config = ['maxSize' => $maxSize, 'i18n' => ['tooLarge' => $langs->transnoentiti
     <?php if (is_array($result)) : ?>
         <div class="dolical-import__card dolical-import__result">
             <h2><i class="fas fa-check-circle pictofixedwidth"></i><?php echo dol_escape_htmltag($langs->transnoentities('DoliCalImportDone', $result['file'])); ?></h2>
-            <?php if ($result['events'] + $result['duplicates'] + $result['ignored'] + count($result['failed']) === 0) : ?>
+            <?php if ($result['events'] + $result['duplicates'] + (int) ($result['joined'] ?? 0) + $result['ignored'] + count($result['failed']) === 0) : ?>
                 <p><?php echo $langs->trans('DoliCalImportNothing'); ?></p>
             <?php else : ?>
                 <ul class="dolical-import__list">
@@ -51,6 +51,9 @@ $config = ['maxSize' => $maxSize, 'i18n' => ['tooLarge' => $langs->transnoentiti
                     <?php endif; ?>
                     <?php if (!empty($result['linked'])) : ?>
                         <li><?php echo $langs->trans('DoliCalImportLinked', $result['linked']); ?></li>
+                    <?php endif; ?>
+                    <?php if (!empty($result['joined'])) : ?>
+                        <li><?php echo $langs->trans('DoliCalImportJoined', $result['joined']); ?></li>
                     <?php endif; ?>
                     <?php if ($result['ignored'] > 0) : ?>
                         <li><?php echo $langs->trans('DoliCalImportIgnored', $result['ignored']); ?></li>
