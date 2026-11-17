@@ -111,6 +111,9 @@
   (« Texte en plus de la confirmation », « Texte en tête du .ics », « Texte en plus des rappels ») : nom du client,
   date, personne réservée, titre, lieu, visio, liens du rendez-vous et du fichier .ics. Remplacés en une passe : un
   jeton tapé par le client reste du texte. La note de la configuration dit où marche chaque jeton.
+- Page de prise de rendez-vous d'une personne ouverte depuis la configuration (crayon des liens) : « Retour à la
+  configuration » ramène à la configuration de la prise de rendez-vous, même pour sa propre page et après un
+  enregistrement (le lien ramenait au calendrier). Depuis le calendrier, retour au calendrier.
 
 ## 1.3.0
 

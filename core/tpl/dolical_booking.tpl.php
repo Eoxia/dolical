@@ -21,14 +21,15 @@
  * \brief   Page of a person for the online booking : his link, and his texts. Same layout as the page of the
  *          synchronization, whose script copies the link.
  *
- * Rendered by view/dolical_booking.php (inherits its scope). Expects: $title, $isSelf, $isOpen, $isOffered,
+ * Rendered by view/dolical_booking.php (inherits its scope). Expects: $title, $isSelf, $fromSetup, $isOpen, $isOffered,
  * $publicUrl, $shortUrl, $ownTexts, $ownVisio, $fields, $personId, $person, $candidates, $ownConflicts, $globalConflicts,
  * $form, $user, $langs.
  */
 ?>
 <div class="dolical-sync dolical-booking-mine" data-config="<?php echo dol_escape_htmltag(json_encode(['i18n' => ['copied' => $langs->transnoentities('DoliCalCopied')]])); ?>">
-    <?php // Back where the page was opened from : the calendar for one's own page, the setup for the page of a colleague ?>
-    <a class="dolical-booking-mine__back" href="<?php echo dol_buildpath($isSelf ? '/dolical/dolicalindex.php' : '/dolical/admin/setup.php', 1); ?>"><i class="fas fa-arrow-left pictofixedwidth"></i><?php echo $langs->trans($isSelf ? 'DoliCalBackToCalendar' : 'DoliCalBackToSetup'); ?></a>
+    <?php // Back where the page was opened from : the setup of the online booking (its links, one of them or a colleague's), else the calendar ?>
+    <?php $backToSetup = $fromSetup || !$isSelf; ?>
+    <a class="dolical-booking-mine__back" href="<?php echo dol_buildpath($backToSetup ? '/dolical/admin/booking.php' : '/dolical/dolicalindex.php', 1) . ($backToSetup ? '#dolical-setup-links' : ''); ?>"><i class="fas fa-arrow-left pictofixedwidth"></i><?php echo $langs->trans($backToSetup ? 'DoliCalBackToSetup' : 'DoliCalBackToCalendar'); ?></a>
 
     <div class="dolical-sync__intro">
         <h1><i class="far fa-calendar-check pictofixedwidth"></i><?php echo dol_escape_htmltag($title); ?></h1>
@@ -41,7 +42,7 @@
             <span>
                 <?php echo $langs->trans(!$isOpen ? 'DoliCalBookingMineClosed' : 'DoliCalBookingMineNotOffered'); ?>
                 <?php if ($user->admin) : ?>
-                    <a href="<?php echo dol_buildpath('/dolical/admin/setup.php', 1); ?>"><?php echo $langs->trans('DoliCalSetup'); ?></a>
+                    <a href="<?php echo dol_buildpath('/dolical/admin/booking.php', 1); ?>"><?php echo $langs->trans('DoliCalSetup'); ?></a>
                 <?php endif; ?>
             </span>
         </div>
@@ -76,6 +77,9 @@
                 <?php if (!$isSelf) : ?>
                     <input type="hidden" name="id" value="<?php echo (int) $personId; ?>">
                 <?php endif; ?>
+                <?php if ($fromSetup) : ?>
+                    <input type="hidden" name="from" value="setup">
+                <?php endif; ?>
                 <label class="dolical-booking-texts__field">
                     <span><?php echo $langs->trans('DoliCalVisio'); ?></span>
                     <input type="text" inputmode="url" name="DOLICAL_BOOKING_VISIO" maxlength="<?php echo DOLICAL_VISIO_MAX; ?>" placeholder="<?php echo dol_escape_htmltag($langs->trans('DoliCalVisioPlaceholder')); ?>" value="<?php echo dol_escape_htmltag($ownVisio); ?>">
@@ -95,6 +99,9 @@
             <input type="hidden" name="action" value="saveconflicts">
             <?php if (!$isSelf) : ?>
                 <input type="hidden" name="id" value="<?php echo (int) $personId; ?>">
+            <?php endif; ?>
+            <?php if ($fromSetup) : ?>
+                <input type="hidden" name="from" value="setup">
             <?php endif; ?>
             <div class="dolical-booking-texts__field">
                 <span><?php echo $langs->trans('DoliCalBookingPersonConflictsField'); ?></span>
@@ -118,6 +125,9 @@
             <input type="hidden" name="action" value="savetexts">
             <?php if (!$isSelf) : ?>
                 <input type="hidden" name="id" value="<?php echo (int) $personId; ?>">
+            <?php endif; ?>
+            <?php if ($fromSetup) : ?>
+                <input type="hidden" name="from" value="setup">
             <?php endif; ?>
             <?php foreach ($fields as $constName => $labelKey) : ?>
                 <?php
