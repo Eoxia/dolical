@@ -21,9 +21,9 @@
  * \brief   Body of the mails of DoliCal : invitation, change, answer received.
  *
  * Rendered by dolical_mail_html() (inherits its scope). Expects: $mail ['title', 'intro', 'rows', 'extra', 'button',
- * 'secondary', 'note'], $mysoc. A row is [label, text], or [label, text, link] : the text links to it, alone (the
- * link of a video call). Written under it, the address became a second link in the mail clients. 'extra' is a plain
- * text of the setup, its lines kept and its addresses of the web made links.
+ * 'secondary', 'note'], $mysoc. The rows : see dolical_mail_rows_html(). 'extra' is a plain text of the setup, its
+ * lines kept and its addresses of the web made links. Or $mail ['body'] : the text of an email template of the online
+ * booking, put in the frame (the editor of the templates drops the styles of a whole mail written in it).
  * The styles are inline on purpose : mail clients drop style sheets, this is the one place of the module where
  * they cannot live in css/dolical.css.
  */
@@ -39,29 +39,14 @@ $company = !empty($mysoc->name) ? $mysoc->name : '';
         </tr>
         <tr>
             <td style="padding:28px;">
+                <?php if (isset($mail['body'])) : ?>
+                    <?php // An email template, already made safe by dolical_mail_from_template() : only its frame comes from here ?>
+                    <div style="font-size:15px;line-height:1.5;color:#2d3748;"><?php echo $mail['body']; ?></div>
+                <?php else : ?>
                 <h1 style="margin:0 0 14px;font-size:22px;line-height:1.3;color:#2d3748;"><?php echo dol_escape_htmltag($mail['title']); ?></h1>
                 <p style="margin:0 0 20px;font-size:15px;line-height:1.5;"><?php echo dol_escape_htmltag($mail['intro']); ?></p>
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;background:#f5f8fa;border-radius:8px;">
-                    <?php foreach ($mail['rows'] as $row) : ?>
-                        <tr>
-                            <td style="padding:10px 14px;width:110px;color:#718096;font-size:13px;vertical-align:top;"><?php echo dol_escape_htmltag($row[0]); ?></td>
-                            <?php if (!empty($row[2])) : ?>
-                                <td style="padding:10px 14px;font-size:14px;font-weight:bold;">
-                                    <a href="<?php echo dol_escape_htmltag($row[2]); ?>" style="color:#4f9ab8;"><?php echo dol_escape_htmltag($row[1]); ?></a>
-                                </td>
-                            <?php else : ?>
-                                <td style="padding:10px 14px;font-size:14px;font-weight:bold;"><?php echo dol_nl2br(dol_escape_htmltag($row[1], 0, 1)); ?></td>
-                            <?php endif; ?>
-                        </tr>
-                    <?php endforeach; ?>
-                </table>
-                <?php if (!empty($mail['extra'])) : ?>
-                    <?php
-                    // Escaped first : only the links made here are HTML
-                    $extra = preg_replace('~https?://[^\s<>"\']+~i', '<a href="$0" style="color:#4f9ab8;word-break:break-all;">$0</a>', dol_escape_htmltag((string) $mail['extra'], 0, 1));
-                    ?>
-                    <p style="margin:0 0 24px;font-size:14px;line-height:1.6;"><?php echo dol_nl2br($extra); ?></p>
-                <?php endif; ?>
+                <?php echo dolical_mail_rows_html($mail['rows'] ?? []); ?>
+                <?php echo dolical_mail_extra_html((string) ($mail['extra'] ?? '')); ?>
                 <?php if (!empty($mail['button'])) : ?>
                     <p style="margin:0 0 16px;text-align:center;">
                         <a href="<?php echo dol_escape_htmltag($mail['button'][0]); ?>" style="display:inline-block;padding:12px 28px;background:#63acc9;border-radius:24px;color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none;"><?php echo dol_escape_htmltag($mail['button'][1]); ?></a>
@@ -74,6 +59,7 @@ $company = !empty($mysoc->name) ? $mysoc->name : '';
                 <?php endif; ?>
                 <?php if (!empty($mail['note'])) : ?>
                     <p style="margin:16px 0 0;color:#718096;font-size:12px;line-height:1.5;"><?php echo dol_escape_htmltag($mail['note']); ?></p>
+                <?php endif; ?>
                 <?php endif; ?>
             </td>
         </tr>

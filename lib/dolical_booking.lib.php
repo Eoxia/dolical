@@ -1283,7 +1283,8 @@ function dolical_booking_contact(array $visitor, User $owner, string &$error): a
     $contact->socid     = $socid;
     $contact->statut    = 1;
     $contact->priv      = 0;
-    $contact->note_private = $langs->transnoentities('DoliCalBookingContactNote') . ($visitor['company'] !== '' ? "\n" . $langs->transnoentities('Company') . ' : ' . $visitor['company'] : '');
+    // Escaped like the note of the event : the company is typed by the visitor
+    $contact->note_private = dol_escape_htmltag($langs->transnoentities('DoliCalBookingContactNote'), 0, 1) . ($visitor['company'] !== '' ? '<br>' . dol_escape_htmltag($langs->transnoentities('Company') . ' : ' . $visitor['company'], 0, 1) : '');
     $contactId = $contact->create($owner);
     if ($contactId <= 0) {
         $error = $contact->error ?: implode(', ', $contact->errors);
@@ -1499,6 +1500,22 @@ function dolical_booking_mail_rows(ActionComm $event, string $when, string $owne
 }
 
 /**
+ * Blocks of an email template of the online booking made here : the table of the details, whose empty rows are left
+ * out (no place, no video call), and the text of the setup
+ *
+ * @param  array  $rows Details, from dolical_booking_mail_rows()
+ * @param  string $text Text of the setup, plain
+ * @return array        For dolical_mail_from_template()
+ */
+function dolical_booking_mail_blocks(array $rows, string $text): array
+{
+    return [
+        '__DOLICAL_EVENT_DETAILS__' => ['html' => dolical_mail_rows_html($rows), 'text' => dolical_mail_rows_text($rows)],
+        '__DOLICAL_BOOKING_TEXT__'  => ['html' => dolical_mail_extra_html($text), 'text' => $text],
+    ];
+}
+
+/**
  * Calendar file of an appointment for its customer : the organizer address of the setup, the link of his appointment,
  * and the description of the setup for the calendar files (DOLICAL_BOOKING_ICS_TEXT)
  *
@@ -1530,8 +1547,11 @@ function dolical_booking_send_confirmation(ActionComm $event, User $owner, array
     $view      = dolical_booking_customer_view($event, $owner);
     $ownerName = $owner->getFullName($langs);
     $url       = dolical_booking_manage_url($event, (int) $visitor['contactId']);
+    $icsUrl    = dolical_booking_manage_url($event, (int) $visitor['contactId'], ['ics' => 1]);
     $when      = dolical_booking_when((int) $event->datep, (int) $event->datef);
     $visio     = dolical_get_visio($event);
+    $rows      = dolical_booking_mail_rows($event, $when, $ownerName, $visio, $langs);
+    $extra     = dolical_booking_text('DOLICAL_BOOKING_CONFIRM_TEXT');
     $template  = dolical_mail_template('dolical_booking', $langs->defaultlang);
 
     if ($template !== null) {
@@ -1543,17 +1563,18 @@ function dolical_booking_send_confirmation(ActionComm $event, User $owner, array
             '__DOLICAL_ORGANIZER_NAME__' => $ownerName,
             '__DOLICAL_RECIPIENT_NAME__' => $visitor['name'],
             '__DOLICAL_ANSWER_LINK__'    => $url,
+            '__DOLICAL_ICS_LINK__'       => $icsUrl,
         ]);
-        [$subject, $html] = dolical_mail_from_template($template, $substitutions, $langs);
+        [$subject, $html] = dolical_template_mail($template, $substitutions, $langs, dolical_booking_mail_blocks($rows, $extra));
     } else {
         $subject = $langs->transnoentities('DoliCalBookingMailSubject', $ownerName, $when);
         $html    = dolical_mail_html([
             'title'     => $view->label,
             'intro'     => $langs->transnoentities('DoliCalBookingMailIntro', $visitor['name']),
-            'rows'      => dolical_booking_mail_rows($event, $when, $ownerName, $visio, $langs),
-            'extra'     => dolical_booking_text('DOLICAL_BOOKING_CONFIRM_TEXT'),
+            'rows'      => $rows,
+            'extra'     => $extra,
             'button'    => [$url, $langs->transnoentities('DoliCalBookingManage')],
-            'secondary' => [dolical_booking_manage_url($event, (int) $visitor['contactId'], ['ics' => 1]), $langs->transnoentities('DoliCalAddToCalendar')],
+            'secondary' => [$icsUrl, $langs->transnoentities('DoliCalAddToCalendar')],
             'note'      => $langs->transnoentities('DoliCalBookingMailNote'),
         ]);
     }
@@ -1803,6 +1824,9 @@ function dolical_booking_send_reminder(ActionComm $event, User $owner): array
         $view      = dolical_booking_customer_view($event, $owner);
         $when      = dolical_booking_when((int) $event->datep, (int) ($event->datef ?: $event->datep));
         $url       = dolical_booking_manage_url($event, (int) $contactId);
+        $icsUrl    = dolical_booking_manage_url($event, (int) $contactId, ['ics' => 1]);
+        $rows      = dolical_booking_mail_rows($event, $when, $ownerName, $visio, $langs);
+        $extra     = dolical_booking_text('DOLICAL_BOOKING_REMINDER_TEXT');
         $template  = dolical_mail_template('dolical_booking_reminder', $langs->defaultlang);
 
         if ($template !== null) {
@@ -1814,17 +1838,18 @@ function dolical_booking_send_reminder(ActionComm $event, User $owner): array
                 '__DOLICAL_ORGANIZER_NAME__' => $ownerName,
                 '__DOLICAL_RECIPIENT_NAME__' => $name,
                 '__DOLICAL_ANSWER_LINK__'    => $url,
+                '__DOLICAL_ICS_LINK__'       => $icsUrl,
             ]);
-            [$subject, $html] = dolical_mail_from_template($template, $substitutions, $langs);
+            [$subject, $html] = dolical_template_mail($template, $substitutions, $langs, dolical_booking_mail_blocks($rows, $extra));
         } else {
             $subject = $langs->transnoentities('DoliCalBookingReminderSubject', $view->label, $when);
             $html    = dolical_mail_html([
                 'title'     => $view->label,
                 'intro'     => $langs->transnoentities('DoliCalBookingReminderIntro', $name),
-                'rows'      => dolical_booking_mail_rows($event, $when, $ownerName, $visio, $langs),
-                'extra'     => dolical_booking_text('DOLICAL_BOOKING_REMINDER_TEXT'),
+                'rows'      => $rows,
+                'extra'     => $extra,
                 'button'    => [$url, $langs->transnoentities('DoliCalBookingManage')],
-                'secondary' => [dolical_booking_manage_url($event, (int) $contactId, ['ics' => 1]), $langs->transnoentities('DoliCalAddToCalendar')],
+                'secondary' => [$icsUrl, $langs->transnoentities('DoliCalAddToCalendar')],
                 'note'      => $langs->transnoentities('DoliCalBookingReminderNote'),
             ]);
         }

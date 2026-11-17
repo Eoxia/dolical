@@ -4089,6 +4089,10 @@ button.dolical-template__menuitem.is-danger i {
   gap: 8px 16px;
   color: #4a5568;
 }
+/* A row of buttons, one per email */
+.dolical-setting__pair.dolical-setting__buttons {
+  gap: 8px;
+}
 
 .dolical-switch.dolical-setting__switch {
   font-weight: 500;

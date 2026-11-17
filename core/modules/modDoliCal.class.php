@@ -438,6 +438,16 @@ class modDoliCal extends DolibarrModules
             return 0;
         }
 
+        // The email templates of the online booking, written from its mails, where there are none : changed in the editor
+        // of Dolibarr rather than written from nothing
+        require_once __DIR__ . '/../../lib/dolical.lib.php';
+        require_once __DIR__ . '/../../lib/dolical_booking.lib.php';
+        $langs->load('dolical@dolical');
+        if (dolical_create_templates() < 0) {
+            $this->error = $this->db->lasterror();
+            return 0;
+        }
+
         // Permissions
         $this->remove($options);
 

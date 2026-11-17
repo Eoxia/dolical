@@ -95,6 +95,18 @@
 - Calendrier : les réponses des participants (✓ acceptée, ? peut-être, ✗ refusée, en attente) sont à côté de
   l'heure du rendez-vous, et non plus en bas du bloc, où un titre sur deux lignes les cachait sur un rendez-vous
   d'une heure (rendez-vous pris en ligne : pas de coche visible).
+- Modèles d'e-mails : un modèle par e-mail de DoliCal (invitation, modification, relance, annulation, réponse reçue,
+  confirmation et rappel d'un rendez-vous pris en ligne), écrit avec le texte du mail, créé à l'activation du module
+  ou par les boutons « Modifier les e-mails » de la configuration (générale et prise de rendez-vous), qui ouvrent
+  l'éditeur des modèles de Dolibarr. Le modèle ne contient que le texte : DoliCal pose autour son cadre (nom de la
+  société, carte), l'éditeur retirant les styles d'un mail entier. Nouveaux jetons : `__DOLICAL_EVENT_DETAILS__`
+  (tableau des informations, lignes vides masquées), `__DOLICAL_ICS_LINK__` (« Ajouter à mon agenda ») et, pour la
+  prise de rendez-vous, `__DOLICAL_BOOKING_TEXT__` (texte de la configuration). Modèles dans la langue de l'instance :
+  une personne d'une autre langue garde le mail de DoliCal dans la sienne. **Réactiver le module** (ou cliquer sur un
+  bouton « Modifier les e-mails ») après la mise à jour.
+- Modèles d'e-mails : les valeurs de DoliCal sont mises en dernier et en une passe ; un jeton tapé dans un nom ou un
+  titre (formulaire de prise de rendez-vous) reste du texte. La société saisie par le client est échappée dans la
+  note du contact créé, comme dans celle du rendez-vous.
 
 ## 1.3.0
 

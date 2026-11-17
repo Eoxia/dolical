@@ -35,6 +35,7 @@ require_once DOL_DOCUMENT_ROOT . '/core/lib/admin.lib.php';
 
 // Load DoliCal libraries
 require_once __DIR__ . '/../lib/dolical.lib.php';
+require_once __DIR__ . '/../lib/dolical_invitation.lib.php';
 
 global $conf, $db, $langs, $user;
 
@@ -54,6 +55,17 @@ $views = ['day' => 'DoliCalViewDay', 'week' => 'DoliCalViewWeek', 'team' => 'Dol
 /*
  * Actions
  */
+
+// The email template of a mail of the invitations, opened in the editor of Dolibarr : made from the mail when there is none
+if ($action === 'mailtemplate' && $permissionToWrite && dolical_valid_post()) {
+    $type = GETPOST('type', 'aZ09');
+    if (in_array($type, ['dolical_invitation', 'dolical_update', 'dolical_reminder', 'dolical_cancel', 'dolical_answer'], true)) {
+        dolical_open_template($type);
+    }
+    setEventMessages($langs->trans('Error') . ' ' . $db->lasterror(), null, 'errors');
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
+}
 
 if ($action == 'update' && $permissionToWrite && dolical_valid_post()) {
     $defaultView = GETPOST('DOLICAL_DEFAULT_VIEW', 'aZ09');
