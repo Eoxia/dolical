@@ -92,6 +92,9 @@
   retrouvé par son identifiant (invitation lue dans Inbox, import) : la requête échouait.
 - E-mails (invitation, prise de rendez-vous en ligne) : la ligne « Visio » ne garde que le lien « Rejoindre la
   visio ». L'adresse écrite en dessous devenait un second lien dans les messageries.
+- Calendrier : les réponses des participants (✓ acceptée, ? peut-être, ✗ refusée, en attente) sont à côté de
+  l'heure du rendez-vous, et non plus en bas du bloc, où un titre sur deux lignes les cachait sur un rendez-vous
+  d'une heure (rendez-vous pris en ligne : pas de coche visible).
 
 ## 1.3.0
 
