@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- Calendrier à la hauteur de l'écran (avec ou sans les menus de Dolibarr, dans une fenêtre ou une messagerie) : la
+  page ne défile plus, seuls la barre de gauche sous « Nouvel événement » et le calendrier défilent. Plus d'espace
+  vide sous la grille.
 - Prise de rendez-vous en ligne : une page publique sans compte par personne, où un client choisit un créneau libre
   de son agenda (rendez-vous, congés validés et jours fériés écartés) et laisse ses coordonnées. Le rendez-vous est un
   événement natif de la personne, le client un contact ; il reçoit une confirmation avec le `.ics` et un lien pour

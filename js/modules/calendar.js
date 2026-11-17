@@ -116,6 +116,7 @@ window.dolical.calendar.init = function() {
 
   C.syncSidebar();
   U.applyColors($('.dolical-sidebar'));
+  C.fitHeight();
   C.event();
   C.render();
   C.load();
@@ -176,6 +177,10 @@ window.dolical.calendar.event = function() {
     }
   });
   $('.dolical-picker__list').on('scroll', C.closeColors);
+  $('.dolical-sidebar__scroll').on('scroll', function() {
+    C.closeColors();
+    $(this).toggleClass('is-scrolled', this.scrollTop > 0);
+  });
   $(document).on('change', '.dolical-filter', C.changeFilter);
   $(document).on('input', '.dolical-filter[data-filter="search"]', C.changeSearch);
 
@@ -196,7 +201,10 @@ window.dolical.calendar.event = function() {
   let resizeTimer = null;
   $(window).on('resize', function() {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(C.render, 150);
+    resizeTimer = setTimeout(function() {
+      C.fitHeight();
+      C.render();
+    }, 150);
   });
 };
 
@@ -1168,6 +1176,19 @@ window.dolical.calendar.minicalNavigate = function() {
   const shown = C.state.minicalMonth || new Date(C.state.anchor.getFullYear(), C.state.anchor.getMonth(), 1);
   C.state.minicalMonth = new Date(shown.getFullYear(), shown.getMonth() + parseInt($(this).attr('data-minical-nav'), 10), 1);
   C.renderMinical();
+};
+
+/**
+ * The application takes the height of the screen under what is above it (the menus of Dolibarr, or nothing in a
+ * window or a frame) : the page does not scroll, the side bar and the calendar scroll on their own (css, large screen).
+ *
+ * @returns {void}
+ */
+window.dolical.calendar.fitHeight = function() {
+  const app = document.querySelector('.dolical-app');
+  if (app) {
+    app.style.setProperty('--dolical-top', Math.max(0, Math.round(app.getBoundingClientRect().top + window.scrollY)) + 'px');
+  }
 };
 
 /**

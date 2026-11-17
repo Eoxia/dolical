@@ -1421,6 +1421,75 @@ body.dolical-is-dragging {
   font-weight: 600;
 }
 
+.dolical-sidebar__scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/*
+ * Height of the screen on a large screen : the page does not scroll, only the side bar under the new event button and
+ * the calendar do. --dolical-top is where the application starts on the page (with or without the menus of Dolibarr),
+ * measured by calendar.js
+ */
+@media (min-width: 993px) {
+  .dolical-app {
+    align-items: stretch;
+    height: calc(100vh - var(--dolical-top, 130px) - 12px);
+    min-height: 480px;
+  }
+  .dolical-sidebar {
+    position: static;
+    min-height: 0;
+  }
+  .dolical-sidebar button.dolical-btn--create {
+    flex: none;
+  }
+  .dolical-sidebar__scroll {
+    flex: 1;
+    min-height: 0;
+    margin: -4px -6px 0;
+    padding: 4px 6px 2px;
+    border-top: 1px solid transparent;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  /* A line under the button once the side bar has scrolled */
+  .dolical-sidebar__scroll.is-scrolled {
+    border-top-color: #e7edf2;
+  }
+  /* The side bar scrolls as a whole : no list scrolling inside it */
+  .dolical-sidebar .dolical-picker__list {
+    max-height: none;
+  }
+  .dolical-app .dolical-main {
+    display: flex;
+    flex-direction: column;
+  }
+  .dolical-main .dolical-toolbar {
+    flex: none;
+  }
+  .dolical-main .dolical-calendar {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .dolical-calendar .ra-tg {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .dolical-calendar .ra-tg__scroll {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+  }
+  .dolical-calendar .ra-team {
+    max-height: 100%;
+  }
+}
+
 .dolical-minical,
 .dolical-sidebar__block {
   padding: 12px;
