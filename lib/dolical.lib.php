@@ -165,7 +165,7 @@ function dolical_header(string $title, string $morecssonbody = ''): void
 {
     // The entry point first, then the modules in the order their init must run
     $js = [dolical_asset('js/dolical.js')];
-    foreach (['calendar', 'eventcard', 'eventform', 'import', 'report', 'sync', 'util', 'single'] as $module) {
+    foreach (['calendar', 'eventcard', 'eventform', 'import', 'report', 'sync', 'util', 'single', 'shortcuts'] as $module) {
         $js[] = dolical_asset('js/modules/' . $module . '.js');
     }
 

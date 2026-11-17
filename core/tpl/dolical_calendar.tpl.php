@@ -28,7 +28,7 @@
 <div class="dolical-app" data-config="<?php echo dol_escape_htmltag(json_encode($calendarConfig)); ?>">
     <aside class="dolical-sidebar">
         <?php if ($calendarConfig['canCreate']) : ?>
-            <button type="button" class="dolical-btn dolical-btn--primary dolical-btn--create" data-action="create"><i class="fas fa-plus"></i><?php echo $langs->trans('DoliCalNewEvent'); ?></button>
+            <button type="button" class="dolical-btn dolical-btn--primary dolical-btn--create" data-action="create" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalNewEvent') . ' (N)'); ?>"><i class="fas fa-plus"></i><?php echo $langs->trans('DoliCalNewEvent'); ?></button>
         <?php endif; ?>
 
         <div class="dolical-minical"></div>
@@ -116,10 +116,10 @@
     <section class="dolical-main">
         <header class="dolical-toolbar">
             <button type="button" class="dolical-btn dolical-btn--icon dolical-sidebar-toggle" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalCalendars')); ?>"><i class="fas fa-bars"></i></button>
-            <button type="button" class="dolical-btn" data-nav="today"><?php echo $langs->trans('Today'); ?></button>
+            <button type="button" class="dolical-btn" data-nav="today" title="<?php echo dol_escape_htmltag($langs->trans('Today') . ' (T)'); ?>"><?php echo $langs->trans('Today'); ?></button>
             <div class="dolical-btn-group">
-                <button type="button" class="dolical-btn dolical-btn--icon" data-nav="prev" title="<?php echo dol_escape_htmltag($langs->trans('Previous')); ?>"><i class="fas fa-chevron-left"></i></button>
-                <button type="button" class="dolical-btn dolical-btn--icon" data-nav="next" title="<?php echo dol_escape_htmltag($langs->trans('Next')); ?>"><i class="fas fa-chevron-right"></i></button>
+                <button type="button" class="dolical-btn dolical-btn--icon" data-nav="prev" title="<?php echo dol_escape_htmltag($langs->trans('Previous') . ' (←)'); ?>"><i class="fas fa-chevron-left"></i></button>
+                <button type="button" class="dolical-btn dolical-btn--icon" data-nav="next" title="<?php echo dol_escape_htmltag($langs->trans('Next') . ' (→)'); ?>"><i class="fas fa-chevron-right"></i></button>
             </div>
             <h2 class="dolical-toolbar__period"></h2>
             <div class="dolical-toolbar__spacer"></div>
@@ -128,11 +128,13 @@
                 <input type="search" class="dolical-filter" data-filter="search" placeholder="<?php echo dol_escape_htmltag($langs->trans('DoliCalSearchEvents')); ?>">
             </div>
             <div class="dolical-btn-group dolical-views">
+                <?php $viewKey = 0; ?>
                 <?php foreach ($views as $view => $labelKey) : ?>
-                    <button type="button" class="dolical-btn" data-view="<?php echo $view; ?>"><?php echo $langs->trans($labelKey); ?></button>
+                    <button type="button" class="dolical-btn" data-view="<?php echo $view; ?>" title="<?php echo dol_escape_htmltag($langs->trans($labelKey) . ' (' . (++$viewKey) . ')'); ?>"><?php echo $langs->trans($labelKey); ?></button>
                 <?php endforeach; ?>
             </div>
-            <button type="button" class="dolical-btn dolical-btn--icon" data-nav="refresh" title="<?php echo dol_escape_htmltag($langs->trans('Refresh')); ?>"><i class="fas fa-sync-alt"></i></button>
+            <button type="button" class="dolical-btn dolical-btn--icon" data-nav="refresh" title="<?php echo dol_escape_htmltag($langs->trans('Refresh') . ' (R)'); ?>"><i class="fas fa-sync-alt"></i></button>
+            <button type="button" class="dolical-btn dolical-btn--icon" data-action="shortcuts" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalShortcuts') . ' (?)'); ?>"><i class="far fa-keyboard"></i></button>
         </header>
         <div class="dolical-calendar"></div>
         <div class="dolical-loader"><i class="fas fa-circle-notch fa-spin"></i></div>
@@ -164,3 +166,4 @@
 
 <?php require __DIR__ . '/dolical_scope_modal.tpl.php'; ?>
 <?php require __DIR__ . '/dolical_ask_modal.tpl.php'; ?>
+<?php require __DIR__ . '/dolical_keys_modal.tpl.php'; ?>

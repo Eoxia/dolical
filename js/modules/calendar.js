@@ -1386,7 +1386,8 @@ window.dolical.calendar.changeSearch = function() {
  * @returns {void}
  */
 window.dolical.calendar.keyboard = function(event) {
-  if (event.ctrlKey || event.metaKey || event.altKey || $(event.target).is('input, textarea, select, [contenteditable]') || $('#dolical-event-modal').hasClass('modal-active')) {
+  // Not while a window is open : the form, a question, the list of the shortcuts
+  if (event.ctrlKey || event.metaKey || event.altKey || $(event.target).is('input, textarea, select, [contenteditable]') || $('.dolical-modal.modal-active').length) {
     return;
   }
   const map = {ArrowLeft: 'prev', ArrowRight: 'next', t: 'today', T: 'today'};
