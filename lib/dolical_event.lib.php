@@ -1004,7 +1004,15 @@ function dolical_get_event_card(ActionComm $event, User $user): array
         if (!$slot['fullday']) {
             $slotLabel .= ' · ' . dol_print_date($slot['start'], 'hour', 'tzuserrel') . ' – ' . dol_print_date($slot['end'], 'hour', 'tzuserrel');
         }
-        $card['slots'][] = ['id' => $slot['id'], 'label' => $slotLabel, 'current' => $slot['id'] === (int) $event->id];
+        // Its dates as the inputs of the window take them : they can be changed when it is confirmed
+        $card['slots'][] = [
+            'id'      => $slot['id'],
+            'label'   => $slotLabel,
+            'current' => $slot['id'] === (int) $event->id,
+            'start'   => dol_print_date($slot['start'], '%Y-%m-%dT%H:%M', 'tzuserrel'),
+            'end'     => dol_print_date($slot['end'], '%Y-%m-%dT%H:%M', 'tzuserrel'),
+            'fullday' => $slot['fullday'],
+        ];
     }
     $card['otherSlots'] = max(0, count($card['slots']) - 1);
 

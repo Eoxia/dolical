@@ -59,8 +59,15 @@
 - Formulaire d'un événement : plus de bandeau « Nouvel événement », le titre saisi et la croix sur la première ligne,
   sans le cadre que le thème met autour du champ actif ; « Envoyer les invitations par e-mail » en interrupteur, comme
   « Me rappeler l'événement ».
+- Prise de rendez-vous en ligne : des agendas (utilisateurs) dont les événements rendent indisponible, comme les agendas
+  vérifiés pour les conflits des rendez-vous de Nextcloud : pour tout le monde dans la configuration (Agendas et
+  planification), pour une personne sur sa page de prise de rendez-vous (« Agendas qui bloquent aussi ces créneaux »).
 - Créneaux proposés : « Confirmer des créneaux » sur la fiche ouvre la liste des créneaux de la proposition, on coche
-  ceux qui sont retenus (plusieurs d'un coup), les autres sont retirés de l'agenda.
+  ceux qui sont retenus (plusieurs d'un coup), les autres sont retirés de l'agenda. Le jour et les heures de chacun se
+  changent dans la même fenêtre : un créneau gardé est déplacé avec ses rappels, comme par un glisser dans le calendrier.
+- Autres dates d'un nouvel événement : sous ses dates, dans le même bloc, chacune avec ses cases « Toute la journée » et
+  « À confirmer » (une date non cochée est un rendez-vous confirmé, que la confirmation des autres ne retire pas). Les
+  boutons du mail s'appellent « Dates proposées du mail ».
 - Confirmer un créneau, supprimer un événement ou une pièce jointe : une fenêtre de DoliCal (titre, ce que fait
   l'action, bouton rouge pour une suppression) au lieu de la question du navigateur.
 - Fuseau horaire affiché avec son écart à UTC (« Europe/Paris (UTC+01:00) ») : liste de la configuration, prise de

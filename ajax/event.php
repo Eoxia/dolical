@@ -449,19 +449,31 @@ if ($action === 'save') {
     }
     // To confirm, when the form has the box : a slot keeps the key of the slots offered with it, a new one gets a key.
     // Never a series : confirming one date would remove the others
-    $repeats = $data['recurrence'] !== '' || (!$isNew && (string) $event->recurid !== '');
-    if (GETPOSTISSET('tentative_field') && dolical_tentative_available() && !$repeats) {
-        $currentGroup      = $isNew ? '' : dolical_get_tentative($event);
-        $data['tentative'] = GETPOSTINT('tentative') ? ($currentGroup !== '' ? $currentGroup : dolical_tentative_new_group()) : '';
+    $repeats   = $data['recurrence'] !== '' || (!$isNew && (string) $event->recurid !== '');
+    $canOffer  = GETPOSTISSET('tentative_field') && dolical_tentative_available() && !$repeats;
+    // One key for every date to confirm of this form : the one of the event when it has one
+    $offerKey  = '';
+    if ($canOffer) {
+        $offerKey          = $isNew ? '' : dolical_get_tentative($event);
+        $offerKey          = $offerKey !== '' ? $offerKey : dolical_tentative_new_group();
+        $data['tentative'] = GETPOSTINT('tentative') ? $offerKey : '';
     }
 
-    // The other dates of a new event : as many events, the same but for their dates, offered with it (10 at most)
+    // The other dates of a new event : as many events, the same but for their dates (10 at most), each with its own
+    // « all day » and « to confirm »
     $extraDates = [];
     if ($isNew && !$repeats) {
-        $extraEnds = GETPOST('extra_end', 'array:int');
+        $extraEnds      = GETPOST('extra_end', 'array:int');
+        $extraFulldays  = GETPOST('extra_fullday', 'array:int');
+        $extraTentative = GETPOST('extra_tentative', 'array:int');
         foreach (array_slice(GETPOST('extra_start', 'array:int'), 0, 10, true) as $index => $extraStart) {
             if ((int) $extraStart > 0) {
-                $extraDates[] = [(int) $extraStart, max((int) $extraStart, (int) ($extraEnds[$index] ?? 0))];
+                $extraDates[] = [
+                    'start'     => (int) $extraStart,
+                    'end'       => max((int) $extraStart, (int) ($extraEnds[$index] ?? 0)),
+                    'fullday'   => !empty($extraFulldays[$index]) ? 1 : 0,
+                    'tentative' => $canOffer && !empty($extraTentative[$index]) ? $offerKey : '',
+                ];
             }
         }
     }
@@ -476,13 +488,18 @@ if ($action === 'save') {
     // The other dates : the same event on each of them, to confirm with it when it is
     $extraIds    = [];
     $extraErrors = [];
-    foreach ($extraDates as [$extraStart, $extraEnd]) {
+    foreach ($extraDates as $extraDate) {
+        $extraData = array_merge($data, ['start' => $extraDate['start'], 'end' => $extraDate['end'], 'fullday' => $extraDate['fullday'], 'recurrence' => '']);
+        // To confirm or not, line by line, when the form has the boxes
+        if ($canOffer) {
+            $extraData['tentative'] = $extraDate['tentative'];
+        }
         $extra      = new ActionComm($db);
-        $extraSaved = dolical_save_event_series($extra, array_merge($data, ['start' => $extraStart, 'end' => $extraEnd, 'recurrence' => '']), $user);
+        $extraSaved = dolical_save_event_series($extra, $extraData, $user);
         if ($extraSaved['id'] > 0) {
             $extraIds[] = (int) $extraSaved['id'];
         } else {
-            $extraErrors[] = dol_print_date($extraStart, 'dayhour', 'tzuserrel') . ' : ' . ($extraSaved['error'] ?: $langs->trans('Error'));
+            $extraErrors[] = dol_print_date($extraDate['start'], 'dayhour', 'tzuserrel') . ' : ' . ($extraSaved['error'] ?: $langs->trans('Error'));
         }
     }
 
@@ -690,7 +707,13 @@ switch ($action) {
             dolical_json_exit(['success' => false, 'error' => $langs->trans('NotEnoughPermissions')], 403);
         }
         // The slots kept : several may be, the others offered with them are removed
-        $confirmed = dolical_confirm_event($event, $user, GETPOST('keep', 'array:int'));
+        // Their dates, changed in the window when they were confirmed
+        $slotDates = [];
+        $slotEnds  = GETPOST('end', 'array:int');
+        foreach (GETPOST('start', 'array:int') as $slotId => $slotStart) {
+            $slotDates[(int) $slotId] = [(int) $slotStart, (int) ($slotEnds[$slotId] ?? 0)];
+        }
+        $confirmed = dolical_confirm_event($event, $user, GETPOST('keep', 'array:int'), $slotDates);
         $warnings  = $confirmed['errors'];
         if ($confirmed['kept'] > 0) {
             $warnings[] = $langs->trans('DoliCalSlotsKept', $confirmed['kept']);

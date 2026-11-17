@@ -80,6 +80,11 @@ window.dolical.eventform.event = function() {
     F.datesChanged($form);
   });
   // Another date typed : no more the one of the mail ; its end follows its start, the length stays
+  $(document).on('change', '#dolical-event-modal .dolical-form__extra [data-extra="fullday"]', F.extraFullday);
+  $(document).on('change', '#dolical-event-modal .dolical-form__extra-day', function() {
+    $(this).closest('.dolical-form__extra').attr('data-chip', '');
+    F.datesChanged($(this).closest('.dolical-form'));
+  });
   $(document).on('focus', '#dolical-event-modal .dolical-form__extra-at[data-extra="start"]', F.rememberStart);
   $(document).on('change', '#dolical-event-modal .dolical-form__extra-at', function() {
     const $row = $(this).closest('.dolical-form__extra');
@@ -610,16 +615,49 @@ window.dolical.eventform.addDate = function($form, start, end, chip) {
     start = F.localValue(new Date(from.getTime() + 86400000));
     end   = F.localValue(new Date(to.getTime() + 86400000));
   }
+  // The line of the dates of the event, for one more date : its own « all day » and « to confirm »
+  const hasTentative = $form.find('input[name="tentative"]').length > 0;
   const $row = $('<div class="dolical-form__extra">'
     + '<input type="datetime-local" class="dolical-form__extra-at" data-extra="start">'
+    + '<input type="date" class="dolical-form__extra-day" data-extra="start-day">'
     + '<span class="dolical-form__arrow"><i class="fas fa-long-arrow-alt-right"></i></span>'
     + '<input type="datetime-local" class="dolical-form__extra-at" data-extra="end">'
+    + '<input type="date" class="dolical-form__extra-day" data-extra="end-day">'
+    + '<label class="dolical-check"><input type="checkbox" data-extra="fullday"><span>' + U.esc(U.t('allDay')) + '</span></label>'
+    + (hasTentative ? '<label class="dolical-check dolical-form__tentative"><input type="checkbox" data-extra="tentative" checked><span>' + U.esc(U.t('toConfirm')) + '</span></label>' : '')
     + '<button type="button" class="dolical-icon-btn dolical-form__extra-remove" title="' + U.esc(U.t('removeDate')) + '" aria-label="' + U.esc(U.t('removeDate')) + '"><i class="fas fa-times"></i></button>'
     + '</div>');
   $row.attr('data-chip', chip || '');
   $row.find('[data-extra="start"]').val(start);
   $row.find('[data-extra="end"]').val(end);
+  $row.find('[data-extra="start-day"]').val(start.slice(0, 10));
+  $row.find('[data-extra="end-day"]').val(end.slice(0, 10));
+  // A whole day as the first date, unless the date comes with its hours (a date of the mail)
+  if (!chip && $form.find('input[name="fullday"]').is(':checked')) {
+    $row.addClass('is-fullday').find('[data-extra="fullday"]').prop('checked', true);
+  }
   $row.insertBefore($form.find('.dolical-form__add-date'));
+};
+
+/**
+ * « All day » of another date : its days shown instead of its hours, the day kept from one to the other.
+ *
+ * @returns {void}
+ */
+window.dolical.eventform.extraFullday = function() {
+  const $row = $(this).closest('.dolical-form__extra');
+  const on   = this.checked;
+  ['start', 'end'].forEach(function(edge) {
+    const $at  = $row.find('[data-extra="' + edge + '"]');
+    const $day = $row.find('[data-extra="' + edge + '-day"]');
+    if (on) {
+      $day.val(($at.val() || '').slice(0, 10));
+    } else if ($day.val()) {
+      $at.val($day.val() + 'T' + (($at.val() || '').slice(11) || '09:00'));
+    }
+  });
+  $row.toggleClass('is-fullday', on).attr('data-chip', '');
+  window.dolical.eventform.datesChanged($row.closest('.dolical-form'));
 };
 
 /**
@@ -846,21 +884,18 @@ window.dolical.eventform.submit = function() {
   const start   = period.start;
   const end     = period.end;
 
-  // The other dates : whole days too when the event is
+  // The other dates, each with its own « all day » and « to confirm »
   const extras = [];
   let badExtra = false;
   $form.find('.dolical-form__extra').each(function() {
-    let from = new Date($(this).find('[data-extra="start"]').val());
-    let to   = new Date($(this).find('[data-extra="end"]').val());
-    if (fullday && !isNaN(from) && !isNaN(to)) {
-      from = U.startOfDay(from);
-      to   = new Date(U.startOfDay(to).getTime() + 86399000);
-    }
+    const allDay = $(this).find('[data-extra="fullday"]').is(':checked');
+    const from   = new Date(allDay ? $(this).find('[data-extra="start-day"]').val() + 'T00:00:00' : $(this).find('[data-extra="start"]').val());
+    const to     = new Date(allDay ? $(this).find('[data-extra="end-day"]').val() + 'T23:59:59' : $(this).find('[data-extra="end"]').val());
     if (isNaN(from) || isNaN(to) || to < from) {
       badExtra = true;
       return false;
     }
-    extras.push([from, to]);
+    extras.push({from: from, to: to, fullday: allDay, tentative: $(this).find('[data-extra="tentative"]').is(':checked')});
   });
   if (badExtra) {
     F.error(U.t('datesInvalid'));
@@ -878,9 +913,11 @@ window.dolical.eventform.submit = function() {
   data.append('end', Math.floor(end.getTime() / 1000));
   data.append('fullday', fullday ? 1 : 0);
   data.append('busy', $form.find('input[name="busy"]').is(':checked') ? 1 : 0);
-  extras.forEach(function(dates) {
-    data.append('extra_start[]', Math.floor(dates[0].getTime() / 1000));
-    data.append('extra_end[]', Math.floor(dates[1].getTime() / 1000));
+  extras.forEach(function(extra) {
+    data.append('extra_start[]', Math.floor(extra.from.getTime() / 1000));
+    data.append('extra_end[]', Math.floor(extra.to.getTime() / 1000));
+    data.append('extra_fullday[]', extra.fullday ? 1 : 0);
+    data.append('extra_tentative[]', extra.tentative ? 1 : 0);
   });
 
   // The last day of a series, at noon : the same day in every time zone close to the one of the user

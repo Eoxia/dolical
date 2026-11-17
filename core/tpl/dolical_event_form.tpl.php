@@ -57,36 +57,34 @@ $title = $isNew ? $langs->trans('DoliCalNewEvent') : $langs->trans('DoliCalEditE
         <div class="dolical-form__grid">
             <div class="dolical-field dolical-field--wide dolical-form__when">
                 <i class="far fa-clock dolical-field__icon"></i>
-                <div class="dolical-form__dates" data-chip="<?php echo isset($formValues['mailDate']) ? (int) $formValues['mailDate'] : ''; ?>">
-                    <input type="datetime-local" name="start_at" class="dolical-form__time" value="<?php echo $startValue; ?>">
-                    <input type="date" name="start_day" class="dolical-form__day" value="<?php echo $startDay; ?>">
-                    <span class="dolical-form__arrow"><i class="fas fa-long-arrow-alt-right"></i></span>
-                    <input type="datetime-local" name="end_at" class="dolical-form__time" value="<?php echo $endValue; ?>">
-                    <input type="date" name="end_day" class="dolical-form__day" value="<?php echo $endDay; ?>">
-                    <label class="dolical-check">
-                        <input type="checkbox" name="fullday" value="1"<?php echo $formValues['fullday'] ? ' checked' : ''; ?>>
-                        <span><?php echo $langs->trans('DoliCalAllDay'); ?></span>
-                    </label>
-                    <?php if (dolical_tentative_available() && ($isNew || empty($event->recurid))) : ?>
-                        <input type="hidden" name="tentative_field" value="1">
-                        <label class="dolical-check dolical-form__tentative" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalToConfirmHelp')); ?>">
-                            <input type="checkbox" name="tentative" value="1"<?php echo $formValues['tentative'] ? ' checked' : ''; ?>>
-                            <span><?php echo $langs->trans('DoliCalToConfirm'); ?></span>
+                <?php // The dates of the event, then its other dates (a new event), each line with its own boxes ?>
+                <div class="dolical-form__when-lines">
+                    <div class="dolical-form__dates" data-chip="<?php echo isset($formValues['mailDate']) ? (int) $formValues['mailDate'] : ''; ?>">
+                        <input type="datetime-local" name="start_at" class="dolical-form__time" value="<?php echo $startValue; ?>">
+                        <input type="date" name="start_day" class="dolical-form__day" value="<?php echo $startDay; ?>">
+                        <span class="dolical-form__arrow"><i class="fas fa-long-arrow-alt-right"></i></span>
+                        <input type="datetime-local" name="end_at" class="dolical-form__time" value="<?php echo $endValue; ?>">
+                        <input type="date" name="end_day" class="dolical-form__day" value="<?php echo $endDay; ?>">
+                        <label class="dolical-check">
+                            <input type="checkbox" name="fullday" value="1"<?php echo $formValues['fullday'] ? ' checked' : ''; ?>>
+                            <span><?php echo $langs->trans('DoliCalAllDay'); ?></span>
                         </label>
+                        <?php if (dolical_tentative_available() && ($isNew || empty($event->recurid))) : ?>
+                            <input type="hidden" name="tentative_field" value="1">
+                            <label class="dolical-check dolical-form__tentative" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalToConfirmHelp')); ?>">
+                                <input type="checkbox" name="tentative" value="1"<?php echo $formValues['tentative'] ? ' checked' : ''; ?>>
+                                <span><?php echo $langs->trans('DoliCalToConfirm'); ?></span>
+                            </label>
+                        <?php endif; ?>
+                    </div>
+                    <?php if ($isNew) : ?>
+                        <?php // Other dates : the same event on each of them ; their lines are drawn by the script, above the button ?>
+                        <div class="dolical-form__extras-list">
+                            <button type="button" class="dolical-link dolical-form__add-date"><i class="fas fa-plus pictofixedwidth"></i><?php echo $langs->trans('DoliCalOtherDate'); ?></button>
+                        </div>
                     <?php endif; ?>
                 </div>
             </div>
-
-            <?php if ($isNew) : ?>
-                <?php // Other dates : the same event on each of them, offered together to confirm ; drawn by the script ?>
-                <div class="dolical-field dolical-field--wide dolical-form__extras">
-                    <i class="far fa-calendar-plus dolical-field__icon" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalOtherDatesHelp')); ?>"></i>
-                    <div class="dolical-form__extras-list">
-                        <button type="button" class="dolical-link dolical-form__add-date"><i class="fas fa-plus pictofixedwidth"></i><?php echo $langs->trans('DoliCalOtherDate'); ?></button>
-                        <span class="dolical-field__help dolical-form__extras-help"><?php echo $langs->trans('DoliCalOtherDatesHelp'); ?></span>
-                    </div>
-                </div>
-            <?php endif; ?>
 
             <?php if (!empty($mailDates)) : ?>
                 <?php // The dates written in the mail the event is planned from : one click puts one in the dates above ?>

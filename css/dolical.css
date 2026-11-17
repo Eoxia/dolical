@@ -976,7 +976,7 @@ button.dolical-card__invite-all {
 
 .dolical-field.dolical-form__when {
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   padding: 10px 12px;
   border-radius: 10px;
@@ -4262,16 +4262,16 @@ button.dolical-form__maildate.is-active {
   font-weight: 600;
 }
 
-/* Other dates of a new event : a line each, under its dates ; a word on them once there is one */
-.dolical-field.dolical-form__extras {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: 4px 12px;
-  padding: 0 12px;
+/* The lines of the dates : the dates of the event, its other dates under them, the button to add one */
+.dolical-form__when > .dolical-field__icon {
+  margin-top: 9px;
 }
-.dolical-form__extras > .dolical-field__icon {
-  margin-top: 6px;
+.dolical-form__when-lines {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
 }
 
 .dolical-form__extras-list {
@@ -4287,20 +4287,22 @@ button.dolical-form__maildate.is-active {
   align-items: center;
   gap: 8px;
 }
-.dolical-form__extra input.dolical-form__extra-at {
+.dolical-form__extra input.dolical-form__extra-at,
+.dolical-form__extra input.dolical-form__extra-day {
   width: auto;
+}
+/* A whole day : its days instead of its hours */
+.dolical-form__extra input.dolical-form__extra-day,
+.dolical-form__extra.is-fullday input.dolical-form__extra-at {
+  display: none;
+}
+.dolical-form__extra.is-fullday input.dolical-form__extra-day {
+  display: inline-block;
 }
 
 button.dolical-form__add-date {
-  padding: 4px 0;
+  padding: 2px 0;
   font-size: 13px;
-}
-
-.dolical-form__extras-help {
-  display: none;
-}
-.dolical-form.has-extra-dates .dolical-form__extras-help {
-  display: block;
 }
 
 /* Slots to confirm : the chip and the line of the card, the events of the calendar hatched with a dashed edge */
@@ -4376,4 +4378,54 @@ label.dolical-check.dolical-ask__choice {
 label.dolical-check.dolical-ask__choice:hover {
   border-color: #63acc9;
   background: #f2f9fc;
+}
+
+/* Slots with their dates in the window that confirms them : the box, the day of the week, the day, its hours */
+.dolical-modal.dolical-ask-modal.has-dates .modal-container {
+  max-width: 560px;
+}
+.dolical-ask__choice.dolical-ask__choice--dates {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid #e7edf2;
+  border-radius: 8px;
+  background: #fff;
+}
+.dolical-ask__choice--dates input[type=checkbox] {
+  margin: 0;
+  accent-color: #63acc9;
+}
+.dolical-ask__choice--dates.is-invalid {
+  border-color: #feb2b2;
+  background: #fff5f5;
+}
+.dolical-ask__weekday {
+  width: 34px;
+  color: #718096;
+  font-size: 12.5px;
+  text-transform: lowercase;
+}
+.dolical-ask__choice--dates input[type=date],
+.dolical-ask__choice--dates input[type=time] {
+  box-sizing: border-box;
+  height: 32px;
+  margin: 0;
+  padding: 0 8px;
+  border: 1px solid #d5dde5;
+  border-radius: 6px;
+  background: #fff;
+  color: #2d3748;
+  font-family: inherit;
+  font-size: 13.5px;
+}
+.dolical-ask__choice--dates input[type=date]:focus,
+.dolical-ask__choice--dates input[type=time]:focus {
+  border-color: #63acc9;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 172, 201, 0.2);
+}
+.dolical-ask__dash {
+  color: #718096;
 }

@@ -96,6 +96,7 @@ $phoneModes = ['optional' => 'DoliCalBookingPhoneOptional', 'required' => 'DoliC
             <?php echo $head('planning'); ?>
             <?php echo $setting('DoliCalBookingEnable', $langs->trans('DoliCalBookingEnableHelp'), $switch('DOLICAL_BOOKING')); ?>
             <?php echo $setting('DoliCalBookingPeople', $langs->trans('DoliCalBookingPeopleHelp'), $form->multiselectarray('DOLICAL_BOOKING_USERS', dolical_booking_candidates(), dolical_booking_user_ids(), 0, 0, 'centpercent', 0, 0, '', '', $langs->trans('DoliCalBookingPeoplePlaceholder')), 'stacked'); ?>
+            <?php echo $setting('DoliCalBookingConflicts', $langs->trans('DoliCalBookingConflictsHelp'), $form->multiselectarray('DOLICAL_BOOKING_CONFLICT_USERS', dolical_booking_candidates(), dolical_booking_conflict_user_ids(), 0, 0, 'centpercent', 0, 0, '', '', $langs->trans('DoliCalBookingConflictsPlaceholder')), 'stacked'); ?>
             <?php
             $summary = $slotCount > 0 ? dol_escape_htmltag($langs->transnoentities('DoliCalBookingTemplateSummary', $slotCount, $slotDays)) : '<span class="dolical-setting__warning">' . $langs->trans('DoliCalBookingTemplateEmpty') . '</span>';
             echo $setting('DoliCalTemplate', $summary, '<a class="dolical-btn" href="' . dol_buildpath('/dolical/admin/booking_template.php', 1) . '"><i class="far fa-calendar-alt"></i>' . $langs->trans('DoliCalBookingTemplateEdit') . '</a>');
