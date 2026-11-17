@@ -420,16 +420,15 @@ function dolical_event_from_uid(string $uid, User $user): ?ActionComm
             $id = (int) $matches[3];
         } else {
             $sql  = 'SELECT id FROM ' . MAIN_DB_PREFIX . "actioncomm WHERE recurid = '" . $db->escape($matches[3]) . "'";
+            // getRow() adds its LIMIT : a second one made the query fail
             $sql .= ' AND entity IN (' . getEntity('agenda') . ') ORDER BY (datep < ' . "'" . $db->idate(dol_now()) . "'" . '), datep';
-            $sql .= $db->plimit(1);
             $row  = $db->getRow($sql);
             $id   = is_object($row) ? (int) $row->id : 0;
         }
     } elseif ($uid !== '' && strlen($uid) <= 255 && !preg_match('/[\x00-\x1F\x7F]/', $uid)) {
         // Made on a phone : the identifier it chose, kept after the address of the event (dolical_dav_reference())
         $sql  = 'SELECT id FROM ' . MAIN_DB_PREFIX . "actioncomm WHERE ref_ext LIKE 'dav:%|" . $db->escape($db->escapeforlike($uid)) . "'";
-        $sql .= ' AND entity IN (' . getEntity('agenda') . ')';
-        $sql .= $db->plimit(1);
+        $sql .= ' AND entity IN (' . getEntity('agenda') . ') ORDER BY id';
         $row  = $db->getRow($sql);
         $id   = is_object($row) ? (int) $row->id : 0;
     }

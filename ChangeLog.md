@@ -75,6 +75,12 @@
 - Fuseau horaire affiché avec son écart à UTC (« Europe/Paris (UTC+01:00) ») : liste de la configuration, prise de
   rendez-vous, modèle hebdomadaire et pages publiques ; l'écart est celui du jour du créneau ou du rendez-vous (heure
   d'été comprise).
+- Import d'un agenda : un rendez-vous déjà dans l'agenda d'un collègue (son import, son téléphone) ou créé dans
+  DoliCal n'est plus copié. La personne de l'agenda importé est ajoutée à ses participants, avec sa réponse quand
+  c'est elle qui importe, et les personnes trouvées complètent le rendez-vous (bilan : « Déjà dans l'agenda d'un
+  collègue »). La copie faisait apparaître le rendez-vous deux fois pour le collègue. Seulement pour qui peut modifier
+  ce rendez-vous, sinon il est importé comme avant. Un rendez-vous venu d'un téléphone ou une série est aussi
+  retrouvé par son identifiant (invitation lue dans Inbox, import) : la requête échouait.
 
 ## 1.3.0
 
