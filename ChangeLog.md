@@ -114,6 +114,11 @@
 - Page de prise de rendez-vous d'une personne ouverte depuis la configuration (crayon des liens) : « Retour à la
   configuration » ramène à la configuration de la prise de rendez-vous, même pour sa propre page et après un
   enregistrement (le lien ramenait au calendrier). Depuis le calendrier, retour au calendrier.
+- Synchronisation CalDAV : un mauvais mot de passe (par exemple le mot de passe Dolibarr d'un téléphone connecté
+  avant le mot de passe de synchronisation) reçoit un 401, que le téléphone affiche comme une erreur
+  d'identification ; il recevait un 404 sur chaque agenda (« HTTP 404 Not Found » dans DAVx⁵). Un identifiant tapé
+  avec une majuscule ou une espace en trop sur le téléphone est accepté comme l'identifiant Dolibarr : il ouvrait la
+  connexion, puis chaque agenda répondait 404.
 
 ## 1.3.0
 
