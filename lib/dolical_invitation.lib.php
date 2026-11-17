@@ -582,27 +582,268 @@ function dolical_mail_template(string $type, string $language): ?array
 
 /**
  * Subject and body of a mail from an email template of Dolibarr. The values of DoliCal come from the event and the
- * people : escaped when the template is HTML, the whole text escaped when it is plain
+ * people : escaped when the template is HTML, the whole text escaped when it is plain. They are put last and in one
+ * pass : a token typed in a name or a title (a booking form) stays text, it is never replaced in its turn
  *
  * @param  array     $template      ['topic', 'content'], from dolical_mail_template()
  * @param  array     $substitutions Common substitutions and the __DOLICAL_*__ values, as plain text
  * @param  Translate $outputLangs   Language of the mail
+ * @param  array     $blocks        [token => ['html' => block made here, 'text' => the same as plain text]] : the
+ *                                  table of the details, the text of the setup ; the HTML is put as it is
  * @return array                    [subject, html]
  */
-function dolical_mail_from_template(array $template, array $substitutions, Translate $outputLangs): array
+function dolical_mail_from_template(array $template, array $substitutions, Translate $outputLangs, array $blocks = []): array
 {
-    $subject = make_substitutions($template['topic'], $substitutions, $outputLangs);
-    if (!dol_textishtml($template['content'])) {
-        return [$subject, dol_nl2br(dol_escape_htmltag(make_substitutions($template['content'], $substitutions, $outputLangs), 0, 1))];
-    }
-
+    $common  = [];
+    $dolical = [];
     foreach ($substitutions as $key => $value) {
         if (strpos($key, '__DOLICAL_') === 0) {
-            $substitutions[$key] = dol_escape_htmltag((string) $value);
+            $dolical[$key] = (string) $value;
+        } else {
+            $common[$key] = $value;
         }
     }
+    foreach ($blocks as $key => $block) {
+        $dolical[$key] = (string) $block['text'];
+    }
 
-    return [$subject, make_substitutions($template['content'], $substitutions, $outputLangs)];
+    // A subject holds one line
+    $subject = strtr(make_substitutions($template['topic'], $common, $outputLangs), array_map(function ($text) {
+        return trim(preg_replace('/\s+/', ' ', $text));
+    }, $dolical));
+    if (!dol_textishtml($template['content'])) {
+        $text = strtr(make_substitutions($template['content'], $common, $outputLangs), $dolical);
+        return [$subject, dol_nl2br(dol_escape_htmltag($text, 0, 1))];
+    }
+
+    $html = array_map(function ($value) {
+        return dol_escape_htmltag($value);
+    }, $dolical);
+    foreach ($blocks as $key => $block) {
+        $html[$key] = (string) $block['html'];
+    }
+
+    return [$subject, strtr(make_substitutions($template['content'], $common, $outputLangs), $html)];
+}
+
+/**
+ * Table of the details of a mail : one row per [label, text] or [label, text, link], the text linking to it alone
+ * (the link of a video call : written under it, the address became a second link in the mail clients)
+ *
+ * @param  array $rows Rows
+ * @return string      HTML with its styles inline, empty without rows
+ */
+function dolical_mail_rows_html(array $rows): string
+{
+    if (empty($rows)) {
+        return '';
+    }
+    $html = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;background:#f5f8fa;border-radius:8px;">';
+    foreach ($rows as $row) {
+        $html .= '<tr><td style="padding:10px 14px;width:110px;color:#718096;font-size:13px;vertical-align:top;">' . dol_escape_htmltag((string) $row[0]) . '</td>';
+        if (!empty($row[2])) {
+            $html .= '<td style="padding:10px 14px;font-size:14px;font-weight:bold;"><a href="' . dol_escape_htmltag((string) $row[2]) . '" style="color:#4f9ab8;">' . dol_escape_htmltag((string) $row[1]) . '</a></td>';
+        } else {
+            $html .= '<td style="padding:10px 14px;font-size:14px;font-weight:bold;">' . dol_nl2br(dol_escape_htmltag((string) $row[1], 0, 1)) . '</td>';
+        }
+        $html .= '</tr>';
+    }
+
+    return $html . '</table>';
+}
+
+/**
+ * The same details as plain text, for a template written without HTML
+ *
+ * @param  array $rows Rows, as dolical_mail_rows_html() takes them
+ * @return string      One « label : text » line per row
+ */
+function dolical_mail_rows_text(array $rows): string
+{
+    return implode("\n", array_map(function ($row) {
+        return $row[0] . ' : ' . (!empty($row[2]) ? $row[2] : $row[1]);
+    }, $rows));
+}
+
+/**
+ * A text of the setup in a mail : its lines kept, its addresses of the web made links
+ *
+ * @param  string $text Plain text
+ * @return string       HTML paragraph, empty without text
+ */
+function dolical_mail_extra_html(string $text): string
+{
+    if (trim($text) === '') {
+        return '';
+    }
+    // Escaped first : only the links made here are HTML
+    $html = preg_replace('~https?://[^\s<>"\']+~i', '<a href="$0" style="color:#4f9ab8;word-break:break-all;">$0</a>', dol_escape_htmltag($text, 0, 1));
+
+    return '<p style="margin:0 0 24px;font-size:14px;line-height:1.6;">' . dol_nl2br($html) . '</p>';
+}
+
+/**
+ * The mails of DoliCal an email template replaces, in the order of the list of the templates : type => what the
+ * template written from the mail holds. 'subject' and 'intro' : key of translation and its values (tokens) ;
+ * 'button' : [link token, key of its text] ; 'ics' : the link « Add to my calendar » ; 'text' : the text of the setup
+ * of the online booking ; 'note' : the small text at the foot
+ */
+const DOLICAL_TEMPLATES = [
+    'dolical_invitation'       => ['label' => 'DoliCalTemplateInvitation', 'subject' => ['DoliCalMailInvitationSubject', '__DOLICAL_EVENT_LABEL__'], 'intro' => ['DoliCalMailInvitationIntro', '__DOLICAL_RECIPIENT_NAME__', '__DOLICAL_ORGANIZER_NAME__'], 'button' => ['__DOLICAL_ANSWER_LINK__', 'DoliCalMailAnswerButton'], 'ics' => true, 'text' => false, 'note' => 'DoliCalMailInvitationNote'],
+    'dolical_update'           => ['label' => 'DoliCalTemplateUpdate', 'subject' => ['DoliCalMailUpdateSubject', '__DOLICAL_EVENT_LABEL__'], 'intro' => ['DoliCalMailUpdateIntro', '__DOLICAL_RECIPIENT_NAME__', '__DOLICAL_ORGANIZER_NAME__'], 'button' => ['__DOLICAL_ANSWER_LINK__', 'DoliCalMailAnswerButton'], 'ics' => true, 'text' => false, 'note' => 'DoliCalMailInvitationNote'],
+    'dolical_reminder'         => ['label' => 'DoliCalTemplateReminder', 'subject' => ['DoliCalMailReminderSubject', '__DOLICAL_EVENT_LABEL__'], 'intro' => ['DoliCalMailReminderIntro', '__DOLICAL_RECIPIENT_NAME__', '__DOLICAL_ORGANIZER_NAME__'], 'button' => ['__DOLICAL_ANSWER_LINK__', 'DoliCalMailAnswerButton'], 'ics' => true, 'text' => false, 'note' => 'DoliCalMailInvitationNote'],
+    'dolical_cancel'           => ['label' => 'DoliCalTemplateCancel', 'subject' => ['DoliCalMailCancelSubject', '__DOLICAL_EVENT_LABEL__'], 'intro' => ['DoliCalMailCancelIntro', '__DOLICAL_RECIPIENT_NAME__', '__DOLICAL_ORGANIZER_NAME__'], 'button' => [], 'ics' => false, 'text' => false, 'note' => 'DoliCalMailCancelNote'],
+    'dolical_answer'           => ['label' => 'DoliCalTemplateAnswer', 'subject' => ['DoliCalMailAnswerSubject', '__DOLICAL_RECIPIENT_NAME__', '__DOLICAL_ANSWER__', '__DOLICAL_EVENT_LABEL__'], 'intro' => ['DoliCalMailAnswerIntro', '__DOLICAL_RECIPIENT_NAME__', '__DOLICAL_ANSWER__'], 'button' => ['__DOLICAL_EVENT_LINK__', 'DoliCalMailOpenEvent'], 'ics' => false, 'text' => false, 'note' => ''],
+    'dolical_booking'          => ['label' => 'DoliCalTemplateBooking', 'subject' => ['DoliCalBookingMailSubject', '__DOLICAL_ORGANIZER_NAME__', '__DOLICAL_EVENT_DATE__'], 'intro' => ['DoliCalBookingMailIntro', '__DOLICAL_RECIPIENT_NAME__'], 'button' => ['__DOLICAL_ANSWER_LINK__', 'DoliCalBookingManage'], 'ics' => true, 'text' => true, 'note' => 'DoliCalBookingMailNote'],
+    'dolical_booking_reminder' => ['label' => 'DoliCalTemplateBookingReminder', 'subject' => ['DoliCalBookingReminderSubject', '__DOLICAL_EVENT_LABEL__', '__DOLICAL_EVENT_DATE__'], 'intro' => ['DoliCalBookingReminderIntro', '__DOLICAL_RECIPIENT_NAME__'], 'button' => ['__DOLICAL_ANSWER_LINK__', 'DoliCalBookingManage'], 'ics' => true, 'text' => true, 'note' => 'DoliCalBookingReminderNote'],
+];
+
+/**
+ * Email template written from a mail DoliCal sends without one : its texts and its button, the tokens in place of the
+ * values. Only the text : the editor of Dolibarr drops the styles of a whole mail, the frame (name of the company,
+ * card) is put around it at the sending (dolical_template_mail())
+ *
+ * @param  string    $type        Key of DOLICAL_TEMPLATES
+ * @param  Translate $outputLangs Language of the template
+ * @return array                  ['label', 'topic', 'content'], empty for a type unknown
+ */
+function dolical_default_template(string $type, Translate $outputLangs): array
+{
+    if (!isset(DOLICAL_TEMPLATES[$type])) {
+        return [];
+    }
+    $spec = DOLICAL_TEMPLATES[$type];
+    $text = function (array $keyAndValues) use ($outputLangs): string {
+        return dol_escape_htmltag($outputLangs->transnoentities(...$keyAndValues));
+    };
+
+    $content = '<h2>__DOLICAL_EVENT_LABEL__</h2>' . "\n" . '<p>' . $text($spec['intro']) . '</p>' . "\n" . '<div>__DOLICAL_EVENT_DETAILS__</div>' . "\n";
+    if ($spec['text']) {
+        $content .= '<div>__DOLICAL_BOOKING_TEXT__</div>' . "\n";
+    }
+    if (!empty($spec['button'])) {
+        $content .= '<p style="text-align:center"><a href="' . $spec['button'][0] . '" style="display:inline-block;padding:12px 28px;background:#63acc9;border-radius:24px;color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none;">' . $text([$spec['button'][1]]) . '</a></p>' . "\n";
+    }
+    if ($spec['ics']) {
+        $content .= '<p style="text-align:center"><a href="__DOLICAL_ICS_LINK__" style="color:#4f9ab8;font-size:13px;">' . $text(['DoliCalAddToCalendar']) . '</a></p>' . "\n";
+    }
+    if ($spec['note'] !== '') {
+        $content .= '<p><span style="color:#718096;font-size:12px;">' . $text([$spec['note']]) . '</span></p>' . "\n";
+    }
+
+    return [
+        'label'   => $outputLangs->transnoentities($spec['label']),
+        'topic'   => $outputLangs->transnoentities(...$spec['subject']),
+        'content' => trim($content),
+    ];
+}
+
+/**
+ * Subject and body of a mail from its email template, put in the frame of the mails of DoliCal. A template that is
+ * already a whole mail (its own page, or the frame of DoliCal in it) is sent as it is
+ *
+ * @param  array     $template      ['topic', 'content'], from dolical_mail_template()
+ * @param  array     $substitutions Common substitutions and the __DOLICAL_*__ values, as plain text
+ * @param  Translate $outputLangs   Language of the mail
+ * @param  array     $blocks        Blocks of dolical_mail_from_template() : the table of the details...
+ * @return array                    [subject, html]
+ */
+function dolical_template_mail(array $template, array $substitutions, Translate $outputLangs, array $blocks = []): array
+{
+    [$subject, $html] = dolical_mail_from_template($template, $substitutions, $outputLangs, $blocks);
+    if (stripos($template['content'], '<html') === false && strpos($template['content'], 'max-width:560px') === false) {
+        $html = dolical_mail_html(['body' => $html]);
+    }
+
+    return [$subject, $html];
+}
+
+/**
+ * The table of the details of a mail as a block of an email template (__DOLICAL_EVENT_DETAILS__), empty rows left out
+ *
+ * @param  array $rows Rows, as dolical_mail_rows_html() takes them
+ * @return array       For dolical_mail_from_template()
+ */
+function dolical_mail_details_block(array $rows): array
+{
+    return ['__DOLICAL_EVENT_DETAILS__' => ['html' => dolical_mail_rows_html($rows), 'text' => dolical_mail_rows_text($rows)]];
+}
+
+/**
+ * Email template of a type in the current entity, the one DoliCal reads first, in any language
+ *
+ * @param  string $type Type of template
+ * @return int          Id, 0 when there is none
+ */
+function dolical_template_id(string $type): int
+{
+    global $conf, $db;
+
+    $sql  = 'SELECT rowid FROM ' . MAIN_DB_PREFIX . "c_email_templates WHERE type_template = '" . $db->escape($type) . "'";
+    $sql .= ' AND entity = ' . ((int) $conf->entity) . ' ORDER BY active DESC, position ASC, rowid ASC';
+    // getRow() adds its LIMIT
+    $row  = $db->getRow($sql);
+
+    return is_object($row) ? (int) $row->rowid : 0;
+}
+
+/**
+ * Open the email template of a mail in the editor of Dolibarr, made from the mail when there is none : the buttons
+ * « Change the emails » of the setup. Redirects ; returns only when the template could not be made
+ *
+ * @param  string $type Key of DOLICAL_TEMPLATES
+ * @return void
+ */
+function dolical_open_template(string $type): void
+{
+    if (!isset(DOLICAL_TEMPLATES[$type]) || dolical_create_templates() < 0) {
+        return;
+    }
+    $templateId = dolical_template_id($type);
+    if ($templateId > 0) {
+        header('Location: ' . DOL_URL_ROOT . '/admin/mails_templates.php?search_type_template=' . urlencode($type) . '&rowid=' . $templateId . '&action=edit&token=' . newToken());
+        exit;
+    }
+}
+
+/**
+ * The email templates of the mails of DoliCal where the entity has none, written from the mails it sends without them :
+ * the administrator changes their text in the editor of Dolibarr rather than writing a mail from nothing. In the
+ * language of the instance : a person of another language keeps the mail of DoliCal in his own
+ *
+ * @return int Number of templates created, -1 on error
+ */
+function dolical_create_templates(): int
+{
+    global $conf, $db, $langs;
+
+    $language = getDolGlobalString('MAIN_LANG_DEFAULT');
+    if ($language === '' || $language === 'auto') {
+        $language = (string) $langs->defaultlang;
+    }
+    $outputLangs = new Translate('', $conf);
+    $outputLangs->setDefaultLang($language);
+    $outputLangs->loadLangs(['main', 'agenda', 'dolical@dolical']);
+
+    $created  = 0;
+    $position = 0;
+    foreach (array_keys(DOLICAL_TEMPLATES) as $type) {
+        $position++;
+        if (dolical_template_id($type) > 0) {
+            continue;
+        }
+        $template = dolical_default_template($type, $outputLangs);
+        $sql      = 'INSERT INTO ' . MAIN_DB_PREFIX . 'c_email_templates (entity, module, type_template, lang, private, datec, label, position, enabled, active, topic, joinfiles, content)';
+        $sql     .= ' VALUES (' . ((int) $conf->entity) . ", 'dolical', '" . $db->escape($type) . "', '" . $db->escape($outputLangs->defaultlang) . "', 0, '" . $db->idate(dol_now()) . "',";
+        $sql     .= " '" . $db->escape($template['label']) . "', " . $position . ", '1', 1, '" . $db->escape($template['topic']) . "', '0', '" . $db->escape($template['content']) . "')";
+        if (!$db->query($sql)) {
+            dol_syslog(__FUNCTION__ . ' ' . $db->lasterror(), LOG_ERR);
+            return -1;
+        }
+        $created++;
+    }
+
+    return $created;
 }
 
 /**
@@ -797,25 +1038,28 @@ function dolical_send_invitations(ActionComm $event, User $sender, array $recipi
             '__DOLICAL_ORGANIZER_NAME__' => $organizerName,
             '__DOLICAL_RECIPIENT_NAME__' => $recipient['name'],
             '__DOLICAL_ANSWER_LINK__'    => $url,
+            '__DOLICAL_ICS_LINK__'       => $icsUrl,
         ]);
 
+        // The details of the event, the same with or without a template
+        $rows = [[$langs->transnoentities('DoliCalMailWhen'), $when]];
+        if (!empty($event->location)) {
+            $rows[] = [$langs->transnoentities('Location'), (string) $event->location];
+        }
+        $rows[] = [$langs->transnoentities($forCustomer ? 'DoliCalBookingWith' : 'DoliCalOrganizer'), $organizerName];
+        if ($visio !== '') {
+            $rows[] = dolical_visio_mail_row($visio, $langs);
+        }
+        // The customer of an appointment booked online : the phone number of the setup to reach the company
+        if ($forCustomer && dolical_booking_text('DOLICAL_BOOKING_PHONE') !== '') {
+            $rows[] = [$langs->transnoentities('Phone'), dolical_booking_text('DOLICAL_BOOKING_PHONE')];
+        }
+
         if ($template !== null) {
-            [$subject, $html] = dolical_mail_from_template($template, $substitutions, $langs);
+            [$subject, $html] = dolical_template_mail($template, $substitutions, $langs, dolical_mail_details_block($rows));
         } else {
             $subject = $langs->transnoentities($visioOnly ? 'DoliCalMailVisioSubject' : $settings['subject'], $mailLabel);
-            $rows    = [[$langs->transnoentities('DoliCalMailWhen'), $when]];
-            if (!empty($event->location)) {
-                $rows[] = [$langs->transnoentities('Location'), (string) $event->location];
-            }
-            $rows[] = [$langs->transnoentities($forCustomer ? 'DoliCalBookingWith' : 'DoliCalOrganizer'), $organizerName];
-            if ($visio !== '') {
-                $rows[] = dolical_visio_mail_row($visio, $langs);
-            }
-            // The customer of an appointment booked online : the phone number of the setup to reach the company
-            if ($forCustomer && dolical_booking_text('DOLICAL_BOOKING_PHONE') !== '') {
-                $rows[] = [$langs->transnoentities('Phone'), dolical_booking_text('DOLICAL_BOOKING_PHONE')];
-            }
-            $html   = dolical_mail_html([
+            $html    = dolical_mail_html([
                 'title'     => $mailLabel,
                 'intro'     => $langs->transnoentities($visioOnly ? 'DoliCalMailVisioIntro' : $settings['intro'], $recipient['name'], $organizerName),
                 'rows'      => $rows,
@@ -1130,6 +1374,7 @@ function dolical_record_answer(ActionComm $event, string $kind, int $personId, i
     $savedLangs = $langs;
     $langs      = $outputLangs;
     $eventUrl   = dol_buildpath('/dolical/dolicalindex.php', 3) . '?event=' . ((int) $event->id);
+    $rows       = [[$outputLangs->transnoentities('DoliCalMailWhen'), dolical_event_when($event)]];
     $template   = dolical_mail_template('dolical_answer', $outputLangs->defaultlang);
     if ($template !== null) {
         $substitutions = array_merge(getCommonSubstitutionArray($outputLangs, 0, null, $event), [
@@ -1141,13 +1386,13 @@ function dolical_record_answer(ActionComm $event, string $kind, int $personId, i
             '__DOLICAL_ANSWER__'         => $answerText,
             '__DOLICAL_EVENT_LINK__'     => $eventUrl,
         ]);
-        [$subject, $html] = dolical_mail_from_template($template, $substitutions, $outputLangs);
+        [$subject, $html] = dolical_template_mail($template, $substitutions, $outputLangs, dolical_mail_details_block($rows));
     } else {
         $subject = $outputLangs->transnoentities('DoliCalMailAnswerSubject', $name, $answerText, $label);
         $html    = dolical_mail_html([
             'title'  => $label,
             'intro'  => $outputLangs->transnoentities('DoliCalMailAnswerIntro', $name, $answerText),
-            'rows'   => [[$outputLangs->transnoentities('DoliCalMailWhen'), dolical_event_when($event)]],
+            'rows'   => $rows,
             'button' => [$eventUrl, $outputLangs->transnoentities('DoliCalMailOpenEvent')],
             'note'   => '',
         ]);

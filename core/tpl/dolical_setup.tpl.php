@@ -51,7 +51,7 @@ foreach (timezone_identifiers_list() as $zone) {
 }
 $zoneSelect .= '</select>';
 
-$tokens = '<code>__DOLICAL_EVENT_LABEL__</code>, <code>__DOLICAL_EVENT_DATE__</code>, <code>__DOLICAL_EVENT_LOCATION__</code>, <code>__DOLICAL_EVENT_VISIO__</code>, <code>__DOLICAL_ORGANIZER_NAME__</code>, <code>__DOLICAL_RECIPIENT_NAME__</code>, <code>__DOLICAL_ANSWER_LINK__</code>';
+$tokens = '<code>__DOLICAL_EVENT_DETAILS__</code>, <code>__DOLICAL_ANSWER_LINK__</code>, <code>__DOLICAL_ICS_LINK__</code>, <code>__DOLICAL_EVENT_LABEL__</code>, <code>__DOLICAL_EVENT_DATE__</code>, <code>__DOLICAL_EVENT_LOCATION__</code>, <code>__DOLICAL_EVENT_VISIO__</code>, <code>__DOLICAL_ORGANIZER_NAME__</code>, <code>__DOLICAL_RECIPIENT_NAME__</code>';
 $answerTokens = '<code>__DOLICAL_ANSWER__</code>, <code>__DOLICAL_EVENT_LINK__</code>';
 ?>
 <form method="POST" action="<?php echo dol_escape_htmltag($_SERVER['PHP_SELF']); ?>" class="dolical-setup">
@@ -80,7 +80,17 @@ $answerTokens = '<code>__DOLICAL_ANSWER__</code>, <code>__DOLICAL_EVENT_LINK__</
             <?php echo dolical_setting($langs->trans('DoliCalAutoRemind'), $langs->trans('DoliCalAutoRemindHelp'), $switch('DOLICAL_AUTO_REMIND', 0)); ?>
             <?php echo dolical_setting($langs->trans('DoliCalAutoRemindDays'), $langs->trans('DoliCalAutoRemindDaysHelp'), dolical_setting_number('DOLICAL_AUTO_REMIND_DAYS', getDolGlobalInt('DOLICAL_AUTO_REMIND_DAYS', 2), 1, 30, $langs->trans('Days')), 'inline', 'DOLICAL_AUTO_REMIND'); ?>
             <?php echo dolical_setting($langs->trans('DoliCalTimezone'), $langs->trans('DoliCalTimezoneHelp'), $zoneSelect); ?>
-            <?php echo dolical_setting($langs->trans('DoliCalMailTemplates'), $langs->trans('DoliCalMailTemplatesHelp'), '<a class="dolical-btn" href="' . DOL_URL_ROOT . '/admin/mails_templates.php?search_type_template=dolical_invitation"><i class="far fa-edit"></i>' . $langs->trans('DoliCalMailTemplatesLink') . '</a>'); ?>
+            <?php if ($permissionToWrite) : ?>
+                <?php
+                // The template of each mail, opened in the editor of Dolibarr : made from the mail when there is none. The
+                // buttons belong to the form under this one, a form cannot hold another
+                $templateButtons = '';
+                foreach (['dolical_invitation' => 'DoliCalTemplateShortInvitation', 'dolical_update' => 'DoliCalTemplateShortUpdate', 'dolical_reminder' => 'DoliCalTemplateShortReminder', 'dolical_cancel' => 'DoliCalTemplateShortCancel', 'dolical_answer' => 'DoliCalTemplateShortAnswer'] as $templateType => $templateLabel) {
+                    $templateButtons .= '<button type="submit" form="dolical-mailtemplate-form" name="type" value="' . $templateType . '" class="dolical-btn"><i class="far fa-edit"></i>' . $langs->trans($templateLabel) . '</button>';
+                }
+                ?>
+                <?php echo dolical_setting($langs->trans('DoliCalMailTemplates'), $langs->trans('DoliCalMailTemplatesHelp'), '<span class="dolical-setting__pair dolical-setting__buttons">' . $templateButtons . '</span>', 'stacked'); ?>
+            <?php endif; ?>
             <p class="dolical-setup__note"><i class="fas fa-info-circle pictofixedwidth"></i><?php // Without entities : trans() would write the <code> of the tokens as text ?>
                 <?php echo $langs->transnoentities('DoliCalMailTemplatesTokens', $tokens, $answerTokens); ?></p>
         </section>
@@ -115,4 +125,10 @@ $answerTokens = '<code>__DOLICAL_ANSWER__</code>, <code>__DOLICAL_EVENT_LINK__</
         </div>
     <?php endif; ?>
 </form>
+<?php if ($permissionToWrite) : ?>
+    <form method="POST" action="<?php echo dol_escape_htmltag($_SERVER['PHP_SELF']); ?>" id="dolical-mailtemplate-form">
+        <input type="hidden" name="token" value="<?php echo newToken(); ?>">
+        <input type="hidden" name="action" value="mailtemplate">
+    </form>
+<?php endif; ?>
 <div class="dolical-toast"></div>

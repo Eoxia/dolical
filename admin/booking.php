@@ -77,6 +77,17 @@ $urls = ['DOLICAL_BOOKING_VISIO', 'DOLICAL_BOOKING_VISIO_SERVER', 'DOLICAL_BOOKI
  * Actions
  */
 
+// The email template of a mail of the booking, opened in the editor of Dolibarr : made from the mail when there is none
+if ($action === 'mailtemplate' && $permissionToWrite && dolical_valid_post()) {
+    $type = GETPOST('type', 'aZ09');
+    if (in_array($type, ['dolical_booking', 'dolical_booking_reminder'], true)) {
+        dolical_open_template($type);
+    }
+    setEventMessages($langs->trans('Error') . ' ' . $db->lasterror(), null, 'errors');
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
+}
+
 if ($action === 'update' && $permissionToWrite && dolical_valid_post()) {
     foreach (array_keys($switches) as $constName) {
         dolibarr_set_const($db, $constName, GETPOSTINT($constName) ? 1 : 0, 'integer', 0, '', $conf->entity);

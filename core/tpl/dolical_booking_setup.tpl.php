@@ -128,7 +128,20 @@ $phoneModes = ['optional' => 'DoliCalBookingPhoneOptional', 'required' => 'DoliC
                 <?php echo $setting('DoliCalBookingConfirmText', $langs->trans('DoliCalBookingConfirmTextHelp'), $textarea('DOLICAL_BOOKING_CONFIRM_TEXT'), 'stacked'); ?>
                 <?php echo $setting('DoliCalBookingIcsText', $langs->trans('DoliCalBookingIcsTextHelp'), $textarea('DOLICAL_BOOKING_ICS_TEXT'), 'stacked'); ?>
             </div>
-            <p class="dolical-setup__note"><i class="far fa-edit pictofixedwidth"></i><?php echo $langs->trans('DoliCalBookingMailTemplatesHelp'); ?> <a href="<?php echo DOL_URL_ROOT; ?>/admin/mails_templates.php?search_type_template=dolical_booking"><?php echo $langs->trans('DoliCalMailTemplatesLink'); ?></a></p>
+            <?php
+            // The template of each mail, opened in the editor of Dolibarr : made from the mail when there is none. The
+            // buttons belong to the form under this one, a form cannot hold another
+            $templateButtons = '';
+            foreach (['dolical_booking' => 'DoliCalBookingMailConfirmed', 'dolical_booking_reminder' => 'DoliCalBookingMailReminder'] as $templateType => $templateLabel) {
+                $templateButtons .= '<button type="submit" form="dolical-mailtemplate-form" name="type" value="' . $templateType . '" class="dolical-btn"><i class="far fa-edit"></i>' . $langs->trans($templateLabel) . '</button>';
+            }
+            $templateTokens = '<code>__DOLICAL_EVENT_DETAILS__</code>, <code>__DOLICAL_BOOKING_TEXT__</code>, <code>__DOLICAL_ICS_LINK__</code>, <code>__DOLICAL_ANSWER_LINK__</code>, <code>__DOLICAL_EVENT_LABEL__</code>, <code>__DOLICAL_EVENT_DATE__</code>, <code>__DOLICAL_EVENT_LOCATION__</code>, <code>__DOLICAL_EVENT_VISIO__</code>, <code>__DOLICAL_ORGANIZER_NAME__</code>, <code>__DOLICAL_RECIPIENT_NAME__</code>';
+            ?>
+            <?php if ($permissionToWrite) : ?>
+                <?php echo $setting('DoliCalBookingMailTemplates', $langs->trans('DoliCalBookingMailTemplatesHelp'), '<span class="dolical-setting__pair">' . $templateButtons . '</span>'); ?>
+            <?php endif; ?>
+            <?php // Without entities : trans() would write the <code> of the tokens as text ?>
+            <p class="dolical-setup__note"><i class="fas fa-info-circle pictofixedwidth"></i><?php echo $langs->transnoentities('DoliCalBookingMailTemplatesTokens', $templateTokens); ?></p>
         </section>
 
         <section class="dolical-sync__card dolical-setup__card" id="dolical-setup-form">
@@ -213,4 +226,10 @@ $phoneModes = ['optional' => 'DoliCalBookingPhoneOptional', 'required' => 'DoliC
         </div>
     <?php endif; ?>
 </form>
+<?php if ($permissionToWrite) : ?>
+    <form method="POST" action="<?php echo dol_escape_htmltag($_SERVER['PHP_SELF']); ?>" id="dolical-mailtemplate-form">
+        <input type="hidden" name="token" value="<?php echo newToken(); ?>">
+        <input type="hidden" name="action" value="mailtemplate">
+    </form>
+<?php endif; ?>
 <div class="dolical-toast"></div>
