@@ -135,13 +135,20 @@ $phoneModes = ['optional' => 'DoliCalBookingPhoneOptional', 'required' => 'DoliC
             foreach (['dolical_booking' => 'DoliCalBookingMailConfirmed', 'dolical_booking_reminder' => 'DoliCalBookingMailReminder'] as $templateType => $templateLabel) {
                 $templateButtons .= '<button type="submit" form="dolical-mailtemplate-form" name="type" value="' . $templateType . '" class="dolical-btn"><i class="far fa-edit"></i>' . $langs->trans($templateLabel) . '</button>';
             }
-            $templateTokens = '<code>__DOLICAL_EVENT_DETAILS__</code>, <code>__DOLICAL_BOOKING_TEXT__</code>, <code>__DOLICAL_ICS_LINK__</code>, <code>__DOLICAL_ANSWER_LINK__</code>, <code>__DOLICAL_EVENT_LABEL__</code>, <code>__DOLICAL_EVENT_DATE__</code>, <code>__DOLICAL_EVENT_LOCATION__</code>, <code>__DOLICAL_EVENT_VISIO__</code>, <code>__DOLICAL_ORGANIZER_NAME__</code>, <code>__DOLICAL_RECIPIENT_NAME__</code>';
+            // The tokens of the texts of this page (confirmation, calendar file, reminders), and the two more of the templates
+            $code = function (array $tokens): string {
+                return implode(', ', array_map(function ($token) {
+                    return '<code>' . $token . '</code>';
+                }, $tokens));
+            };
+            $textTokens     = $code(['__DOLICAL_RECIPIENT_NAME__', '__DOLICAL_EVENT_DATE__', '__DOLICAL_ORGANIZER_NAME__', '__DOLICAL_EVENT_LABEL__', '__DOLICAL_EVENT_LOCATION__', '__DOLICAL_EVENT_VISIO__', '__DOLICAL_ANSWER_LINK__', '__DOLICAL_ICS_LINK__']);
+            $templateTokens = $code(['__DOLICAL_EVENT_DETAILS__', '__DOLICAL_BOOKING_TEXT__']);
             ?>
             <?php if ($permissionToWrite) : ?>
                 <?php echo $setting('DoliCalBookingMailTemplates', $langs->trans('DoliCalBookingMailTemplatesHelp'), '<span class="dolical-setting__pair">' . $templateButtons . '</span>'); ?>
             <?php endif; ?>
             <?php // Without entities : trans() would write the <code> of the tokens as text ?>
-            <p class="dolical-setup__note"><i class="fas fa-info-circle pictofixedwidth"></i><?php echo $langs->transnoentities('DoliCalBookingMailTemplatesTokens', $templateTokens); ?></p>
+            <p class="dolical-setup__note"><i class="fas fa-info-circle pictofixedwidth"></i><?php echo $langs->transnoentities('DoliCalBookingMailTemplatesTokens', $textTokens, $templateTokens); ?></p>
         </section>
 
         <section class="dolical-sync__card dolical-setup__card" id="dolical-setup-form">

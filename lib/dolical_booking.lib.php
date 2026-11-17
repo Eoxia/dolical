@@ -1516,18 +1516,71 @@ function dolical_booking_mail_blocks(array $rows, string $text): array
 }
 
 /**
- * Calendar file of an appointment for its customer : the organizer address of the setup, the link of his appointment,
- * and the description of the setup for the calendar files (DOLICAL_BOOKING_ICS_TEXT)
+ * A text of the setup of the online booking (confirmation, reminders, calendar file), its tokens replaced by the values
+ * of the appointment, the ones of the email templates. In one pass : a value typed by the customer is not replaced in
+ * its turn. Plain text, escaped where it is shown
  *
- * @param  ActionComm $view     Event as the customer sees it
- * @param  User       $owner    Person booked
- * @param  string     $url      Link of his appointment
- * @param  int        $sequence Version of the event
+ * @param  string $constName Constant of the text
+ * @param  array  $values    [__DOLICAL_*__ => value], the other keys left out
  * @return string
  */
-function dolical_booking_ics(ActionComm $view, User $owner, string $url, int $sequence): string
+function dolical_booking_text_values(string $constName, array $values): string
 {
-    return dolical_build_ics($view, dolical_booking_organizer($owner), $url, $sequence, 'PUBLISH', ['urlLabel' => 'DoliCalBookingIcsManage', 'description' => dolical_booking_text('DOLICAL_BOOKING_ICS_TEXT')]);
+    $text   = dolical_booking_text($constName);
+    $tokens = [];
+    foreach ($values as $key => $value) {
+        if (strpos((string) $key, '__DOLICAL_') === 0) {
+            $tokens[(string) $key] = (string) $value;
+        }
+    }
+
+    return $text !== '' && !empty($tokens) ? strtr($text, $tokens) : $text;
+}
+
+/**
+ * Values of an appointment booked online for the tokens of the mails and of the texts of the setup
+ *
+ * @param  ActionComm $view          Event as the customer sees it
+ * @param  string     $when          When, in words
+ * @param  string     $ownerName     Person booked
+ * @param  string     $recipientName Customer
+ * @param  string     $url           Link of his appointment
+ * @param  string     $icsUrl        Link of its calendar file
+ * @return array                     [__DOLICAL_*__ => value]
+ */
+function dolical_booking_token_values(ActionComm $view, string $when, string $ownerName, string $recipientName, string $url, string $icsUrl): array
+{
+    return [
+        '__DOLICAL_EVENT_LABEL__'    => (string) $view->label,
+        '__DOLICAL_EVENT_DATE__'     => $when,
+        '__DOLICAL_EVENT_LOCATION__' => (string) $view->location,
+        '__DOLICAL_EVENT_VISIO__'    => dolical_get_visio($view),
+        '__DOLICAL_ORGANIZER_NAME__' => $ownerName,
+        '__DOLICAL_RECIPIENT_NAME__' => $recipientName,
+        '__DOLICAL_ANSWER_LINK__'    => $url,
+        '__DOLICAL_ICS_LINK__'       => $icsUrl,
+    ];
+}
+
+/**
+ * Calendar file of an appointment for its customer : the organizer address of the setup, the link of his appointment,
+ * and the description of the setup for the calendar files (DOLICAL_BOOKING_ICS_TEXT), its tokens replaced
+ *
+ * @param  ActionComm $view          Event as the customer sees it
+ * @param  User       $owner         Person booked
+ * @param  string     $url           Link of his appointment
+ * @param  int        $sequence      Version of the event
+ * @param  string     $recipientName Customer, for the token of his name
+ * @return string
+ */
+function dolical_booking_ics(ActionComm $view, User $owner, string $url, int $sequence, string $recipientName = ''): string
+{
+    global $langs;
+
+    $when   = dolical_booking_when((int) $view->datep, (int) ($view->datef ?: $view->datep));
+    $values = dolical_booking_token_values($view, $when, $owner->getFullName($langs), $recipientName, $url, $url !== '' ? $url . '&ics=1' : '');
+
+    return dolical_build_ics($view, dolical_booking_organizer($owner), $url, $sequence, 'PUBLISH', ['urlLabel' => 'DoliCalBookingIcsManage', 'description' => dolical_booking_text_values('DOLICAL_BOOKING_ICS_TEXT', $values)]);
 }
 
 /**
@@ -1551,20 +1604,12 @@ function dolical_booking_send_confirmation(ActionComm $event, User $owner, array
     $when      = dolical_booking_when((int) $event->datep, (int) $event->datef);
     $visio     = dolical_get_visio($event);
     $rows      = dolical_booking_mail_rows($event, $when, $ownerName, $visio, $langs);
-    $extra     = dolical_booking_text('DOLICAL_BOOKING_CONFIRM_TEXT');
+    $values    = dolical_booking_token_values($view, $when, $ownerName, $visitor['name'], $url, $icsUrl);
+    $extra     = dolical_booking_text_values('DOLICAL_BOOKING_CONFIRM_TEXT', $values);
     $template  = dolical_mail_template('dolical_booking', $langs->defaultlang);
 
     if ($template !== null) {
-        $substitutions = array_merge(getCommonSubstitutionArray($langs, 0, null, $event), [
-            '__DOLICAL_EVENT_LABEL__'    => $view->label,
-            '__DOLICAL_EVENT_DATE__'     => $when,
-            '__DOLICAL_EVENT_LOCATION__' => (string) $event->location,
-            '__DOLICAL_EVENT_VISIO__'    => $visio,
-            '__DOLICAL_ORGANIZER_NAME__' => $ownerName,
-            '__DOLICAL_RECIPIENT_NAME__' => $visitor['name'],
-            '__DOLICAL_ANSWER_LINK__'    => $url,
-            '__DOLICAL_ICS_LINK__'       => $icsUrl,
-        ]);
+        $substitutions = array_merge(getCommonSubstitutionArray($langs, 0, null, $event), $values);
         [$subject, $html] = dolical_template_mail($template, $substitutions, $langs, dolical_booking_mail_blocks($rows, $extra));
     } else {
         $subject = $langs->transnoentities('DoliCalBookingMailSubject', $ownerName, $when);
@@ -1582,7 +1627,7 @@ function dolical_booking_send_confirmation(ActionComm $event, User $owner, array
     $tempDir = $conf->dolical->dir_temp ?? (DOL_DATA_ROOT . '/dolical/temp');
     dol_mkdir($tempDir);
     $icsFile = $tempDir . '/booking-' . ((int) $event->id) . '.ics';
-    file_put_contents($icsFile, dolical_booking_ics($view, $owner, $url, 0));
+    file_put_contents($icsFile, dolical_booking_ics($view, $owner, $url, 0, $visitor['name']));
 
     $replyTo = dolical_booking_reply_to($owner);
     $error   = dolical_send_mail($visitor['email'], $subject, $html, $replyTo, $ownerName, 'rea' . ((int) $event->id), [['path' => $icsFile, 'mime' => 'text/calendar', 'name' => 'rendez-vous.ics']]);
@@ -1826,20 +1871,12 @@ function dolical_booking_send_reminder(ActionComm $event, User $owner): array
         $url       = dolical_booking_manage_url($event, (int) $contactId);
         $icsUrl    = dolical_booking_manage_url($event, (int) $contactId, ['ics' => 1]);
         $rows      = dolical_booking_mail_rows($event, $when, $ownerName, $visio, $langs);
-        $extra     = dolical_booking_text('DOLICAL_BOOKING_REMINDER_TEXT');
+        $values    = dolical_booking_token_values($view, $when, $ownerName, $name, $url, $icsUrl);
+        $extra     = dolical_booking_text_values('DOLICAL_BOOKING_REMINDER_TEXT', $values);
         $template  = dolical_mail_template('dolical_booking_reminder', $langs->defaultlang);
 
         if ($template !== null) {
-            $substitutions = array_merge(getCommonSubstitutionArray($langs, 0, null, $event), [
-                '__DOLICAL_EVENT_LABEL__'    => $view->label,
-                '__DOLICAL_EVENT_DATE__'     => $when,
-                '__DOLICAL_EVENT_LOCATION__' => (string) $event->location,
-                '__DOLICAL_EVENT_VISIO__'    => $visio,
-                '__DOLICAL_ORGANIZER_NAME__' => $ownerName,
-                '__DOLICAL_RECIPIENT_NAME__' => $name,
-                '__DOLICAL_ANSWER_LINK__'    => $url,
-                '__DOLICAL_ICS_LINK__'       => $icsUrl,
-            ]);
+            $substitutions = array_merge(getCommonSubstitutionArray($langs, 0, null, $event), $values);
             [$subject, $html] = dolical_template_mail($template, $substitutions, $langs, dolical_booking_mail_blocks($rows, $extra));
         } else {
             $subject = $langs->transnoentities('DoliCalBookingReminderSubject', $view->label, $when);
