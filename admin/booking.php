@@ -169,7 +169,8 @@ if (dolical_booking_enabled()) {
         $links[]  = [
             'name' => $personName,
             'url'  => $shortUrl !== '' ? $shortUrl : dolical_booking_public_url((int) $personId),
-            'edit' => $personId > 0 && $permissionToWrite ? dol_buildpath('/dolical/view/dolical_booking.php', 1) . '?id=' . ((int) $personId) : '',
+            // Opened from here : its link goes back here, even for one's own page
+            'edit' => $personId > 0 && $permissionToWrite ? dol_buildpath('/dolical/view/dolical_booking.php', 1) . '?id=' . ((int) $personId) . '&from=setup' : '',
         ];
     }
 }

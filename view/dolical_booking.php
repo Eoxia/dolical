@@ -58,7 +58,10 @@ if ($person->fetch($personId) <= 0 || (int) $person->statut !== 1 || $person->so
     accessforbidden();
 }
 
-$selfUrl = $_SERVER['PHP_SELF'] . ($isSelf ? '' : '?id=' . $personId);
+// Opened from the setup of the online booking : saved, it stays so, and its link goes back there
+$fromSetup = GETPOST('from', 'aZ09') === 'setup';
+$selfQuery = array_filter(['id' => $isSelf ? 0 : $personId, 'from' => $fromSetup ? 'setup' : '']);
+$selfUrl   = $_SERVER['PHP_SELF'] . (!empty($selfQuery) ? '?' . http_build_query($selfQuery) : '');
 
 /*
  * Actions
