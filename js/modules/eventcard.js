@@ -144,10 +144,30 @@ window.dolical.eventcard.reload = function() {
       }
     });
     E.position();
+    E.runPending();
   }).fail(function(xhr) {
     E.close();
     U.toast(U.xhrError(xhr), 'error');
   });
+};
+
+/**
+ * An action asked before the card was drawn (the menu of a right click) : run by its button, once it is there.
+ *
+ * @returns {void}
+ */
+window.dolical.eventcard.runPending = function() {
+  const E       = window.dolical.eventcard;
+  const pending = E.pendingAction;
+  E.pendingAction = null;
+  if (!pending) {
+    return;
+  }
+  let selector = '.dolical-popover .dolical-card [data-action="' + pending.action + '"]';
+  if (pending.percent) {
+    selector += '[data-percent="' + pending.percent + '"]';
+  }
+  $(selector).first().trigger('click');
 };
 
 /**
@@ -157,8 +177,9 @@ window.dolical.eventcard.reload = function() {
  */
 window.dolical.eventcard.close = function() {
   const E = window.dolical.eventcard;
-  E.currentId = 0;
-  E.anchor    = null;
+  E.currentId     = 0;
+  E.anchor        = null;
+  E.pendingAction = null;
   $('.dolical-popover').removeClass('is-open is-sheet').empty();
   $('.dolical-calendar .dolical-event.is-active').removeClass('is-active');
 };
