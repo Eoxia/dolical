@@ -405,10 +405,10 @@ $billingIcons  = ['paid' => 'fas fa-check-circle', 'unpaid' => 'fas fa-hourglass
         <?php endif; ?>
     </div>
 
-    <div class="dolical-card__footer">
-        <a class="dolical-btn" href="<?php echo dol_escape_htmltag($card['nativeUrl']); ?>"><?php echo $langs->trans('DoliCalMoreDetails'); ?></a>
-        <?php if ($card['canEdit']) : ?>
+    <?php // The native card stays in the menu « … » : the foot only holds the change ?>
+    <?php if ($card['canEdit']) : ?>
+        <div class="dolical-card__footer">
             <button type="button" class="dolical-btn dolical-btn--primary" data-action="edit"><i class="fas fa-pen"></i><?php echo $langs->trans('Modify'); ?></button>
-        <?php endif; ?>
-    </div>
+        </div>
+    <?php endif; ?>
 </div>

@@ -54,6 +54,8 @@
   entre eux. « Confirmer ce créneau » sur la fiche de l'un retire les autres de l'agenda (les invités prévenus comme
   pour une suppression). La case « À confirmer » du formulaire vaut aussi pour un rendez-vous seul. Champ
   complémentaire `dolical_tentative` créé à l'activation : **réactiver le module** après la mise à jour.
+- Fiche d'un événement : plus de bouton « Plus de détails » en bas, seulement « Modifier » ; la fiche native de Dolibarr
+  reste dans le menu « … ».
 - Calendrier : un clic à côté de la fiche ouverte d'un événement la ferme sans ouvrir le formulaire d'un nouvel
   événement (la fiche se fermait à l'appui, le clic qui suivait ouvrait le formulaire).
 - Formulaire d'un événement : plus de bandeau « Nouvel événement », le titre saisi et la croix sur la première ligne,

@@ -114,7 +114,6 @@ DoliCalLinkedElements   = Linked elements
 DoliCalAttachments      = Attachments
 DoliCalDropFiles        = Drop files here or click to add some
 DoliCalShowMore         = Show all
-DoliCalMoreDetails      = More details
 DoliCalCreatedBy        = Created by %s on %s
 DoliCalModifiedBy       = modified by %s on %s
 DoliCalConfirmDelete    = The event will be deleted for good.
