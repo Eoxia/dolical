@@ -755,11 +755,12 @@ window.dolical.calendar.layout = function(drawings, day) {
 /**
  * Dots of the other selected people taking part in an event.
  *
- * @param   {Object} event  Event
- * @param   {Number} userId Person already shown by the color
+ * @param   {Object}  event   Event
+ * @param   {Number}  userId  Person already shown by the color
+ * @param   {Boolean} noTally Without the count of the answers, shown elsewhere
  * @returns {String}
  */
-window.dolical.calendar.peopleDots = function(event, userId) {
+window.dolical.calendar.peopleDots = function(event, userId, noTally) {
   const C = window.dolical.calendar;
   const U = window.dolical.util;
   let html = '';
@@ -771,7 +772,9 @@ window.dolical.calendar.peopleDots = function(event, userId) {
   if (event.contacts > 0) {
     html += '<span class="ra-contacts" title="' + U.esc(U.t('contacts', event.contacts)) + '"><i class="far fa-address-book"></i>' + event.contacts + '</span>';
   }
-  html += window.dolical.calendar.tallyHtml(event);
+  if (!noTally) {
+    html += window.dolical.calendar.tallyHtml(event);
+  }
   return html ? '<span class="ra-people">' + html + '</span>' : '';
 };
 
@@ -874,13 +877,16 @@ window.dolical.calendar.blockHtml = function(item, userId) {
   let html = '<div class="dolical-event ra-block' + C.stateClasses(event, userId) + (short ? ' is-short' : '') + '" data-id="' + event.id + '" data-user="' + userId + '" data-kind="timed"'
     + ' style="--ra-top:' + top + 'px;--ra-height:' + height + 'px;--ra-left:' + (item.lane * width) + '%;--ra-width:' + width + '%;--ra-color:' + color + '"'
     + ' title="' + U.esc(U.time(event.s) + ' – ' + U.time(event.e) + ' ' + event.label) + '">';
-  html += '<div class="ra-block__head"><i class="' + U.esc(event.typeIcon) + '"></i><span class="ra-block__time">' + U.esc(U.time(event.s) + ' – ' + U.time(event.e)) + '</span>' + C.flagsHtml(event) + '</div>';
+  // The answers by the hours, always seen : at the foot, a title on two lines hid them on a meeting of an hour
+  const signs = C.tallyHtml(event) + C.flagsHtml(event);
+  html += '<div class="ra-block__head"><i class="' + U.esc(event.typeIcon) + '"></i><span class="ra-block__time">' + U.esc(U.time(event.s) + ' – ' + U.time(event.e)) + '</span>'
+    + (signs ? '<span class="ra-block__signs">' + signs + '</span>' : '') + '</div>';
   html += '<div class="ra-block__label">' + U.esc(event.label || U.t('untitled')) + '</div>';
   if (!short && sub) {
     html += '<div class="ra-block__sub">' + U.esc(sub) + '</div>';
   }
   if (!short) {
-    html += C.peopleDots(event, userId || C.firstSelectedOf(event));
+    html += C.peopleDots(event, userId || C.firstSelectedOf(event), true);
   }
   if (event.editable) {
     html += '<div class="ra-block__resize"></div>';

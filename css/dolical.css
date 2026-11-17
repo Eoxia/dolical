@@ -2112,6 +2112,26 @@ button.ra-dayhead {
   color: var(--ra-color);
   font-size: 10px;
 }
+/* The answers and the signs of the event, on the right of the hours */
+.ra-block__signs {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding-left: 4px;
+}
+.ra-block__signs .ra-flags {
+  margin-left: 0;
+  padding-left: 0;
+}
+.ra-block.is-late .ra-block__signs {
+  padding-right: 7px;
+}
+.ra-block__head .ra-tally i {
+  color: inherit;
+  font-size: 9px;
+}
 
 .ra-block__label {
   overflow: hidden;
