@@ -1071,7 +1071,7 @@ function dolical_send_invitations(ActionComm $event, User $sender, array $recipi
 
         $icsFile = $tempDir . '/invitation-' . ((int) $event->id) . '-' . $recipient['kind'] . ((int) $recipient['id']) . '.ics';
         // The customer of an appointment booked online : the organizer address and the description of the setup
-        $icsOptions = $forCustomer ? $options + ['urlLabel' => 'DoliCalBookingIcsManage', 'description' => dolical_booking_text('DOLICAL_BOOKING_ICS_TEXT')] : $options;
+        $icsOptions = $forCustomer ? $options + ['urlLabel' => 'DoliCalBookingIcsManage', 'description' => dolical_booking_text_values('DOLICAL_BOOKING_ICS_TEXT', $substitutions)] : $options;
         file_put_contents($icsFile, dolical_build_ics($mailEvent, $forCustomer ? dolical_booking_organizer($organizer) : $organizer, $url, $sequence, $settings['method'], $icsOptions));
 
         $error = dolical_send_mail($recipient['email'], $subject, $html, $forCustomer ? dolical_booking_reply_to($organizer) : $replyTo, $organizerName, 'rea' . ((int) $event->id), [['path' => $icsFile, 'mime' => 'text/calendar', 'name' => 'invitation.ics']]);

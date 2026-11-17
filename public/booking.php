@@ -141,9 +141,11 @@ if ($bookingId > 0) {
     $manageUrl = $valid ? dolical_booking_manage_url($event, $contactId) : '';
 
     if ($valid && !$isPast && GETPOSTINT('ics')) {
+        // The name of the customer, for the token of the text of the calendar file
+        $customer = new Contact($db);
         header('Content-Type: text/calendar; charset=utf-8');
         header('Content-Disposition: attachment; filename="rendez-vous.ics"');
-        echo dolical_booking_ics(dolical_booking_customer_view($event, $owner), $owner, $manageUrl, dolical_invitation_sequence($event));
+        echo dolical_booking_ics(dolical_booking_customer_view($event, $owner), $owner, $manageUrl, dolical_invitation_sequence($event), $customer->fetch($contactId) > 0 ? $customer->getFullName($langs) : '');
         exit;
     }
 

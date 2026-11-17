@@ -107,6 +107,10 @@
 - Modèles d'e-mails : les valeurs de DoliCal sont mises en dernier et en une passe ; un jeton tapé dans un nom ou un
   titre (formulaire de prise de rendez-vous) reste du texte. La société saisie par le client est échappée dans la
   note du contact créé, comme dans celle du rendez-vous.
+- Prise de rendez-vous en ligne : les jetons des modèles d'e-mails marchent aussi dans les textes de la configuration
+  (« Texte en plus de la confirmation », « Texte en tête du .ics », « Texte en plus des rappels ») : nom du client,
+  date, personne réservée, titre, lieu, visio, liens du rendez-vous et du fichier .ics. Remplacés en une passe : un
+  jeton tapé par le client reste du texte. La note de la configuration dit où marche chaque jeton.
 
 ## 1.3.0
 
