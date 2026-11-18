@@ -31,86 +31,89 @@
             <button type="button" class="dolical-btn dolical-btn--primary dolical-btn--create" data-action="create" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalNewEvent') . ' (N)'); ?>"><i class="fas fa-plus"></i><?php echo $langs->trans('DoliCalNewEvent'); ?></button>
         <?php endif; ?>
 
-        <div class="dolical-minical"></div>
+        <?php // Everything under the new event button scrolls on its own : the page keeps the height of the screen ?>
+        <div class="dolical-sidebar__scroll">
+            <div class="dolical-minical"></div>
 
-        <div class="dolical-sidebar__block dolical-picker">
-            <div class="dolical-sidebar__title">
-                <span><i class="fas fa-users pictofixedwidth"></i><?php echo $langs->trans('DoliCalCalendars'); ?></span>
-                <span class="dolical-badge dolical-picker__count">0</span>
-            </div>
-            <?php if (count($calendarUsers) > 1) : ?>
-                <input type="search" class="dolical-picker__search" placeholder="<?php echo dol_escape_htmltag($langs->trans('DoliCalSearchPerson')); ?>">
-                <div class="dolical-picker__shortcuts">
-                    <button type="button" class="dolical-link" data-pick="me"><?php echo $langs->trans('DoliCalOnlyMe'); ?></button>
-                    <button type="button" class="dolical-link" data-pick="none"><?php echo $langs->trans('DoliCalNobody'); ?></button>
-                    <?php if (!empty($calendarGroups)) : ?>
-                        <select class="dolical-picker__group">
-                            <option value=""><?php echo $langs->trans('DoliCalAddGroup'); ?></option>
-                            <?php foreach ($calendarGroups as $group) : ?>
-                                <option value="<?php echo $group['id']; ?>"><?php echo dol_escape_htmltag($group['name'] . ' (' . count($group['members']) . ')'); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    <?php endif; ?>
+            <div class="dolical-sidebar__block dolical-picker">
+                <div class="dolical-sidebar__title">
+                    <span><i class="fas fa-users pictofixedwidth"></i><?php echo $langs->trans('DoliCalCalendars'); ?></span>
+                    <span class="dolical-badge dolical-picker__count">0</span>
                 </div>
-            <?php endif; ?>
-            <ul class="dolical-picker__list">
-                <?php foreach ($calendarUsers as $calendarUser) : ?>
-                    <li class="dolical-picker__item" data-name="<?php echo dol_escape_htmltag(dol_strtolower($calendarUser['name'] . ' ' . $calendarUser['login'])); ?>">
-                        <label>
-                            <input type="checkbox" class="dolical-picker__check" value="<?php echo $calendarUser['id']; ?>">
-                            <span class="dolical-picker__swatch" data-color="<?php echo dol_escape_htmltag($calendarUser['color']); ?>"></span>
-                            <span class="dolical-picker__name"><?php echo dol_escape_htmltag($calendarUser['name']); ?><?php echo $calendarUser['id'] === (int) $user->id ? ' <span class="dolical-card__muted">(' . $langs->trans('DoliCalMe') . ')</span>' : ''; ?></span>
-                        </label>
-                        <button type="button" class="dolical-picker__paint" data-person="<?php echo $calendarUser['id']; ?>" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalColorChange')); ?>" aria-label="<?php echo dol_escape_htmltag($langs->trans('DoliCalColorChange') . ' : ' . $calendarUser['name']); ?>"><i class="fas fa-palette"></i></button>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-            <div class="dolical-colorpop" role="dialog" aria-label="<?php echo dol_escape_htmltag($langs->trans('DoliCalColorChange')); ?>">
-                <div class="dolical-colorpop__name"></div>
-                <div class="dolical-colorpop__swatches">
-                    <?php foreach (dolical_palette() as $paletteColor) : ?>
-                        <button type="button" class="dolical-colorpop__swatch" data-color="<?php echo $paletteColor; ?>" data-pick-color="<?php echo $paletteColor; ?>" aria-label="<?php echo $paletteColor; ?>"></button>
+                <?php if (count($calendarUsers) > 1) : ?>
+                    <input type="search" class="dolical-picker__search" placeholder="<?php echo dol_escape_htmltag($langs->trans('DoliCalSearchPerson')); ?>">
+                    <div class="dolical-picker__shortcuts">
+                        <button type="button" class="dolical-link" data-pick="me"><?php echo $langs->trans('DoliCalOnlyMe'); ?></button>
+                        <button type="button" class="dolical-link" data-pick="none"><?php echo $langs->trans('DoliCalNobody'); ?></button>
+                        <?php if (!empty($calendarGroups)) : ?>
+                            <select class="dolical-picker__group">
+                                <option value=""><?php echo $langs->trans('DoliCalAddGroup'); ?></option>
+                                <?php foreach ($calendarGroups as $group) : ?>
+                                    <option value="<?php echo $group['id']; ?>"><?php echo dol_escape_htmltag($group['name'] . ' (' . count($group['members']) . ')'); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+                <ul class="dolical-picker__list">
+                    <?php foreach ($calendarUsers as $calendarUser) : ?>
+                        <li class="dolical-picker__item" data-name="<?php echo dol_escape_htmltag(dol_strtolower($calendarUser['name'] . ' ' . $calendarUser['login'])); ?>">
+                            <label>
+                                <input type="checkbox" class="dolical-picker__check" value="<?php echo $calendarUser['id']; ?>">
+                                <span class="dolical-picker__swatch" data-color="<?php echo dol_escape_htmltag($calendarUser['color']); ?>"></span>
+                                <span class="dolical-picker__name"><?php echo dol_escape_htmltag($calendarUser['name']); ?><?php echo $calendarUser['id'] === (int) $user->id ? ' <span class="dolical-card__muted">(' . $langs->trans('DoliCalMe') . ')</span>' : ''; ?></span>
+                            </label>
+                            <button type="button" class="dolical-picker__paint" data-person="<?php echo $calendarUser['id']; ?>" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalColorChange')); ?>" aria-label="<?php echo dol_escape_htmltag($langs->trans('DoliCalColorChange') . ' : ' . $calendarUser['name']); ?>"><i class="fas fa-palette"></i></button>
+                        </li>
                     <?php endforeach; ?>
+                </ul>
+                <div class="dolical-colorpop" role="dialog" aria-label="<?php echo dol_escape_htmltag($langs->trans('DoliCalColorChange')); ?>">
+                    <div class="dolical-colorpop__name"></div>
+                    <div class="dolical-colorpop__swatches">
+                        <?php foreach (dolical_palette() as $paletteColor) : ?>
+                            <button type="button" class="dolical-colorpop__swatch" data-color="<?php echo $paletteColor; ?>" data-pick-color="<?php echo $paletteColor; ?>" aria-label="<?php echo $paletteColor; ?>"></button>
+                        <?php endforeach; ?>
+                    </div>
+                    <label class="dolical-colorpop__other">
+                        <input type="color" class="dolical-colorpop__input" value="#63acc9">
+                        <span><?php echo $langs->trans('DoliCalColorOther'); ?></span>
+                    </label>
+                    <button type="button" class="dolical-link dolical-colorpop__reset"><?php echo $langs->trans('DoliCalColorReset'); ?></button>
+                    <p class="dolical-colorpop__help"><?php echo $langs->trans('DoliCalColorOnlyYou'); ?></p>
                 </div>
-                <label class="dolical-colorpop__other">
-                    <input type="color" class="dolical-colorpop__input" value="#63acc9">
-                    <span><?php echo $langs->trans('DoliCalColorOther'); ?></span>
+            </div>
+
+            <div class="dolical-sidebar__block dolical-filters">
+                <div class="dolical-sidebar__title"><span><i class="fas fa-filter pictofixedwidth"></i><?php echo $langs->trans('Filters'); ?></span></div>
+                <label class="dolical-check">
+                    <input type="checkbox" class="dolical-filter" data-filter="hideauto" value="1"<?php echo $calendarConfig['hideAuto'] ? ' checked' : ''; ?>>
+                    <span><?php echo $langs->trans('DoliCalHideAutoEvents'); ?></span>
                 </label>
-                <button type="button" class="dolical-link dolical-colorpop__reset"><?php echo $langs->trans('DoliCalColorReset'); ?></button>
-                <p class="dolical-colorpop__help"><?php echo $langs->trans('DoliCalColorOnlyYou'); ?></p>
-            </div>
-        </div>
-
-        <div class="dolical-sidebar__block dolical-filters">
-            <div class="dolical-sidebar__title"><span><i class="fas fa-filter pictofixedwidth"></i><?php echo $langs->trans('Filters'); ?></span></div>
-            <label class="dolical-check">
-                <input type="checkbox" class="dolical-filter" data-filter="hideauto" value="1"<?php echo $calendarConfig['hideAuto'] ? ' checked' : ''; ?>>
-                <span><?php echo $langs->trans('DoliCalHideAutoEvents'); ?></span>
-            </label>
-            <select class="dolical-filter dolical-select" data-filter="status">
-                <option value="all"><?php echo $langs->trans('DoliCalAllStatuses'); ?></option>
-                <option value="todo"><?php echo $langs->trans('DoliCalOnlyTodo'); ?></option>
-                <option value="done"><?php echo $langs->trans('DoliCalOnlyDone'); ?></option>
-            </select>
-            <?php if (getDolGlobalString('AGENDA_USE_EVENT_TYPE') && !empty($eventTypes)) : ?>
-                <select class="dolical-filter dolical-select" data-filter="types">
-                    <option value=""><?php echo $langs->trans('DoliCalAllTypes'); ?></option>
-                    <?php foreach ($eventTypes as $type) : ?>
-                        <option value="<?php echo dol_escape_htmltag($type['code']); ?>"><?php echo dol_escape_htmltag($type['label']); ?></option>
-                    <?php endforeach; ?>
+                <select class="dolical-filter dolical-select" data-filter="status">
+                    <option value="all"><?php echo $langs->trans('DoliCalAllStatuses'); ?></option>
+                    <option value="todo"><?php echo $langs->trans('DoliCalOnlyTodo'); ?></option>
+                    <option value="done"><?php echo $langs->trans('DoliCalOnlyDone'); ?></option>
                 </select>
+                <?php if (getDolGlobalString('AGENDA_USE_EVENT_TYPE') && !empty($eventTypes)) : ?>
+                    <select class="dolical-filter dolical-select" data-filter="types">
+                        <option value=""><?php echo $langs->trans('DoliCalAllTypes'); ?></option>
+                        <?php foreach ($eventTypes as $type) : ?>
+                            <option value="<?php echo dol_escape_htmltag($type['code']); ?>"><?php echo dol_escape_htmltag($type['label']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                <?php endif; ?>
+            </div>
+
+            <?php if (getDolGlobalInt('DOLICAL_CALDAV', 1)) : ?>
+                <a class="dolical-sidebar__sync" href="<?php echo dol_buildpath('/dolical/view/dolical_sync.php', 1); ?>"><i class="fas fa-mobile-alt pictofixedwidth"></i><?php echo $langs->trans('DoliCalSyncPhone'); ?></a>
+            <?php endif; ?>
+            <?php if (dolical_can_create($user)) : ?>
+                <a class="dolical-sidebar__import" href="<?php echo dol_buildpath('/dolical/view/dolical_import.php', 1); ?>"><i class="fas fa-file-upload pictofixedwidth"></i><?php echo $langs->trans('DoliCalImport'); ?></a>
+            <?php endif; ?>
+            <?php if (getDolGlobalInt('DOLICAL_BOOKING') && in_array((int) $user->id, dolical_booking_user_ids(), true)) : ?>
+                <a class="dolical-sidebar__booking" href="<?php echo dol_buildpath('/dolical/view/dolical_booking.php', 1); ?>"><i class="far fa-calendar-check pictofixedwidth"></i><?php echo $langs->trans('DoliCalBookingMyPage'); ?></a>
             <?php endif; ?>
         </div>
-
-        <?php if (getDolGlobalInt('DOLICAL_CALDAV', 1)) : ?>
-            <a class="dolical-sidebar__sync" href="<?php echo dol_buildpath('/dolical/view/dolical_sync.php', 1); ?>"><i class="fas fa-mobile-alt pictofixedwidth"></i><?php echo $langs->trans('DoliCalSyncPhone'); ?></a>
-        <?php endif; ?>
-        <?php if (dolical_can_create($user)) : ?>
-            <a class="dolical-sidebar__import" href="<?php echo dol_buildpath('/dolical/view/dolical_import.php', 1); ?>"><i class="fas fa-file-upload pictofixedwidth"></i><?php echo $langs->trans('DoliCalImport'); ?></a>
-        <?php endif; ?>
-        <?php if (getDolGlobalInt('DOLICAL_BOOKING') && in_array((int) $user->id, dolical_booking_user_ids(), true)) : ?>
-            <a class="dolical-sidebar__booking" href="<?php echo dol_buildpath('/dolical/view/dolical_booking.php', 1); ?>"><i class="far fa-calendar-check pictofixedwidth"></i><?php echo $langs->trans('DoliCalBookingMyPage'); ?></a>
-        <?php endif; ?>
     </aside>
 
     <section class="dolical-main">
