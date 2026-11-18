@@ -122,6 +122,8 @@
   d'identification ; il recevait un 404 sur chaque agenda (« HTTP 404 Not Found » dans DAVx⁵). Un identifiant tapé
   avec une majuscule ou une espace en trop sur le téléphone est accepté comme l'identifiant Dolibarr : il ouvrait la
   connexion, puis chaque agenda répondait 404.
+- Page « Synchroniser mon téléphone », iPhone et iPad : la première étape passe par Réglages › Apps › Calendrier ;
+  les iOS récents n'ont plus d'entrée « Calendrier » directement dans les Réglages.
 
 ## 1.3.0
 
