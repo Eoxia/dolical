@@ -163,11 +163,7 @@ window.dolical.eventcard.runPending = function() {
   if (!pending) {
     return;
   }
-  let selector = '.dolical-popover .dolical-card [data-action="' + pending.action + '"]';
-  if (pending.percent) {
-    selector += '[data-percent="' + pending.percent + '"]';
-  }
-  $(selector).first().trigger('click');
+  $('.dolical-popover .dolical-card [data-action="' + pending.action + '"]').first().trigger('click');
 };
 
 /**

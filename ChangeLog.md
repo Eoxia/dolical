@@ -80,8 +80,9 @@
   d'été comprise).
 - Calendrier : clic droit sur un événement pour ses actions (ouvrir, modifier, dupliquer, confirmer des créneaux,
   marquer comme réalisé ou remettre à faire, copier le lien, supprimer), selon les droits, avec les mêmes questions
-  que sa fiche ; clic droit sur une case vide pour « Nouvel événement ici » ou « Afficher ce jour ». Raccourcis
-  clavier : N nouvel événement, T aujourd'hui, ← → période, 1 à 5 les vues, / recherche, R rafraîchir ; sur la fiche
+  que sa fiche (réalisé et à faire sans l'ouvrir) ; clic droit sur une case vide pour « Nouvel événement ici » ou
+  « Afficher ce jour ». Raccourcis clavier : N nouvel événement, T aujourd'hui, ← → période, 1 à 5 les vues,
+  / recherche, R rafraîchir ; sur la fiche
   ouverte E modifier, F réalisé / à faire, C confirmer des créneaux, Suppr supprimer. « ? » ou le bouton clavier de la
   barre d'outils les liste ; les boutons donnent leur raccourci au survol.
 - Pages publiques : le logo de la société est rogné de ses marges transparentes (un logo dessiné au milieu d'un grand
