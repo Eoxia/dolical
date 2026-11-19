@@ -19,7 +19,8 @@
  * \ingroup dolical
  * \brief   Calendar page : the menu of a right click on an event (open, change, duplicate, confirm, done, copy the link,
  *          delete) or on an empty place (a new event there, the day), and the keyboard shortcuts, listed by « ? ». The
- *          actions of an event are the ones of its card : the card opens and does them, with its questions.
+ *          actions with questions (confirm, delete) are the ones of the card : it opens and does them ; done and to do
+ *          again are sent at once.
  */
 
 'use strict';
@@ -222,13 +223,13 @@ window.dolical.shortcuts.act = function(action, target) {
     // The card does them, with its questions : the dates of a series, the people invited, the slots kept
     case 'confirm':
     case 'delete':
-      S.cardAction(target, action, '');
+      S.cardAction(target, action);
       break;
     case 'done':
-      S.cardAction(target, 'setpercent', '100');
+      S.setPercent(target, 100);
       break;
     case 'reopen':
-      S.cardAction(target, 'setpercent', '0');
+      S.setPercent(target, 0);
       break;
     case 'create':
       E.close();
@@ -242,16 +243,35 @@ window.dolical.shortcuts.act = function(action, target) {
 };
 
 /**
- * Do an action of the card of an event : the card opens, the action runs once it is drawn.
+ * Done or to do again : nothing to ask, so the event changes without its card opening (an open card is drawn again).
  *
  * @param   {Object} target  {id, element}
- * @param   {String} action  data-action of the card
- * @param   {String} percent data-percent of the button, for setpercent
+ * @param   {Number} percent 100 done, 0 to do
  * @returns {void}
  */
-window.dolical.shortcuts.cardAction = function(target, action, percent) {
+window.dolical.shortcuts.setPercent = function(target, percent) {
+  const U = window.dolical.util;
+  U.post({action: 'setpercent', id: target.id, percent: percent}).done(function(response) {
+    if (response.success) {
+      $(document).trigger('dolical:changed', [target.id]);
+    } else {
+      U.toast(response.error || U.t('error'), 'error');
+    }
+  }).fail(function(xhr) {
+    U.toast(U.xhrError(xhr), 'error');
+  });
+};
+
+/**
+ * Do an action of the card of an event : the card opens, the action runs once it is drawn.
+ *
+ * @param   {Object} target {id, element}
+ * @param   {String} action data-action of the card
+ * @returns {void}
+ */
+window.dolical.shortcuts.cardAction = function(target, action) {
   const E = window.dolical.eventcard;
-  E.pendingAction = {action: action, percent: percent};
+  E.pendingAction = {action: action};
   if (E.isOpen() && E.currentId === target.id && $('.dolical-popover .dolical-card').length) {
     E.runPending();
     return;
