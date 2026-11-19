@@ -97,6 +97,11 @@ $shared        = dolical_caldav_calendar_users($user);
 $newPassword   = (string) ($_SESSION['dolical_caldav_password'] ?? '');
 unset($_SESSION['dolical_caldav_password']);
 $syncPassword  = dolical_caldav_password($user);
+// Opened on the phone to set up : its own steps first, everything typed in it copied from this page. Its kind from the
+// 'phone' key : the 'browseros' one of the core says linux for an Android phone
+$onPhone       = in_array((string) ($conf->browser->layout ?? ''), ['phone', 'tablet'], true);
+$phoneKind     = $onPhone ? (string) (getBrowserInfo((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''))['phone'] ?? '') : '';
+$phoneDevice   = ['iphone' => 'apple', 'android' => 'android'][$phoneKind] ?? '';
 
 $title = $langs->trans('DoliCalSyncPhone');
 

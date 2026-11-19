@@ -21,7 +21,7 @@
  * \brief   Page of the synchronization : address and login, steps for each kind of device, agendas of the colleagues.
  *
  * Rendered by view/dolical_sync.php (inherits its scope). Expects: $syncUrl, $calendarUrl, $isSecure, $httpAllowed,
- * $newPassword, $syncPassword, $canShare, $calendarUsers, $shared, $user, $langs.
+ * $newPassword, $syncPassword, $canShare, $calendarUsers, $shared, $onPhone, $phoneDevice, $user, $langs.
  */
 
 $devices = [
@@ -29,8 +29,29 @@ $devices = [
     'apple'       => ['icon' => 'fab fa-apple', 'title' => 'DoliCalSyncApple', 'steps' => ['DoliCalSyncApple1', 'DoliCalSyncApple2', 'DoliCalSyncApple3', 'DoliCalSyncApple4']],
     'thunderbird' => ['icon' => 'fas fa-envelope-open-text', 'title' => 'DoliCalSyncThunderbird', 'steps' => ['DoliCalSyncThunderbird1', 'DoliCalSyncThunderbird2', 'DoliCalSyncThunderbird3']],
 ];
+// On a phone, the steps of that phone come first, the other devices folded below them
+$ownDevice    = isset($devices[$phoneDevice]) ? [$phoneDevice => $devices[$phoneDevice]] : [];
+$otherDevices = array_diff_key($devices, $ownDevice);
+
+// A value to type in the device : its label, the value, and a button to copy it
+$field = function (string $label, string $value, string $more = '') use ($langs): string {
+    $secret = strpos($more, 'dolical-sync__field--password') !== false;
+
+    return '<div class="dolical-sync__field' . $more . '"><span class="dolical-sync__label">' . $label . '</span>'
+        . '<code class="dolical-sync__value' . ($secret ? ' dolical-sync__secret' : '') . '">' . dol_escape_htmltag($value) . '</code>'
+        . '<button type="button" class="dolical-icon-btn dolical-copy" data-copy="' . dol_escape_htmltag($value) . '" title="' . dol_escape_htmltag($langs->trans('DoliCalCopy')) . '"><i class="far fa-copy"></i></button></div>';
+};
+// The steps of one kind of device
+$device = function (array $device) use ($langs): string {
+    $html = '<section class="dolical-sync__device"><h2><i class="' . $device['icon'] . ' pictofixedwidth"></i>' . $langs->trans($device['title']) . '</h2><ol>';
+    foreach ($device['steps'] as $step) {
+        $html .= '<li>' . $langs->trans($step) . '</li>';
+    }
+
+    return $html . '</ol></section>';
+};
 ?>
-<div class="dolical-sync" data-config="<?php echo dol_escape_htmltag(json_encode(['i18n' => ['copied' => $langs->transnoentities('DoliCalCopied')]])); ?>">
+<div class="dolical-sync<?php echo $onPhone ? ' dolical-sync--phone' : ''; ?>" data-config="<?php echo dol_escape_htmltag(json_encode(['i18n' => ['copied' => $langs->transnoentities('DoliCalCopied')]])); ?>">
     <div class="dolical-sync__intro">
         <h1><i class="fas fa-mobile-alt pictofixedwidth"></i><?php echo $langs->trans('DoliCalSyncPhone'); ?></h1>
         <p><?php echo $langs->trans('DoliCalSyncIntro'); ?></p>
@@ -46,12 +67,13 @@ $devices = [
         <div class="dolical-sync__card dolical-sync__password">
             <h2><i class="fas fa-key pictofixedwidth"></i><?php echo $langs->trans('DoliCalSyncPasswordTitle'); ?></h2>
             <?php if ($newPassword !== '') : ?>
-                <div class="dolical-sync__notice dolical-sync__notice--success"><i class="fas fa-exclamation-circle"></i><?php echo $langs->trans('DoliCalSyncPasswordShownOnce'); ?></div>
-                <div class="dolical-sync__field">
-                    <span class="dolical-sync__label"><?php echo $langs->trans('Password'); ?></span>
-                    <code class="dolical-sync__value dolical-sync__secret"><?php echo dol_escape_htmltag($newPassword); ?></code>
-                    <button type="button" class="dolical-icon-btn dolical-copy" data-copy="<?php echo dol_escape_htmltag($newPassword); ?>" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalCopy')); ?>"><i class="far fa-copy"></i></button>
-                </div>
+                <div class="dolical-sync__notice dolical-sync__notice--success"><i class="fas fa-exclamation-circle"></i><span><?php echo $langs->trans('DoliCalSyncPasswordShownOnce'); ?><?php echo $onPhone ? ' ' . $langs->trans('DoliCalSyncPasswordOnPhone') : ''; ?></span></div>
+                <?php
+                // Everything the device asks for, together and in the order of its form : nothing to look for further down
+                echo $field($langs->trans('DoliCalSyncServer'), $syncUrl);
+                echo $field($langs->trans('Login'), (string) $user->login);
+                echo $field($langs->trans('Password'), $newPassword, ' dolical-sync__field--password');
+                ?>
             <?php elseif ($syncPassword['hash'] !== '') : ?>
                 <p><?php echo $langs->trans('DoliCalSyncPasswordActive', dol_print_date($syncPassword['date'], 'dayhour', 'tzuserrel')); ?></p>
             <?php else : ?>
@@ -75,39 +97,36 @@ $devices = [
         </div>
 
         <div class="dolical-sync__card">
-            <div class="dolical-sync__field">
-                <span class="dolical-sync__label"><?php echo $langs->trans('DoliCalSyncServer'); ?></span>
-                <code class="dolical-sync__value"><?php echo dol_escape_htmltag($syncUrl); ?></code>
-                <button type="button" class="dolical-icon-btn dolical-copy" data-copy="<?php echo dol_escape_htmltag($syncUrl); ?>" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalCopy')); ?>"><i class="far fa-copy"></i></button>
-            </div>
-            <div class="dolical-sync__field">
-                <span class="dolical-sync__label"><?php echo $langs->trans('Login'); ?></span>
-                <code class="dolical-sync__value"><?php echo dol_escape_htmltag($user->login); ?></code>
-                <button type="button" class="dolical-icon-btn dolical-copy" data-copy="<?php echo dol_escape_htmltag($user->login); ?>" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalCopy')); ?>"><i class="far fa-copy"></i></button>
-            </div>
-            <div class="dolical-sync__field">
-                <span class="dolical-sync__label"><?php echo $langs->trans('Password'); ?></span>
-                <span class="dolical-sync__value"><?php echo $langs->trans('DoliCalSyncPassword'); ?></span>
-            </div>
-            <div class="dolical-sync__field dolical-sync__field--secondary">
-                <span class="dolical-sync__label"><?php echo $langs->trans('DoliCalSyncCalendarUrl'); ?></span>
-                <code class="dolical-sync__value"><?php echo dol_escape_htmltag($calendarUrl); ?></code>
-                <button type="button" class="dolical-icon-btn dolical-copy" data-copy="<?php echo dol_escape_htmltag($calendarUrl); ?>" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalCopy')); ?>"><i class="far fa-copy"></i></button>
-            </div>
+            <?php if ($newPassword === '') : ?>
+                <?php echo $field($langs->trans('DoliCalSyncServer'), $syncUrl); ?>
+                <?php echo $field($langs->trans('Login'), (string) $user->login); ?>
+                <div class="dolical-sync__field">
+                    <span class="dolical-sync__label"><?php echo $langs->trans('Password'); ?></span>
+                    <span class="dolical-sync__value"><?php echo $langs->trans('DoliCalSyncPassword'); ?></span>
+                </div>
+            <?php endif; ?>
+            <?php echo $field($langs->trans('DoliCalSyncCalendarUrl'), $calendarUrl, $newPassword === '' ? ' dolical-sync__field--secondary' : ''); ?>
         </div>
 
-        <div class="dolical-sync__devices">
-            <?php foreach ($devices as $key => $device) : ?>
-                <section class="dolical-sync__device">
-                    <h2><i class="<?php echo $device['icon']; ?> pictofixedwidth"></i><?php echo $langs->trans($device['title']); ?></h2>
-                    <ol>
-                        <?php foreach ($device['steps'] as $step) : ?>
-                            <li><?php echo $langs->trans($step); ?></li>
-                        <?php endforeach; ?>
-                    </ol>
-                </section>
-            <?php endforeach; ?>
-        </div>
+        <?php if (!empty($ownDevice)) : ?>
+            <div class="dolical-sync__devices dolical-sync__devices--own">
+                <?php echo $device(reset($ownDevice)); ?>
+            </div>
+            <details class="dolical-sync__others">
+                <summary><?php echo $langs->trans('DoliCalSyncOtherDevices'); ?></summary>
+                <div class="dolical-sync__devices">
+                    <?php foreach ($otherDevices as $otherDevice) : ?>
+                        <?php echo $device($otherDevice); ?>
+                    <?php endforeach; ?>
+                </div>
+            </details>
+        <?php else : ?>
+            <div class="dolical-sync__devices">
+                <?php foreach ($devices as $otherDevice) : ?>
+                    <?php echo $device($otherDevice); ?>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
 
         <div class="dolical-sync__card">
             <h2><i class="fas fa-sync-alt pictofixedwidth"></i><?php echo $langs->trans('DoliCalSyncWhat'); ?></h2>
