@@ -2,6 +2,12 @@
 
 ## Non publié
 
+- Rappels du téléphone : à côté de l'agenda, une liste « Mes rappels Dolibarr » pour l'app Rappels de l'iPhone, ou
+  Tasks.org et jtx Board avec DAVx⁵. Un rappel créé, coché, renommé ou supprimé sur le téléphone l'est dans Dolibarr,
+  et inversement ; c'est un événement du type « Rappel » (ajouté au dictionnaire des types), daté de son échéance (sans
+  date quand il n'en a pas), réalisé une fois coché, avec sa priorité, sa description et son alerte en rappel Dolibarr.
+  L'iPhone ne tente plus de créer sa propre liste, que le serveur refusait (403 sur `MKCALENDAR` à chaque
+  synchronisation). Les autres événements restent des rendez-vous, sans doublon.
 - Calendrier à la hauteur de l'écran (avec ou sans les menus de Dolibarr, dans une fenêtre ou une messagerie) : la
   page ne défile plus, seuls la barre de gauche sous « Nouvel événement » et le calendrier défilent. Plus d'espace
   vide sous la grille.

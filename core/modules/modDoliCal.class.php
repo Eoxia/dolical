@@ -448,6 +448,13 @@ class modDoliCal extends DolibarrModules
             return 0;
         }
 
+        // The reminders of the phones are events of their own type, in the dictionary of the event types
+        require_once __DIR__ . '/../../lib/dolical_caldav_todo.lib.php';
+        if (dolical_todo_type_id() <= 0) {
+            $this->error = $this->db->lasterror();
+            return 0;
+        }
+
         // Permissions
         $this->remove($options);
 
