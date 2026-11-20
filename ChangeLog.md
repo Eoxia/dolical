@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- Fiche d'un rendez-vous : le lien de visio se voit, dans un encart juste sous la date, avec le nom du service (Google
+  Meet, Microsoft Teams, Zoom, Jitsi Meet, Whereby, Webex ; « Lien de visio » sinon), son adresse et un bouton
+  « Rejoindre ».
 - Synchronisation : son propre agenda porte son nom sur le téléphone, « Agenda de » suivi du nom, comme ceux des
   collègues, au lieu de « Mon agenda Dolibarr » ; de même pour la liste des rappels. La page de synchronisation donne
   ces noms.

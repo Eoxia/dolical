@@ -225,6 +225,7 @@ DoliCalMailVisioIntro            = Bonjour %s, %s vous envoie le lien de la visi
 DoliCalVisio                     = Lien de visio
 DoliCalVisioShort                = Visio
 DoliCalVisioJoin                 = Rejoindre la visio
+DoliCalVisioJoinShort            = Rejoindre
 DoliCalVisioPlaceholder          = Teams, Meet, Zoom, Jitsi… ex. : https://meet.google.com/abc-defg-hij
 DoliCalVisioInvalid              = Lien de visio non reconnu : collez l'adresse complète du lien (https://…).
 DoliCalIcsVisio                  = Rejoindre la visio :

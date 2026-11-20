@@ -114,6 +114,20 @@ $billingIcons  = ['paid' => 'fas fa-check-circle', 'unpaid' => 'fas fa-hourglass
             </div>
         </div>
 
+        <?php if ($card['visio'] !== '') : ?>
+            <?php // The video call right under the date, in a box : its service and address, a button to join ?>
+            <?php $visioService = dolical_visio_service($card['visio']); ?>
+            <div class="dolical-card__visio">
+                <span class="dolical-card__visio-icon"><i class="fas fa-video"></i></span>
+                <div class="dolical-card__grow">
+                    <div class="dolical-card__visio-name"><?php echo dol_escape_htmltag($visioService !== '' ? $visioService : $langs->transnoentities('DoliCalVisio')); ?></div>
+                    <div class="dolical-card__muted dolical-card__visio-url"><?php echo dol_escape_htmltag(preg_replace('~^https?://~i', '', $card['visio'])); ?></div>
+                </div>
+                <button type="button" class="dolical-icon-btn dolical-copy" data-copy="<?php echo dol_escape_htmltag($card['visio']); ?>" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalCopy')); ?>"><i class="far fa-copy"></i></button>
+                <a class="dolical-btn dolical-btn--primary" href="<?php echo dol_escape_htmltag($card['visio']); ?>" target="_blank" rel="noopener noreferrer" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalVisioJoin')); ?>"><?php echo $langs->trans('DoliCalVisioJoinShort'); ?></a>
+            </div>
+        <?php endif; ?>
+
         <?php if ($card['recurrence'] !== '') : ?>
             <div class="dolical-card__row">
                 <i class="fas fa-redo-alt dolical-card__row-icon"></i>
@@ -139,17 +153,6 @@ $billingIcons  = ['paid' => 'fas fa-check-circle', 'unpaid' => 'fas fa-hourglass
                 <div class="dolical-card__grow"><?php echo dol_escape_htmltag($card['location']); ?></div>
                 <button type="button" class="dolical-icon-btn dolical-copy" data-copy="<?php echo dol_escape_htmltag($card['location']); ?>" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalCopy')); ?>"><i class="far fa-copy"></i></button>
                 <a class="dolical-icon-btn" href="https://www.openstreetmap.org/search?query=<?php echo urlencode($card['location']); ?>" target="_blank" rel="noopener" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalShowOnMap')); ?>"><i class="fas fa-map"></i></a>
-            </div>
-        <?php endif; ?>
-
-        <?php if ($card['visio'] !== '') : ?>
-            <div class="dolical-card__row">
-                <i class="fas fa-video dolical-card__row-icon"></i>
-                <div class="dolical-card__grow dolical-card__visio">
-                    <a href="<?php echo dol_escape_htmltag($card['visio']); ?>" target="_blank" rel="noopener noreferrer"><?php echo $langs->trans('DoliCalVisioJoin'); ?></a>
-                    <span class="dolical-card__muted"><?php echo dol_escape_htmltag($card['visio']); ?></span>
-                </div>
-                <button type="button" class="dolical-icon-btn dolical-copy" data-copy="<?php echo dol_escape_htmltag($card['visio']); ?>" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalCopy')); ?>"><i class="far fa-copy"></i></button>
             </div>
         <?php endif; ?>
 
