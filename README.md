@@ -97,6 +97,14 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
   Mac** et **Thunderbird**. Chacun y crée son **mot de passe de synchronisation** (affiché une fois, gardé haché dans
   son paramètre utilisateur `DOLICAL_CALDAV_PASSWORD`), le renouvelle ou désactive sa synchronisation. Le mot de passe
   Dolibarr n'ouvre pas CalDAV, et celui de synchronisation n'ouvre pas Dolibarr.
+- **Connexion en un scan**, affichée une fois avec le mot de passe juste créé : un QR code pour **DAVx⁵**
+  (`davx5://identifiant:motdepasse@serveur/…`, `caldav://` en http), qui s'ouvre avec la connexion remplie, et un QR code
+  pour l'**iPhone / iPad**, lien d'un profil de configuration `.mobileconfig` (compte CalDAV complet : serveur,
+  identifiant, mot de passe). Sur le téléphone lui-même, un bouton à la place du QR code, avant les valeurs à recopier.
+  Le profil est servi par `public/caldavprofile.php`, sans session Dolibarr, **en HTTPS seulement**, **une seule fois** et
+  pendant **10 minutes** ; un nouveau mot de passe ou la désactivation l'annulent. Entre-temps, le mot de passe attend
+  dans le paramètre utilisateur `DOLICAL_CALDAV_PROFILE`, chiffré (AES-256-GCM) avec une clé que seul le lien porte.
+  QR codes dessinés par la bibliothèque TCPDF livrée avec Dolibarr, sans service externe.
 - Connexion protégée comme la page de connexion : hooks `beforeLoginAuthentication` et `afterLoginFailed` (modules de
   double authentification, de bannissement, de limitation), échecs dans les événements de sécurité, et au plus 5 échecs
   par identifiant et 20 par adresse en 15 minutes (réglable) : au-delà, même le bon mot de passe est refusé un moment.
