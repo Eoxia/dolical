@@ -24,8 +24,13 @@
  * $newPassword, $syncPassword, $canShare, $calendarUsers, $shared, $onPhone, $phoneDevice, $user, $langs.
  */
 
+// The names the phone shows : the agenda and the reminders of the person, named like the ones of the colleagues
+$calendarName  = $langs->transnoentities('DoliCalCalDavCalendarOf', $user->getFullName($langs));
+$remindersName = $langs->transnoentities('DoliCalCalDavRemindersOf', $user->getFullName($langs));
+
+// A step is a translation key, or a key and its value
 $devices = [
-    'android'     => ['icon' => 'fab fa-android', 'title' => 'DoliCalSyncAndroid', 'steps' => ['DoliCalSyncAndroid1', 'DoliCalSyncAndroid2', 'DoliCalSyncAndroid3', 'DoliCalSyncAndroid4']],
+    'android'     => ['icon' => 'fab fa-android', 'title' => 'DoliCalSyncAndroid', 'steps' => ['DoliCalSyncAndroid1', 'DoliCalSyncAndroid2', 'DoliCalSyncAndroid3', ['DoliCalSyncAndroid4', $calendarName]]],
     'apple'       => ['icon' => 'fab fa-apple', 'title' => 'DoliCalSyncApple', 'steps' => ['DoliCalSyncApple1', 'DoliCalSyncApple2', 'DoliCalSyncApple3', 'DoliCalSyncApple4']],
     'thunderbird' => ['icon' => 'fas fa-envelope-open-text', 'title' => 'DoliCalSyncThunderbird', 'steps' => ['DoliCalSyncThunderbird1', 'DoliCalSyncThunderbird2', 'DoliCalSyncThunderbird3']],
 ];
@@ -45,7 +50,7 @@ $field = function (string $label, string $value, string $more = '') use ($langs)
 $device = function (array $device) use ($langs): string {
     $html = '<section class="dolical-sync__device"><h2><i class="' . $device['icon'] . ' pictofixedwidth"></i>' . $langs->trans($device['title']) . '</h2><ol>';
     foreach ($device['steps'] as $step) {
-        $html .= '<li>' . $langs->trans($step) . '</li>';
+        $html .= '<li>' . $langs->trans(...(array) $step) . '</li>';
     }
 
     return $html . '</ol></section>';
@@ -135,7 +140,7 @@ $device = function (array $device) use ($langs): string {
                 <li><?php echo $langs->trans('DoliCalSyncWhat2'); ?></li>
                 <li><?php echo $langs->trans('DoliCalSyncWhat3'); ?></li>
                 <li><?php echo $langs->trans('DoliCalSyncWhat4', DOLICAL_CALDAV_PAST_DAYS); ?></li>
-                <li><?php echo $langs->trans('DoliCalSyncWhat5'); ?></li>
+                <li><?php echo $langs->trans('DoliCalSyncWhat5', $remindersName); ?></li>
             </ul>
         </div>
 

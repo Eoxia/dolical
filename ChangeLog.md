@@ -2,7 +2,10 @@
 
 ## Non publié
 
-- Rappels du téléphone : à côté de l'agenda, une liste « Mes rappels Dolibarr » pour l'app Rappels de l'iPhone, ou
+- Synchronisation : son propre agenda porte son nom sur le téléphone, « Agenda de » suivi du nom, comme ceux des
+  collègues, au lieu de « Mon agenda Dolibarr » ; de même pour la liste des rappels. La page de synchronisation donne
+  ces noms.
+- Rappels du téléphone : à côté de l'agenda, une liste « Rappels de » suivi de son nom pour l'app Rappels de l'iPhone, ou
   Tasks.org et jtx Board avec DAVx⁵. Un rappel créé, coché, renommé ou supprimé sur le téléphone l'est dans Dolibarr,
   et inversement ; c'est un événement du type « Rappel » (ajouté au dictionnaire des types), daté de son échéance (sans
   date quand il n'en a pas), réalisé une fois coché, avec sa priorité, sa description et son alerte en rappel Dolibarr.
