@@ -33,6 +33,7 @@ if (file_exists('../dolical.main.inc.php')) {
 
 require_once DOL_DOCUMENT_ROOT . '/core/lib/functions2.lib.php';
 require_once __DIR__ . '/../lib/dolical_caldav.lib.php';
+require_once __DIR__ . '/../lib/dolical_caldav_profile.lib.php';
 
 global $conf, $db, $langs, $user;
 
@@ -55,12 +56,16 @@ if (in_array($action, ['caldavpassword', 'caldavrevoke'], true) && dolical_calda
     if ($action === 'caldavpassword') {
         $password = dolical_caldav_new_password($user);
         if ($password !== '') {
-            // Kept for the next page only : the redirection must not show it again on a reload
+            // Kept for the next page only : the redirection must not show it again on a reload. With it the link of
+            // the iPhone profile, the previous one dropped with the previous password
             $_SESSION['dolical_caldav_password'] = $password;
+            dolical_caldav_clear_profile($user);
+            $_SESSION['dolical_caldav_profile'] = dolical_caldav_new_profile_token($user, $password);
         } else {
             setEventMessages($langs->trans('Error'), null, 'errors');
         }
     } elseif (dolical_caldav_revoke_password($user)) {
+        dolical_caldav_clear_profile($user);
         setEventMessages($langs->trans('DoliCalSyncPasswordRevoked'), null);
     } else {
         setEventMessages($langs->trans('Error'), null, 'errors');
@@ -97,8 +102,12 @@ $calendarUsers = $canShare ? dolical_get_calendar_users($user) : [];
 $shared        = dolical_caldav_calendar_users($user);
 // The password just made, shown this once
 $newPassword   = (string) ($_SESSION['dolical_caldav_password'] ?? '');
-unset($_SESSION['dolical_caldav_password']);
+$profileToken  = $newPassword !== '' ? (string) ($_SESSION['dolical_caldav_profile'] ?? '') : '';
+unset($_SESSION['dolical_caldav_password'], $_SESSION['dolical_caldav_profile']);
 $syncPassword  = dolical_caldav_password($user);
+// The phone set up in one scan, at the same time and as long as the password is shown : DAVx⁵ link, iPhone profile
+$davx5Link     = $newPassword !== '' ? dolical_caldav_davx5_link((string) $user->login, $newPassword) : '';
+$profileUrl    = $profileToken !== '' ? dolical_caldav_profile_url($profileToken) : '';
 // Opened on the phone to set up : its own steps first, everything typed in it copied from this page. Its kind from the
 // 'phone' key : the 'browseros' one of the core says linux for an Android phone
 $onPhone       = in_array((string) ($conf->browser->layout ?? ''), ['phone', 'tablet'], true);

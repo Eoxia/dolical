@@ -3618,6 +3618,47 @@ code.dolical-sync__value {
   margin-bottom: 16px;
 }
 
+/* Set up in one scan : a QR code per kind of phone on a computer, a button on the phone itself */
+.dolical-sync__scans {
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid #e7edf2;
+}
+.dolical-sync__scans.dolical-sync__scans--first {
+  margin: 0;
+  padding: 0 0 14px;
+  border-top: 0;
+  border-bottom: 1px solid #e7edf2;
+}
+.dolical-sync__scans-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.dolical-sync__scan {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.dolical-sync__scan h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.dolical-sync__scan h3 i {
+  color: #4f9ab8;
+}
+.dolical-sync__scan svg.dolical-qrcode {
+  width: 200px;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #e7edf2;
+  border-radius: 8px;
+}
+.dolical-sync__scan .dolical-btn {
+  min-height: 44px;
+}
+
 /* Import of an agenda : the result of the last import, the file and the agenda it goes to */
 .dolical-import__result {
   border-color: #c6e6d0;

@@ -21,7 +21,8 @@
  * \brief   Page of the synchronization : address and login, steps for each kind of device, agendas of the colleagues.
  *
  * Rendered by view/dolical_sync.php (inherits its scope). Expects: $syncUrl, $calendarUrl, $isSecure, $httpAllowed,
- * $newPassword, $syncPassword, $canShare, $calendarUsers, $shared, $onPhone, $phoneDevice, $user, $langs.
+ * $newPassword, $syncPassword, $davx5Link, $profileUrl, $canShare, $calendarUsers, $shared, $onPhone, $phoneDevice,
+ * $user, $langs.
  */
 
 // The names the phone shows : the agenda and the reminders of the person, named like the ones of the colleagues
@@ -46,6 +47,39 @@ $field = function (string $label, string $value, string $more = '') use ($langs)
         . '<code class="dolical-sync__value' . ($secret ? ' dolical-sync__secret' : '') . '">' . dol_escape_htmltag($value) . '</code>'
         . '<button type="button" class="dolical-icon-btn dolical-copy" data-copy="' . dol_escape_htmltag($value) . '" title="' . dol_escape_htmltag($langs->trans('DoliCalCopy')) . '"><i class="far fa-copy"></i></button></div>';
 };
+// The phone set up in one scan : a QR code on a computer, a button on the phone itself (its own kind only when known)
+$scans = [];
+if ($newPassword !== '') {
+    $scans['android'] = ['icon' => 'fab fa-android', 'title' => 'DoliCalSyncAndroid', 'link' => $davx5Link, 'button' => 'DoliCalSyncScanOpenDavx5', 'help' => $onPhone ? 'DoliCalSyncScanAndroidPhone' : 'DoliCalSyncScanAndroid'];
+    $scans['apple']   = ['icon' => 'fab fa-apple', 'title' => 'DoliCalSyncApple', 'link' => $profileUrl, 'button' => 'DoliCalSyncScanInstallProfile', 'help' => $onPhone ? 'DoliCalSyncScanApplePhone' : 'DoliCalSyncScanApple'];
+    if ($davx5Link === '') {
+        unset($scans['android']);
+    }
+    if (isset($scans[$phoneDevice])) {
+        $scans = [$phoneDevice => $scans[$phoneDevice]];
+    }
+}
+// The scan of one kind of device
+$scan = function (array $scan) use ($langs, $onPhone): string {
+    $html = '<div class="dolical-sync__scan"><h3><i class="' . $scan['icon'] . ' pictofixedwidth"></i>' . $langs->trans($scan['title']) . '</h3>';
+    if ($scan['link'] === '') {
+        // No profile over plain HTTP : the steps below remain
+        return $html . '<p class="dolical-card__muted">' . $langs->trans('DoliCalSyncScanAppleHttps') . '</p></div>';
+    }
+    if ($onPhone) {
+        $html .= '<a class="dolical-btn dolical-btn--primary" href="' . dol_escape_htmltag($scan['link']) . '" rel="noopener noreferrer"><i class="' . $scan['icon'] . '"></i>' . $langs->trans($scan['button']) . '</a>';
+    } else {
+        $html .= dolical_qrcode_svg($scan['link'], $langs->transnoentities($scan['title']));
+    }
+
+    return $html . '<p class="dolical-card__muted">' . $langs->trans($scan['help'], (int) (DOLICAL_CALDAV_PROFILE_TTL / 60)) . '</p></div>';
+};
+$scansHtml = '';
+if (!empty($scans)) {
+    $scansHtml = '<div class="dolical-sync__scans' . ($onPhone ? ' dolical-sync__scans--first' : '') . '"><h2><i class="fas fa-qrcode pictofixedwidth"></i>'
+        . $langs->trans($onPhone ? 'DoliCalSyncScanTitlePhone' : 'DoliCalSyncScanTitle') . '</h2><div class="dolical-sync__scans-list">'
+        . implode('', array_map($scan, $scans)) . '</div></div>';
+}
 // The steps of one kind of device
 $device = function (array $device) use ($langs): string {
     $html = '<section class="dolical-sync__device"><h2><i class="' . $device['icon'] . ' pictofixedwidth"></i>' . $langs->trans($device['title']) . '</h2><ol>';
@@ -74,10 +108,13 @@ $device = function (array $device) use ($langs): string {
             <?php if ($newPassword !== '') : ?>
                 <div class="dolical-sync__notice dolical-sync__notice--success"><i class="fas fa-exclamation-circle"></i><span><?php echo $langs->trans('DoliCalSyncPasswordShownOnce'); ?><?php echo $onPhone ? ' ' . $langs->trans('DoliCalSyncPasswordOnPhone') : ''; ?></span></div>
                 <?php
+                // On the phone, its button first : the values to copy are the way when it does not work
+                echo $onPhone ? $scansHtml : '';
                 // Everything the device asks for, together and in the order of its form : nothing to look for further down
                 echo $field($langs->trans('DoliCalSyncServer'), $syncUrl);
                 echo $field($langs->trans('Login'), (string) $user->login);
                 echo $field($langs->trans('Password'), $newPassword, ' dolical-sync__field--password');
+                echo $onPhone ? '' : $scansHtml;
                 ?>
             <?php elseif ($syncPassword['hash'] !== '') : ?>
                 <p><?php echo $langs->trans('DoliCalSyncPasswordActive', dol_print_date($syncPassword['date'], 'dayhour', 'tzuserrel')); ?></p>

@@ -5,6 +5,10 @@
 - Rappels du téléphone : par défaut, seule sa propre liste de rappels arrive sur le téléphone, à côté des agendas des
   collègues choisis. Leurs listes, en lecture seule, s'ajoutent en cochant « Ajouter aussi leurs listes de rappels » sur
   la page de synchronisation ; sinon le serveur ne les donne pas, même par leur adresse directe.
+- Synchroniser mon téléphone : connexion en un scan, juste après la création du mot de passe. Un QR code ouvre DAVx⁵
+  avec la connexion remplie ; un autre installe sur l'iPhone ou l'iPad un profil avec le compte CalDAV complet (en
+  HTTPS, lien valable 10 minutes et une seule fois). Sur le téléphone lui-même, un bouton à la place du QR code, avant
+  les valeurs à recopier.
 - Fiche d'un rendez-vous : le lien de visio se voit, dans un encart juste sous la date, avec le nom du service (Google
   Meet, Microsoft Teams, Zoom, Jitsi Meet, Whereby, Webex ; « Lien de visio » sinon), son adresse et un bouton
   « Rejoindre ».
