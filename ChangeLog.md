@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- Rappels du téléphone : par défaut, seule sa propre liste de rappels arrive sur le téléphone, à côté des agendas des
+  collègues choisis. Leurs listes, en lecture seule, s'ajoutent en cochant « Ajouter aussi leurs listes de rappels » sur
+  la page de synchronisation ; sinon le serveur ne les donne pas, même par leur adresse directe.
 - Fiche d'un rendez-vous : le lien de visio se voit, dans un encart juste sous la date, avec le nom du service (Google
   Meet, Microsoft Teams, Zoom, Jitsi Meet, Whereby, Webex ; « Lien de visio » sinon), son adresse et un bouton
   « Rejoindre ».

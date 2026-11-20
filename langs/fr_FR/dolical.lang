@@ -595,6 +595,7 @@ DoliCalSyncWhat4                 = Les rendez-vous des %s derniers jours et tous
 DoliCalSyncWhat5                 = Vos rappels, dans la liste « %s » : app Rappels de l'iPhone, Tasks.org ou jtx Board avec DAVx⁵ sur Android. Chacun est un événement de type « Rappel » ; coché sur le téléphone, il est réalisé dans Dolibarr.
 DoliCalSyncShared                = Agendas des collègues sur mon téléphone
 DoliCalSyncSharedHelp            = En lecture seule, chacun avec sa couleur.
+DoliCalSyncSharedReminders       = Ajouter aussi leurs listes de rappels, en lecture seule (sinon, seule la vôtre arrive sur le téléphone)
 DoliCalSyncSharedSaved           = Agendas enregistrés : ils apparaîtront à la prochaine synchronisation.
 DoliCalSyncPasswordTitle = Mot de passe de synchronisation
 DoliCalSyncPasswordNone = Vous n'avez pas encore de mot de passe de synchronisation : créez-le pour connecter vos appareils.

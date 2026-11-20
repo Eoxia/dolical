@@ -76,18 +76,20 @@ class DoliCalCalDavBackend extends \Sabre\CalDAV\Backend\AbstractBackend
             $mine        = $userId === (int) $this->user->id;
             $color       = strtoupper(dolical_user_color($userId, (string) $owner->color)) . 'FF';
             // The reminders of the person, in their own list : the reminders application of the phone finds it and
-            // makes none of its own, refused here
-            $calendars[] = [
-                'id'                                                                 => -$userId,
-                'uri'                                                                => $mine ? 'reminders' : 'reminders-' . $userId,
-                'principaluri'                                                       => $principalUri,
-                '{DAV:}displayname'                                                  => $langs->transnoentities('DoliCalCalDavRemindersOf', $owner->getFullName($langs)),
-                '{http://apple.com/ns/ical/}calendar-color'                          => $color,
-                '{http://apple.com/ns/ical/}calendar-order'                          => count($people) + $order + 1,
-                '{' . \Sabre\CalDAV\Plugin::NS_CALENDARSERVER . '}getctag'           => $this->ctag(-$userId),
-                '{' . \Sabre\CalDAV\Plugin::NS_CALDAV . '}supported-calendar-component-set' => new \Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet(['VTODO']),
-                '{http://sabredav.org/ns}read-only'                                  => !$mine,
-            ];
+            // makes none of its own, refused here. The ones of the colleagues only when asked for
+            if (dolical_caldav_reminders_listed($this->user, $userId)) {
+                $calendars[] = [
+                    'id'                                                                 => -$userId,
+                    'uri'                                                                => $mine ? 'reminders' : 'reminders-' . $userId,
+                    'principaluri'                                                       => $principalUri,
+                    '{DAV:}displayname'                                                  => $langs->transnoentities('DoliCalCalDavRemindersOf', $owner->getFullName($langs)),
+                    '{http://apple.com/ns/ical/}calendar-color'                          => $color,
+                    '{http://apple.com/ns/ical/}calendar-order'                          => count($people) + $order + 1,
+                    '{' . \Sabre\CalDAV\Plugin::NS_CALENDARSERVER . '}getctag'           => $this->ctag(-$userId),
+                    '{' . \Sabre\CalDAV\Plugin::NS_CALDAV . '}supported-calendar-component-set' => new \Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet(['VTODO']),
+                    '{http://sabredav.org/ns}read-only'                                  => !$mine,
+                ];
+            }
             $calendars[] = [
                 'id'                                                                 => $userId,
                 'uri'                                                                => $mine ? 'agenda' : 'agenda-' . $userId,
@@ -119,6 +121,10 @@ class DoliCalCalDavBackend extends \Sabre\CalDAV\Backend\AbstractBackend
     {
         $calendarId = (int) $calendarId;
         if (!in_array(abs($calendarId), dolical_caldav_calendar_users($this->user), true)) {
+            return [];
+        }
+        // The list of reminders of a colleague, not asked for : nothing, even by its direct address
+        if ($calendarId < 0 && !dolical_caldav_reminders_listed($this->user, -$calendarId)) {
             return [];
         }
         if (!isset($this->cache[$calendarId])) {

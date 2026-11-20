@@ -107,13 +107,15 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
 - Une répétition créée sur le téléphone devient une série native. Un rendez-vous refusé quitte le téléphone ;
   supprimer un rendez-vous dont on n'est qu'invité le refuse.
 - Les agendas de collègues choisis sur la page s'ajoutent en lecture seule, chacun avec sa couleur.
-- **Rappels du téléphone** : à côté de chaque agenda, une liste « Rappels de … » à son nom (`VTODO`) pour l'app Rappels
+- **Rappels du téléphone** : à côté de son agenda, une liste « Rappels de … » à son nom (`VTODO`) pour l'app Rappels
   de l'iPhone, Tasks.org ou jtx Board avec DAVx⁵. Chaque rappel est un événement natif du type « Rappel »
   (`AC_DOLICAL_TODO`, ajouté au dictionnaire des types à l'activation ou à la première synchronisation) : son échéance
   est la date de l'événement (aucune date sans échéance), coché il est réalisé (100 %), décoché à faire (0 %) ; la
   priorité et la description suivent, l'alerte devient un rappel de Dolibarr avant l'échéance. Seuls les événements de
   ce type vont dans la liste, ils quittent l'agenda ; les rappels réalisés depuis plus de 180 jours quittent la liste.
-  Une liste par agenda de collègue synchronisé, en lecture seule. Le téléphone ne crée pas d'autre liste (`MKCALENDAR`
+  Les listes des collègues dont l'agenda est synchronisé, en lecture seule, seulement si la case « Ajouter aussi leurs
+  listes de rappels » est cochée (paramètre utilisateur `DOLICAL_CALDAV_SHARED_REMINDERS`) : sinon le serveur ne les
+  donne pas, même par leur adresse directe. Le téléphone ne crée pas d'autre liste (`MKCALENDAR`
   refusé) ; un rappel qui se répète sur le téléphone est gardé comme un seul rappel.
 - Rien de nouveau n'est stocké : le nom de fichier et l'identifiant qu'un téléphone donne à un événement qu'il crée vont
   dans la référence externe de l'événement natif (`ref_ext = dav:<fichier>|<uid>`).
