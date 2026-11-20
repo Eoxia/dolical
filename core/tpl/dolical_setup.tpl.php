@@ -21,7 +21,7 @@
  * \brief   General setup of DoliCal, as the one of the online booking : a card for each section, the sections listed on
  *          the side, the save button always in sight.
  *
- * Rendered by admin/setup.php (inherits its scope). Expects: $views, $permissionToWrite, $langs.
+ * Rendered by admin/setup.php (inherits its scope). Expects: $views, $permissionToWrite, $caldavSynced, $langs.
  */
 
 // The sections : anchor, icon, title
@@ -54,7 +54,7 @@ $zoneSelect .= '</select>';
 $tokens = '<code>__DOLICAL_EVENT_DETAILS__</code>, <code>__DOLICAL_ANSWER_LINK__</code>, <code>__DOLICAL_ICS_LINK__</code>, <code>__DOLICAL_EVENT_LABEL__</code>, <code>__DOLICAL_EVENT_DATE__</code>, <code>__DOLICAL_EVENT_LOCATION__</code>, <code>__DOLICAL_EVENT_VISIO__</code>, <code>__DOLICAL_ORGANIZER_NAME__</code>, <code>__DOLICAL_RECIPIENT_NAME__</code>';
 $answerTokens = '<code>__DOLICAL_ANSWER__</code>, <code>__DOLICAL_EVENT_LINK__</code>';
 ?>
-<form method="POST" action="<?php echo dol_escape_htmltag($_SERVER['PHP_SELF']); ?>" class="dolical-setup">
+<form method="POST" action="<?php echo dol_escape_htmltag($_SERVER['PHP_SELF']); ?>" class="dolical-setup"<?php echo $caldavSynced > 0 ? ' data-caldav-confirm="' . dol_escape_htmltag($langs->transnoentities('DoliCalSetupCalDavConfirmOff', $caldavSynced)) . '"' : ''; ?>>
     <input type="hidden" name="token" value="<?php echo newToken(); ?>">
     <input type="hidden" name="action" value="update">
 

@@ -41,6 +41,17 @@ window.dolical.setup.init = function() {
   $form.on('change', '.dolical-setting__switch input', S.depends);
   S.depends();
 
+  // Closing CalDAV while phones synchronize cuts them all at once : asked first, the switch back on when refused
+  $form.on('submit', function(event) {
+    const message = $form.attr('data-caldav-confirm');
+    const caldav  = $form.find('input[name="DOLICAL_CALDAV"]').get(0);
+    if (message && caldav && caldav.defaultChecked && !caldav.checked && !window.confirm(message)) {
+      event.preventDefault();
+      caldav.checked = true;
+      S.depends();
+    }
+  });
+
   $form.on('click', '.dolical-copy', function() {
     window.dolical.util.copy($(this).attr('data-copy'));
   });

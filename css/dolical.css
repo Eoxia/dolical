@@ -1801,7 +1801,8 @@ input.dolical-picker__check:focus-visible + .dolical-picker__swatch {
 }
 
 @media (min-width: 993px) {
-  .dolical-sidebar-toggle.dolical-btn {
+  .dolical-sidebar-toggle.dolical-btn,
+  a.dolical-btn.dolical-toolbar__sync {
     display: none;
   }
 }
@@ -3559,6 +3560,32 @@ code.dolical-sync__value {
 }
 .dolical-sync__actions form {
   margin: 0;
+}
+
+/* Set up from the phone itself : the copy buttons large enough for a finger, the other devices folded below its own */
+.dolical-sync.dolical-sync--phone button.dolical-icon-btn.dolical-copy {
+  width: 44px;
+  height: 44px;
+  font-size: 18px;
+}
+@media (pointer: coarse), (max-width: 768px) {
+  .dolical-sync button.dolical-icon-btn.dolical-copy {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+}
+.dolical-sync__others > summary {
+  padding: 12px 18px;
+  border: 1px solid #e7edf2;
+  border-radius: 12px;
+  background: #fff;
+  color: #4a5568;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dolical-sync__others[open] > summary {
+  margin-bottom: 16px;
 }
 
 /* Import of an agenda : the result of the last import, the file and the agenda it goes to */

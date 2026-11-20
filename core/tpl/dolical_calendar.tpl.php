@@ -138,6 +138,10 @@
             </div>
             <button type="button" class="dolical-btn dolical-btn--icon" data-nav="refresh" title="<?php echo dol_escape_htmltag($langs->trans('Refresh') . ' (R)'); ?>"><i class="fas fa-sync-alt"></i></button>
             <button type="button" class="dolical-btn dolical-btn--icon" data-action="shortcuts" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalShortcuts') . ' (?)'); ?>"><i class="far fa-keyboard"></i></button>
+            <?php if (getDolGlobalInt('DOLICAL_CALDAV', 1)) : ?>
+                <?php // The side bar is folded on a phone, its link with it : the page to set the phone up stays in sight ?>
+                <a class="dolical-btn dolical-toolbar__sync" href="<?php echo dol_buildpath('/dolical/view/dolical_sync.php', 1); ?>"><i class="fas fa-mobile-alt"></i><?php echo $langs->trans('DoliCalSyncPhone'); ?></a>
+            <?php endif; ?>
         </header>
         <div class="dolical-calendar"></div>
         <div class="dolical-loader"><i class="fas fa-circle-notch fa-spin"></i></div>

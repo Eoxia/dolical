@@ -122,6 +122,24 @@ function dolical_caldav_revoke_password(User $user): bool
 }
 
 /**
+ * Active people of the entity with a synchronization password : the devices that closing CalDAV would cut
+ *
+ * @return int
+ */
+function dolical_caldav_synced_users_count(): int
+{
+    global $conf, $db;
+
+    $sql  = 'SELECT COUNT(DISTINCT p.fk_user) as nb FROM ' . MAIN_DB_PREFIX . 'user_param as p';
+    $sql .= ' INNER JOIN ' . MAIN_DB_PREFIX . 'user as u ON u.rowid = p.fk_user AND u.statut = 1';
+    $sql .= " WHERE p.param = 'DOLICAL_CALDAV_PASSWORD' AND p.value LIKE '%|%' AND p.entity = " . ((int) $conf->entity);
+    $resql = $db->query($sql);
+    $obj   = $resql ? $db->fetch_object($resql) : null;
+
+    return $obj ? (int) $obj->nb : 0;
+}
+
+/**
  * Whether a password is the synchronization password of a person
  *
  * @param  User   $user     Person, his parameters loaded

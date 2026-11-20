@@ -125,6 +125,13 @@
   connexion, puis chaque agenda répondait 404.
 - Page « Synchroniser mon téléphone », iPhone et iPad : la première étape passe par Réglages › Apps › Calendrier ;
   les iOS récents n'ont plus d'entrée « Calendrier » directement dans les Réglages.
+- Connecter son téléphone depuis le téléphone lui-même : bouton « Synchroniser mon téléphone » dans la barre du
+  calendrier tant que la barre de gauche est repliée (téléphone, tablette, petite fenêtre), où son lien restait caché.
+  Sur un téléphone, la page donne d'abord les étapes de ce téléphone (iPhone ou Android), les autres appareils repliés
+  dessous ; le mot de passe tout juste créé s'affiche avec l'adresse du serveur et l'identifiant, dans l'ordre du
+  formulaire du compte, chacun avec un bouton de copie à la taille du doigt.
+- Configuration : décocher « Synchronisation CalDAV » alors que des personnes ont un mot de passe de synchronisation
+  demande confirmation, avec leur nombre ; enregistrée par erreur, la page coupait tous les téléphones d'un coup.
 
 ## 1.3.0
 

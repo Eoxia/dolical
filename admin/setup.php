@@ -36,6 +36,7 @@ require_once DOL_DOCUMENT_ROOT . '/core/lib/admin.lib.php';
 // Load DoliCal libraries
 require_once __DIR__ . '/../lib/dolical.lib.php';
 require_once __DIR__ . '/../lib/dolical_invitation.lib.php';
+require_once __DIR__ . '/../lib/dolical_caldav.lib.php';
 
 global $conf, $db, $langs, $user;
 
@@ -103,6 +104,9 @@ if ($action == 'update' && $permissionToWrite && dolical_valid_post()) {
  */
 
 $title = $langs->trans('ModuleSetup', 'DoliCal');
+
+// The phones synchronizing now : closing CalDAV by mistake would cut them all at once, asked first
+$caldavSynced = getDolGlobalInt('DOLICAL_CALDAV') ? dolical_caldav_synced_users_count() : 0;
 
 $js = [dolical_asset('js/dolical.js'), dolical_asset('js/modules/util.js'), dolical_asset('js/modules/setup.js')];
 llxHeader('', $title, '', '', 0, 0, $js, [dolical_asset('css/dolical.css')]);

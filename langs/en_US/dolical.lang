@@ -598,6 +598,8 @@ DoliCalSyncPasswordTitle = Synchronization password
 DoliCalSyncPasswordNone = You have no synchronization password yet: create it to connect your devices.
 DoliCalSyncPasswordActive = Synchronization active, password created on %s.
 DoliCalSyncPasswordShownOnce = Write it down or copy it into your device now: it will not be shown again.
+DoliCalSyncPasswordOnPhone = On this phone: copy a value, paste it into the account form, then come back here for the next one, without reloading the page.
+DoliCalSyncOtherDevices = Other devices
 DoliCalSyncPasswordHelp = This password is only for your phones, Mac and Thunderbird, with your Dolibarr login; it does not let anyone log into Dolibarr. A new password replaces the old one on all your devices.
 DoliCalSyncPasswordCreate = Create my synchronization password
 DoliCalSyncPasswordRenew = New password
@@ -675,6 +677,7 @@ DoliCalSetupCalDav                = CalDAV synchronization
 DoliCalSetupCalDavHelp            = Everyone creates on "Sync my phone" a password for DAVx⁵, iPhone, Mac or Thunderbird. The Dolibarr password is not enough.
 DoliCalSetupCalDavHttp = Synchronization over http (test installation)
 DoliCalSetupCalDavHttpHelp = Never in production: without HTTPS, the password travels in clear.
+DoliCalSetupCalDavConfirmOff = %s person(s) synchronize their phone with DoliCal. Turning the CalDAV synchronization off stops all of them at once. Continue?
 
 #
 # Page of one event alone (window of another application, link « Plan »)
