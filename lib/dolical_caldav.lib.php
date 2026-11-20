@@ -289,6 +289,23 @@ function dolical_caldav_calendar_users(User $user): array
 }
 
 /**
+ * Whether the phone of a person gets the list of reminders of someone : his own always, the ones of the colleagues
+ * whose agenda he chose only when he asked for them too (user parameter DOLICAL_CALDAV_SHARED_REMINDERS)
+ *
+ * @param  User $user    Person synchronizing
+ * @param  int  $ownerId Person whose list it is
+ * @return bool
+ */
+function dolical_caldav_reminders_listed(User $user, int $ownerId): bool
+{
+    if ($ownerId === (int) $user->id) {
+        return true;
+    }
+
+    return !empty($user->conf->DOLICAL_CALDAV_SHARED_REMINDERS) && in_array($ownerId, dolical_caldav_calendar_users($user), true);
+}
+
+/**
  * Name of the file of an event in the calendar : the one the phone chose, else one made from its id
  *
  * @param  int    $id     Event

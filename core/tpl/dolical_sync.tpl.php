@@ -199,6 +199,10 @@ $device = function (array $device) use ($langs): string {
                         </label>
                     <?php endforeach; ?>
                 </div>
+                <label class="dolical-check dolical-sync__shared-reminders">
+                    <input type="checkbox" name="sharedreminders" value="1"<?php echo !empty($user->conf->DOLICAL_CALDAV_SHARED_REMINDERS) ? ' checked' : ''; ?>>
+                    <span><?php echo $langs->trans('DoliCalSyncSharedReminders'); ?></span>
+                </label>
                 <button type="submit" class="dolical-btn dolical-btn--primary"><i class="fas fa-check"></i><?php echo $langs->trans('Save'); ?></button>
             </form>
         <?php endif; ?>

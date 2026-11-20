@@ -78,7 +78,9 @@ if ($action === 'saveshared' && dolical_can_read_all($user) && dolical_valid_pos
     // Only colleagues whose agenda the user may display
     $shared = array_values(array_intersect(GETPOST('shared', 'array:int'), array_keys(dolical_get_calendar_users($user))));
     $shared = array_values(array_diff($shared, [(int) $user->id]));
-    if (dol_set_user_param($db, $conf, $user, ['DOLICAL_CALDAV_SHARED' => implode(',', $shared)]) > 0) {
+    // Their lists of reminders too, only when asked for : by default the phone gets his own list only
+    $sharedReminders = GETPOSTINT('sharedreminders') > 0 ? '1' : '';
+    if (dol_set_user_param($db, $conf, $user, ['DOLICAL_CALDAV_SHARED' => implode(',', $shared), 'DOLICAL_CALDAV_SHARED_REMINDERS' => $sharedReminders]) > 0) {
         setEventMessages($langs->trans('DoliCalSyncSharedSaved'), null);
     } else {
         setEventMessages($langs->trans('Error'), null, 'errors');

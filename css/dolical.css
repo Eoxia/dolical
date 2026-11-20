@@ -3555,6 +3555,11 @@ code.dolical-sync__value {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 6px 16px;
 }
+/* Their lists of reminders too : asked apart from the choice of the colleagues */
+.dolical-sync__card label.dolical-sync__shared-reminders {
+  padding-top: 10px;
+  border-top: 1px solid #e7edf2;
+}
 
 .dolical-sync__notice {
   display: flex;
