@@ -225,6 +225,7 @@ DoliCalMailVisioIntro            = Hello %s, %s sends you the link of the video 
 DoliCalVisio                     = Video call link
 DoliCalVisioShort                = Video call
 DoliCalVisioJoin                 = Join the video call
+DoliCalVisioJoinShort            = Join
 DoliCalVisioPlaceholder          = Teams, Meet, Zoom, Jitsi… e.g. https://meet.google.com/abc-defg-hij
 DoliCalVisioInvalid              = Video call link not recognized: paste the full address of the link (https://…).
 DoliCalIcsVisio                  = Join the video call:

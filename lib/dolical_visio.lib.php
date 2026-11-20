@@ -105,6 +105,34 @@ function dolical_get_visio(ActionComm $event, bool $reload = false): string
 }
 
 /**
+ * Name of the service of a video call link, read from its host : « Google Meet », « Microsoft Teams »...
+ *
+ * @param  string $url Link
+ * @return string      Empty when the service is not known (a Jitsi of its own server, an other tool...)
+ */
+function dolical_visio_service(string $url): string
+{
+    $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+    $services = [
+        'meet.google.com' => 'Google Meet',
+        'teams.microsoft.com' => 'Microsoft Teams',
+        'teams.live.com' => 'Microsoft Teams',
+        'zoom.us' => 'Zoom',
+        'meet.jit.si' => 'Jitsi Meet',
+        'whereby.com' => 'Whereby',
+        'webex.com' => 'Webex',
+    ];
+    foreach ($services as $domain => $name) {
+        // The domain or one of its subdomains : « us02web.zoom.us », « evarisk.webex.com »
+        if ($host === $domain || substr($host, -strlen('.' . $domain)) === '.' . $domain) {
+            return $name;
+        }
+    }
+
+    return '';
+}
+
+/**
  * Line of the link in the body of a mail : « Visio : Join the video call », the text linking to the call
  *
  * @param  string    $url         Link
