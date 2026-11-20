@@ -107,6 +107,14 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
 - Une répétition créée sur le téléphone devient une série native. Un rendez-vous refusé quitte le téléphone ;
   supprimer un rendez-vous dont on n'est qu'invité le refuse.
 - Les agendas de collègues choisis sur la page s'ajoutent en lecture seule, chacun avec sa couleur.
+- **Rappels du téléphone** : à côté de chaque agenda, une liste « Mes rappels Dolibarr » (`VTODO`) pour l'app Rappels
+  de l'iPhone, Tasks.org ou jtx Board avec DAVx⁵. Chaque rappel est un événement natif du type « Rappel »
+  (`AC_DOLICAL_TODO`, ajouté au dictionnaire des types à l'activation ou à la première synchronisation) : son échéance
+  est la date de l'événement (aucune date sans échéance), coché il est réalisé (100 %), décoché à faire (0 %) ; la
+  priorité et la description suivent, l'alerte devient un rappel de Dolibarr avant l'échéance. Seuls les événements de
+  ce type vont dans la liste, ils quittent l'agenda ; les rappels réalisés depuis plus de 180 jours quittent la liste.
+  Une liste par agenda de collègue synchronisé, en lecture seule. Le téléphone ne crée pas d'autre liste (`MKCALENDAR`
+  refusé) ; un rappel qui se répète sur le téléphone est gardé comme un seul rappel.
 - Rien de nouveau n'est stocké : le nom de fichier et l'identifiant qu'un téléphone donne à un événement qu'il crée vont
   dans la référence externe de l'événement natif (`ref_ext = dav:<fichier>|<uid>`).
 - Les rendez-vous des 180 derniers jours et tous ceux à venir. HTTPS indispensable en production (l'iPhone refuse un
@@ -286,6 +294,7 @@ emojis sont gardés, même sur une base en latin1 : ils sont enregistrés en ent
 | Lien court d'une page (avec Saturne) | table de Saturne `llx_saturne_object_redirection` |
 | Réservations récentes par adresse IP | `documents/dolical/temp/booking/` (quelques octets, oubliés après une heure) |
 | Agendas de collègues synchronisés | paramètre utilisateur `DOLICAL_CALDAV_SHARED` |
+| Rappels du téléphone (`VTODO`) | événements natifs du type `AC_DOLICAL_TODO` (`llx_c_actioncomm`) |
 | Couleurs choisies pour les autres | paramètre utilisateur `DOLICAL_COLORS` (`{"id": "rrggbb"}`) |
 
 ## Droits

@@ -135,6 +135,7 @@ $device = function (array $device) use ($langs): string {
                 <li><?php echo $langs->trans('DoliCalSyncWhat2'); ?></li>
                 <li><?php echo $langs->trans('DoliCalSyncWhat3'); ?></li>
                 <li><?php echo $langs->trans('DoliCalSyncWhat4', DOLICAL_CALDAV_PAST_DAYS); ?></li>
+                <li><?php echo $langs->trans('DoliCalSyncWhat5'); ?></li>
             </ul>
         </div>
 

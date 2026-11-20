@@ -591,6 +591,7 @@ DoliCalSyncWhat1                 = Vos rendez-vous, ceux que vous organisez et c
 DoliCalSyncWhat2                 = Créer, déplacer, renommer ou supprimer un rendez-vous sur le téléphone met Dolibarr à jour ; une répétition créée sur le téléphone devient une série.
 DoliCalSyncWhat3                 = Accepter ou refuser une invitation, et les rappels, dans les deux sens. Un rendez-vous refusé disparaît du téléphone.
 DoliCalSyncWhat4                 = Les rendez-vous des %s derniers jours et tous ceux à venir. Les tiers, projets, documents et pièces jointes restent dans Dolibarr ; le compte-rendu est recopié sous la description.
+DoliCalSyncWhat5                 = Vos rappels, dans la liste « Mes rappels Dolibarr » : app Rappels de l'iPhone, Tasks.org ou jtx Board avec DAVx⁵ sur Android. Chacun est un événement de type « Rappel » ; coché sur le téléphone, il est réalisé dans Dolibarr.
 DoliCalSyncShared                = Agendas des collègues sur mon téléphone
 DoliCalSyncSharedHelp            = En lecture seule, chacun avec sa couleur.
 DoliCalSyncSharedSaved           = Agendas enregistrés : ils apparaîtront à la prochaine synchronisation.
@@ -609,6 +610,9 @@ DoliCalSyncPasswordConfirmRevoke = Vos appareils ne pourront plus se synchronise
 DoliCalSyncPasswordRevoked = Synchronisation désactivée : vos appareils ne peuvent plus se connecter.
 DoliCalCalDavMyCalendar          = Mon agenda Dolibarr
 DoliCalCalDavCalendarOf          = Agenda de %s
+DoliCalCalDavMyReminders         = Mes rappels Dolibarr
+DoliCalCalDavRemindersOf         = Rappels de %s
+ActionAC_DOLICAL_TODO            = Rappel
 
 #
 # Import - Import d'un agenda

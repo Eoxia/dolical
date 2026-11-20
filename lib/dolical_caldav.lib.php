@@ -26,6 +26,8 @@
 
 require_once DOL_DOCUMENT_ROOT . '/core/lib/functions2.lib.php';
 require_once __DIR__ . '/dolical_series.lib.php';
+// The reminders (VTODO), served beside the agendas
+require_once __DIR__ . '/dolical_caldav_todo.lib.php';
 
 /**
  * Days of the past a phone gets : the older events stay in Dolibarr only
@@ -353,6 +355,8 @@ function dolical_caldav_objects(User $user, int $calendarUserId): array
     $sql .= ' LEFT JOIN ' . MAIN_DB_PREFIX . 'c_actioncomm as ca ON ca.id = a.fk_action';
     $sql .= ' WHERE a.entity IN (' . getEntity('agenda') . ')';
     $sql .= " AND a.datep IS NOT NULL AND COALESCE(a.datep2, a.datep) >= '" . $db->idate(dol_now() - DOLICAL_CALDAV_PAST_DAYS * 86400) . "'";
+    // The reminders go to the list beside the agenda, not twice
+    $sql .= " AND (ca.code IS NULL OR ca.code <> '" . $db->escape(DOLICAL_TODO_TYPE) . "')";
     $sql .= " AND (ca.type IS NULL OR ca.type <> 'systemauto')";
     $sql .= ' AND (a.fk_user_action = ' . $calendarUserId;
     $sql .= ' OR EXISTS (SELECT r.fk_actioncomm FROM ' . MAIN_DB_PREFIX . "actioncomm_resources as r WHERE r.fk_actioncomm = a.id AND r.element_type = 'user' AND r.fk_element = " . $calendarUserId . '))';

@@ -19,7 +19,9 @@
  * \file    class/dolicalcaldavbackend.class.php
  * \ingroup dolical
  * \brief   Agendas of DoliCal for the CalDAV server of SabreDAV : the agenda of the person, written, and the ones of
- *          the colleagues he chose, read only. Every object is a native event.
+ *          the colleagues he chose, read only. Each agenda has its list of reminders beside it (VTODO), with the same
+ *          rights. Every object is a native event. The id of an agenda is the id of its person, the one of a list of
+ *          reminders its opposite.
  */
 
 require_once __DIR__ . '/../lib/dolical_caldav.lib.php';
@@ -65,18 +67,33 @@ class DoliCalCalDavBackend extends \Sabre\CalDAV\Backend\AbstractBackend
         }
 
         $calendars = [];
-        foreach (dolical_caldav_calendar_users($this->user) as $order => $userId) {
+        $people    = dolical_caldav_calendar_users($this->user);
+        foreach ($people as $order => $userId) {
             $owner = new User($db);
             if ($owner->fetch($userId) <= 0) {
                 continue;
             }
             $mine        = $userId === (int) $this->user->id;
+            $color       = strtoupper(dolical_user_color($userId, (string) $owner->color)) . 'FF';
+            // The reminders of the person, in their own list : the reminders application of the phone finds it and
+            // makes none of its own, refused here
+            $calendars[] = [
+                'id'                                                                 => -$userId,
+                'uri'                                                                => $mine ? 'reminders' : 'reminders-' . $userId,
+                'principaluri'                                                       => $principalUri,
+                '{DAV:}displayname'                                                  => $mine ? $langs->transnoentities('DoliCalCalDavMyReminders') : $langs->transnoentities('DoliCalCalDavRemindersOf', $owner->getFullName($langs)),
+                '{http://apple.com/ns/ical/}calendar-color'                          => $color,
+                '{http://apple.com/ns/ical/}calendar-order'                          => count($people) + $order + 1,
+                '{' . \Sabre\CalDAV\Plugin::NS_CALENDARSERVER . '}getctag'           => $this->ctag(-$userId),
+                '{' . \Sabre\CalDAV\Plugin::NS_CALDAV . '}supported-calendar-component-set' => new \Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet(['VTODO']),
+                '{http://sabredav.org/ns}read-only'                                  => !$mine,
+            ];
             $calendars[] = [
                 'id'                                                                 => $userId,
                 'uri'                                                                => $mine ? 'agenda' : 'agenda-' . $userId,
                 'principaluri'                                                       => $principalUri,
                 '{DAV:}displayname'                                                  => $mine ? $langs->transnoentities('DoliCalCalDavMyCalendar') : $langs->transnoentities('DoliCalCalDavCalendarOf', $owner->getFullName($langs)),
-                '{http://apple.com/ns/ical/}calendar-color'                          => strtoupper(dolical_user_color($userId, (string) $owner->color)) . 'FF',
+                '{http://apple.com/ns/ical/}calendar-color'                          => $color,
                 '{http://apple.com/ns/ical/}calendar-order'                          => $order + 1,
                 '{' . \Sabre\CalDAV\Plugin::NS_CALENDARSERVER . '}getctag'           => $this->ctag($userId),
                 '{' . \Sabre\CalDAV\Plugin::NS_CALDAV . '}supported-calendar-component-set' => new \Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet(['VEVENT']),
@@ -93,19 +110,19 @@ class DoliCalCalDavBackend extends \Sabre\CalDAV\Backend\AbstractBackend
     }
 
     /**
-     * Objects of an agenda, built once per request
+     * Objects of an agenda or of a list of reminders, built once per request
      *
-     * @param  int   $calendarId Person whose agenda it is
+     * @param  int   $calendarId Person whose agenda it is, the opposite for his reminders
      * @return array             [uri => object]
      */
     private function objects($calendarId): array
     {
         $calendarId = (int) $calendarId;
-        if (!in_array($calendarId, dolical_caldav_calendar_users($this->user), true)) {
+        if (!in_array(abs($calendarId), dolical_caldav_calendar_users($this->user), true)) {
             return [];
         }
         if (!isset($this->cache[$calendarId])) {
-            $this->cache[$calendarId] = dolical_caldav_objects($this->user, $calendarId);
+            $this->cache[$calendarId] = $calendarId < 0 ? dolical_caldav_todo_objects($this->user, -$calendarId) : dolical_caldav_objects($this->user, $calendarId);
         }
 
         return $this->cache[$calendarId];
@@ -207,15 +224,15 @@ class DoliCalCalDavBackend extends \Sabre\CalDAV\Backend\AbstractBackend
     }
 
     /**
-     * Only the agenda of the person takes changes
+     * Only the agenda of the person and his list of reminders take changes
      *
-     * @param  mixed $calendarId Agenda
+     * @param  mixed $calendarId Agenda, or list of reminders
      * @return void
      * @throws \Sabre\DAV\Exception\Forbidden
      */
     private function checkWritable($calendarId): void
     {
-        if ((int) $calendarId !== (int) $this->user->id) {
+        if (abs((int) $calendarId) !== (int) $this->user->id) {
             throw new \Sabre\DAV\Exception\Forbidden('This agenda is read only');
         }
     }
@@ -231,6 +248,8 @@ class DoliCalCalDavBackend extends \Sabre\CalDAV\Backend\AbstractBackend
      */
     public function createCalendarObject($calendarId, $objectUri, $calendarData)
     {
+        global $db;
+
         $this->checkWritable($calendarId);
         if (!dolical_can_create($this->user)) {
             throw new \Sabre\DAV\Exception\Forbidden('Not allowed to create events');
@@ -238,6 +257,18 @@ class DoliCalCalDavBackend extends \Sabre\CalDAV\Backend\AbstractBackend
         // dolical-<id>.ics names the events made in Dolibarr, and a "|" would cut the reference stored in ref_ext
         if (preg_match('/^dolical-\d+\.ics$/', (string) $objectUri) || preg_match('/[|\x00-\x1F\x7F]/', (string) $objectUri)) {
             throw new \Sabre\DAV\Exception\Forbidden('Reserved file name');
+        }
+        if ((int) $calendarId < 0) {
+            // A reminder : an event of the type of the reminders in the list of the person
+            $read           = dolical_caldav_read_todo($calendarData);
+            $event          = new ActionComm($db);
+            $event->ref_ext = dol_trunc('dav:' . $objectUri . '|' . $read['uid'], 255, 'right', 'UTF-8', 1);
+            if (dolical_caldav_save_todo($event, $read, null, $this->user, $this->user) <= 0) {
+                throw new \Sabre\DAV\Exception('The reminder could not be saved');
+            }
+            $this->cache = [];
+
+            return null;
         }
         $read = dolical_caldav_read($calendarData, (string) $this->user->email);
         if (dolical_caldav_create($this->user, $objectUri, $read) <= 0) {
@@ -261,6 +292,18 @@ class DoliCalCalDavBackend extends \Sabre\CalDAV\Backend\AbstractBackend
     {
         $this->checkWritable($calendarId);
         [$event, $served] = $this->load($calendarId, $objectUri);
+        if ((int) $calendarId < 0) {
+            // A reminder ticked, renamed, given a due date : only what the phone changed
+            if (!dolical_can_edit_event($this->user, $event)) {
+                throw new \Sabre\DAV\Exception\Forbidden('Not allowed to change this reminder');
+            }
+            if (dolical_caldav_save_todo($event, dolical_caldav_read_todo($calendarData), dolical_caldav_read_todo($served), $this->user, $this->user) <= 0) {
+                throw new \Sabre\DAV\Exception('The reminder could not be saved');
+            }
+            $this->cache = [];
+
+            return null;
+        }
         $read             = dolical_caldav_read($calendarData, (string) $this->user->email);
         if (dolical_caldav_update($this->user, $event, $served, $read) <= 0) {
             throw new \Sabre\DAV\Exception('The event could not be saved');
