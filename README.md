@@ -107,7 +107,7 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
 - Une répétition créée sur le téléphone devient une série native. Un rendez-vous refusé quitte le téléphone ;
   supprimer un rendez-vous dont on n'est qu'invité le refuse.
 - Les agendas de collègues choisis sur la page s'ajoutent en lecture seule, chacun avec sa couleur.
-- **Rappels du téléphone** : à côté de chaque agenda, une liste « Mes rappels Dolibarr » (`VTODO`) pour l'app Rappels
+- **Rappels du téléphone** : à côté de chaque agenda, une liste « Rappels de … » à son nom (`VTODO`) pour l'app Rappels
   de l'iPhone, Tasks.org ou jtx Board avec DAVx⁵. Chaque rappel est un événement natif du type « Rappel »
   (`AC_DOLICAL_TODO`, ajouté au dictionnaire des types à l'activation ou à la première synchronisation) : son échéance
   est la date de l'événement (aucune date sans échéance), coché il est réalisé (100 %), décoché à faire (0 %) ; la
