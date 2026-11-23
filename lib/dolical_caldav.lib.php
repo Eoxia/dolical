@@ -40,6 +40,12 @@ const DOLICAL_CALDAV_PAST_DAYS = 180;
 const DOLICAL_CALDAV_MAX_STEPS = 10000;
 
 /**
+ * Seconds an event a phone put in another agenda waits for its removal from the agenda it left : the phone sends the
+ * two in the same synchronization
+ */
+const DOLICAL_CALDAV_MOVE_WINDOW = 900;
+
+/**
  * Whether the synchronization is open : closed until an administrator opens it in the setup of DoliCal
  *
  * @return bool
@@ -272,7 +278,8 @@ function dolical_caldav_url(): string
 }
 
 /**
- * Agendas a person gets on the phone : his own, then the ones of the colleagues he chose, read only
+ * Agendas a person gets on the phone : his own, then the ones of the colleagues he chose, written when he may change
+ * the events of everyone (dolical_caldav_writable())
  *
  * @param  User  $user Person
  * @return int[]       Ids of users, his own first
@@ -303,6 +310,171 @@ function dolical_caldav_reminders_listed(User $user, int $ownerId): bool
     }
 
     return !empty($user->conf->DOLICAL_CALDAV_SHARED_REMINDERS) && in_array($ownerId, dolical_caldav_calendar_users($user), true);
+}
+
+/**
+ * Whether the phone of a person changes the agenda of someone, and his list of reminders : his own always, the ones
+ * of the colleagues when he may change the events of everyone, as in the calendar of Dolibarr
+ *
+ * @param  User $user    Person synchronizing
+ * @param  int  $ownerId Person whose agenda it is
+ * @return bool
+ */
+function dolical_caldav_writable(User $user, int $ownerId): bool
+{
+    return $ownerId === (int) $user->id || (bool) $user->hasRight('agenda', 'allactions', 'create');
+}
+
+/**
+ * File of the events the phone of a person just put in another agenda : a few bytes in the temporary directory of the
+ * module, nothing in the database
+ *
+ * @param  User   $user Person synchronizing
+ * @return string
+ */
+function dolical_caldav_moves_file(User $user): string
+{
+    global $conf;
+
+    $dir = DOL_DATA_ROOT . '/dolical/temp/caldav';
+    dol_mkdir($dir);
+
+    return $dir . '/' . hash('sha256', ($conf->file->instance_unique_id ?? '') . '|moves:' . ((int) $conf->entity) . ':' . ((int) $user->id)) . '.json';
+}
+
+/**
+ * Events the phone of a person put in another agenda in the last DOLICAL_CALDAV_MOVE_WINDOW seconds, waiting for their
+ * removal from the agenda they left
+ *
+ * @param  User  $user Person synchronizing
+ * @return array       [event id => ['event', 'to' => person whose agenda got it, 'at' => time]]
+ */
+function dolical_caldav_moves(User $user): array
+{
+    $file  = dolical_caldav_moves_file($user);
+    $lines = is_file($file) ? json_decode((string) @file_get_contents($file), true) : [];
+    $since = dol_now() - DOLICAL_CALDAV_MOVE_WINDOW;
+    $moves = [];
+    foreach (is_array($lines) ? $lines : [] as $line) {
+        if (is_array($line) && (int) ($line['at'] ?? 0) > $since && (int) ($line['event'] ?? 0) > 0 && (int) ($line['to'] ?? 0) > 0) {
+            $moves[(int) $line['event']] = ['event' => (int) $line['event'], 'to' => (int) $line['to'], 'at' => (int) $line['at']];
+        }
+    }
+
+    return $moves;
+}
+
+/**
+ * Person whose agenda the phone of a person just put an event in
+ *
+ * @param  User $user    Person synchronizing
+ * @param  int  $eventId Event
+ * @return int           0 when the event was not moved
+ */
+function dolical_caldav_moved_to(User $user, int $eventId): int
+{
+    return dolical_caldav_moves($user)[$eventId]['to'] ?? 0;
+}
+
+/**
+ * Remember, or forget, that the phone of a person put an event in the agenda of someone
+ *
+ * @param  User $user    Person synchronizing
+ * @param  int  $eventId Event
+ * @param  int  $toUser  Person whose agenda got it, 0 to forget it
+ * @return void
+ */
+function dolical_caldav_remember_move(User $user, int $eventId, int $toUser): void
+{
+    $file  = dolical_caldav_moves_file($user);
+    $moves = dolical_caldav_moves($user);
+    unset($moves[$eventId]);
+    if ($toUser > 0) {
+        $moves[$eventId] = ['event' => $eventId, 'to' => $toUser, 'at' => dol_now()];
+    }
+    if (empty($moves)) {
+        if (is_file($file)) {
+            @unlink($file);
+        }
+        return;
+    }
+
+    @file_put_contents($file, json_encode(array_values(array_slice($moves, -50, null, true))), LOCK_EX);
+}
+
+/**
+ * Event of Dolibarr a phone puts in an agenda under an identifier already known : it moves it from another agenda,
+ * or adds it once more. Only an event the person may change, and not a series made on a phone, whose dates share
+ * their identifier
+ *
+ * @param  User            $user Person synchronizing
+ * @param  string          $uid  Identifier given by the phone
+ * @return ActionComm|null
+ */
+function dolical_caldav_known_event(User $user, string $uid): ?ActionComm
+{
+    if ($uid === '') {
+        return null;
+    }
+    $event = dolical_event_from_uid($uid, $user);
+    if ($event === null || dolical_event_uid($event) !== $uid || !dolical_can_edit_event($user, $event)) {
+        return null;
+    }
+    if (!empty($event->recurid) && dolical_dav_reference($event)['uid'] !== '') {
+        return null;
+    }
+
+    return $event;
+}
+
+/**
+ * A person takes part in an event a phone put in his agenda : no copy is made, the documents, links and report stay
+ * with the event
+ *
+ * @param  User       $user    Person synchronizing
+ * @param  ActionComm $event   Event, resources loaded
+ * @param  int        $ownerId Person whose agenda got the event
+ * @return int                 > 0 when done
+ */
+function dolical_caldav_join(User $user, ActionComm $event, int $ownerId): int
+{
+    if ((int) $event->userownerid === $ownerId || isset($event->userassigned[$ownerId])) {
+        return 1;
+    }
+    $data               = dolical_event_values($event);
+    $data['user_ids'][] = $ownerId;
+
+    return dolical_save_event($event, $data, $user);
+}
+
+/**
+ * A person leaves an event the phone moved from his agenda to the agenda of someone else : the event goes on, the
+ * other one owning it when the person did
+ *
+ * @param  User       $user      Person synchronizing
+ * @param  ActionComm $event     Event, resources loaded
+ * @param  int        $leaverId  Person whose agenda the event left
+ * @param  int        $toUser    Person whose agenda got it
+ * @return int                   > 0 when done
+ */
+function dolical_caldav_leave(User $user, ActionComm $event, int $leaverId, int $toUser): int
+{
+    global $db;
+
+    $data             = dolical_event_values($event);
+    $data['user_ids'] = array_values(array_diff($data['user_ids'], [$leaverId]));
+    if ((int) $data['owner_id'] === $leaverId) {
+        $data['owner_id'] = $toUser;
+        $data['user_ids'] = array_values(array_diff($data['user_ids'], [$toUser]));
+    }
+
+    $result = dolical_save_event($event, $data, $user);
+    if ($result > 0) {
+        // His reminders to come leave with him : he would be told of an event no longer his
+        $db->query('DELETE FROM ' . MAIN_DB_PREFIX . 'actioncomm_reminder WHERE fk_actioncomm = ' . ((int) $event->id) . ' AND fk_user = ' . $leaverId . ' AND status = ' . ActionCommReminder::STATUS_TODO);
+    }
+
+    return $result;
 }
 
 /**
@@ -1217,20 +1389,22 @@ function dolical_caldav_create(User $user, string $uri, array $read, ?User $owne
  * third party, project, people without email...) stays as it is. Whoever may not change the event only answers
  * and sets his own reminder
  *
- * @param  User       $user    Person synchronizing
- * @param  ActionComm $event   Event, resources loaded
- * @param  string     $served  iCalendar object the phone was given
- * @param  array      $read    From dolical_caldav_read()
- * @return int                 > 0 when done
+ * @param  User       $user      Person synchronizing
+ * @param  ActionComm $event     Event, resources loaded
+ * @param  string     $served    iCalendar object the phone was given
+ * @param  array      $read      From dolical_caldav_read()
+ * @param  bool       $ownAgenda Whether the phone changed it in the agenda of the person : the alarms of the agenda
+ *                               of a colleague are his, they stay as they are
+ * @return int                   > 0 when done
  */
-function dolical_caldav_update(User $user, ActionComm $event, string $served, array $read): int
+function dolical_caldav_update(User $user, ActionComm $event, string $served, array $read, bool $ownAgenda = true): int
 {
     $before = dolical_caldav_read($served, (string) $user->email);
 
     if ($read['answer'] !== null && $read['answer'] !== $before['answer'] && (int) $event->userownerid !== (int) $user->id) {
         dolical_caldav_set_answer($event, (int) $user->id, (int) $read['answer']);
     }
-    if ($read['alarm'] !== $before['alarm']) {
+    if ($ownAgenda && $read['alarm'] !== $before['alarm']) {
         dolical_caldav_set_alarm($event, $read['alarm'], $user);
     }
 

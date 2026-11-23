@@ -2,8 +2,13 @@
 
 ## Non publié
 
+- Synchroniser mon téléphone : les agendas des collègues se modifient depuis le téléphone comme dans le calendrier,
+  avec le droit « Créer/modifier les événements des autres » (en lecture seule sinon, comme avant). Un rendez-vous
+  ajouté dans l'agenda d'un collègue est le sien, sans rappel posé à sa place ; le supprimer demande le droit de
+  supprimer ses événements. Déplacer un rendez-vous d'un agenda à l'autre sur le téléphone transfère l'événement, sans
+  copie : documents, liens et compte-rendu restent avec lui. Leurs listes de rappels suivent les mêmes droits.
 - Rappels du téléphone : par défaut, seule sa propre liste de rappels arrive sur le téléphone, à côté des agendas des
-  collègues choisis. Leurs listes, en lecture seule, s'ajoutent en cochant « Ajouter aussi leurs listes de rappels » sur
+  collègues choisis. Leurs listes s'ajoutent en cochant « Ajouter aussi leurs listes de rappels » sur
   la page de synchronisation ; sinon le serveur ne les donne pas, même par leur adresse directe.
 - Synchroniser mon téléphone : connexion en un scan, juste après la création du mot de passe. Un QR code ouvre DAVx⁵
   avec la connexion remplie ; un autre installe sur l'iPhone ou l'iPad un profil avec le compte CalDAV complet (en

@@ -21,8 +21,8 @@
  * \brief   Page of the synchronization : address and login, steps for each kind of device, agendas of the colleagues.
  *
  * Rendered by view/dolical_sync.php (inherits its scope). Expects: $syncUrl, $calendarUrl, $isSecure, $httpAllowed,
- * $newPassword, $syncPassword, $davx5Link, $profileUrl, $canShare, $calendarUsers, $shared, $onPhone, $phoneDevice,
- * $user, $langs.
+ * $newPassword, $syncPassword, $davx5Link, $profileUrl, $canShare, $sharedWrite, $calendarUsers, $shared, $onPhone,
+ * $phoneDevice, $user, $langs.
  */
 
 // The names the phone shows : the agenda and the reminders of the person, named like the ones of the colleagues
@@ -186,7 +186,7 @@ $device = function (array $device) use ($langs): string {
                 <input type="hidden" name="token" value="<?php echo newToken(); ?>">
                 <input type="hidden" name="action" value="saveshared">
                 <h2><i class="fas fa-users pictofixedwidth"></i><?php echo $langs->trans('DoliCalSyncShared'); ?></h2>
-                <p class="dolical-card__muted"><?php echo $langs->trans('DoliCalSyncSharedHelp'); ?></p>
+                <p class="dolical-card__muted"><?php echo $langs->trans($sharedWrite ? 'DoliCalSyncSharedHelpWrite' : 'DoliCalSyncSharedHelp'); ?></p>
                 <div class="dolical-sync__people">
                     <?php foreach ($calendarUsers as $calendarUser) : ?>
                         <?php if ($calendarUser['id'] === (int) $user->id) {
@@ -201,7 +201,7 @@ $device = function (array $device) use ($langs): string {
                 </div>
                 <label class="dolical-check dolical-sync__shared-reminders">
                     <input type="checkbox" name="sharedreminders" value="1"<?php echo !empty($user->conf->DOLICAL_CALDAV_SHARED_REMINDERS) ? ' checked' : ''; ?>>
-                    <span><?php echo $langs->trans('DoliCalSyncSharedReminders'); ?></span>
+                    <span><?php echo $langs->trans($sharedWrite ? 'DoliCalSyncSharedRemindersWrite' : 'DoliCalSyncSharedReminders'); ?></span>
                 </label>
                 <button type="submit" class="dolical-btn dolical-btn--primary"><i class="fas fa-check"></i><?php echo $langs->trans('Save'); ?></button>
             </form>
