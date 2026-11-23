@@ -98,6 +98,8 @@ $calendarUrl   = $syncUrl . 'calendars/' . rawurlencode($user->login) . '/agenda
 $isSecure      = strpos($syncUrl, 'https://') === 0;
 $httpAllowed   = getDolGlobalInt('DOLICAL_CALDAV_ALLOW_HTTP') > 0;
 $canShare      = dolical_can_read_all($user);
+// The agendas of the colleagues are changed from the phone as in the calendar : with the right on the events of others
+$sharedWrite   = dolical_caldav_writable($user, 0);
 $calendarUsers = $canShare ? dolical_get_calendar_users($user) : [];
 $shared        = dolical_caldav_calendar_users($user);
 // The password just made, shown this once

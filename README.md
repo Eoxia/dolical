@@ -114,17 +114,25 @@ externe, pour pouvoir rejoindre le cœur de Dolibarr.
   une invitation remplit `answer_status` ; une alarme du téléphone devient un rappel, et inversement.
 - Une répétition créée sur le téléphone devient une série native. Un rendez-vous refusé quitte le téléphone ;
   supprimer un rendez-vous dont on n'est qu'invité le refuse.
-- Les agendas de collègues choisis sur la page s'ajoutent en lecture seule, chacun avec sa couleur.
+- Les agendas de collègues choisis sur la page s'ajoutent, chacun avec sa couleur, avec les mêmes droits que dans le
+  calendrier : modifiables avec le droit natif « Créer/modifier les événements des autres »
+  (`agenda->allactions->create`), en lecture seule sinon. Un rendez-vous créé dans l'agenda d'un collègue lui
+  appartient ; une suppression y demande le droit de supprimer ses événements (pas de refus à sa place) ; l'alarme du
+  téléphone n'y devient pas un rappel (les rappels d'un collègue restent les siens).
+- Déplacer un rendez-vous d'un agenda à l'autre sur le téléphone (PUT dans le nouveau puis DELETE dans l'ancien, ou
+  MOVE) transfère l'événement natif, sans copie : la personne du nouvel agenda y participe (propriétaire si l'autre
+  l'était), celle de l'ancien le quitte avec ses rappels. Le téléphone garde pour cela l'identifiant (`UID`) de
+  l'événement ; les deux envois sont rapprochés pendant 15 minutes (fichier dans `documents/dolical/temp/caldav`).
 - **Rappels du téléphone** : à côté de son agenda, une liste « Rappels de … » à son nom (`VTODO`) pour l'app Rappels
   de l'iPhone, Tasks.org ou jtx Board avec DAVx⁵. Chaque rappel est un événement natif du type « Rappel »
   (`AC_DOLICAL_TODO`, ajouté au dictionnaire des types à l'activation ou à la première synchronisation) : son échéance
   est la date de l'événement (aucune date sans échéance), coché il est réalisé (100 %), décoché à faire (0 %) ; la
   priorité et la description suivent, l'alerte devient un rappel de Dolibarr avant l'échéance. Seuls les événements de
   ce type vont dans la liste, ils quittent l'agenda ; les rappels réalisés depuis plus de 180 jours quittent la liste.
-  Les listes des collègues dont l'agenda est synchronisé, en lecture seule, seulement si la case « Ajouter aussi leurs
-  listes de rappels » est cochée (paramètre utilisateur `DOLICAL_CALDAV_SHARED_REMINDERS`) : sinon le serveur ne les
-  donne pas, même par leur adresse directe. Le téléphone ne crée pas d'autre liste (`MKCALENDAR`
-  refusé) ; un rappel qui se répète sur le téléphone est gardé comme un seul rappel.
+  Les listes des collègues dont l'agenda est synchronisé, avec les droits de leur agenda, seulement si la case
+  « Ajouter aussi leurs listes de rappels » est cochée (paramètre utilisateur `DOLICAL_CALDAV_SHARED_REMINDERS`) :
+  sinon le serveur ne les donne pas, même par leur adresse directe. Le téléphone ne crée pas d'autre liste
+  (`MKCALENDAR` refusé) ; un rappel qui se répète sur le téléphone est gardé comme un seul rappel.
 - Rien de nouveau n'est stocké : le nom de fichier et l'identifiant qu'un téléphone donne à un événement qu'il crée vont
   dans la référence externe de l'événement natif (`ref_ext = dav:<fichier>|<uid>`).
 - Les rendez-vous des 180 derniers jours et tous ceux à venir. HTTPS indispensable en production (l'iPhone refuse un
