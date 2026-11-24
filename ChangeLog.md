@@ -2,6 +2,9 @@
 
 ## Non publié
 
+- Liens publics (réponse aux invitations, pages de prise de rendez-vous) : ils restent valables quand on ajoute plus tard
+  la clé d'instance (`$dolibarr_main_instance_unique_id`) au `conf.php` d'une installation qui n'en avait pas. Le secret
+  déjà tiré par le module est gardé ; une installation qui avait déjà sa clé ne change pas.
 - Synchroniser mon téléphone : les agendas des collègues se modifient depuis le téléphone comme dans le calendrier,
   avec le droit « Créer/modifier les événements des autres » (en lecture seule sinon, comme avant). Un rendez-vous
   ajouté dans l'agenda d'un collègue est le sien, sans rappel posé à sa place ; le supprimer demande le droit de

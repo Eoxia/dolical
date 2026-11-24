@@ -68,8 +68,10 @@ function dolical_invitation_signature(int $entity, int $eventId, string $kind, i
 }
 
 /**
- * Secret of the answer links : the unique id of the instance, or on an old installation without one a random
- * secret of the module, made once. Nothing anyone could guess from the setup
+ * Secret of the public links (answers to invitations, booking pages) : the secret of the module when it was made
+ * once, else the unique id of the instance, else a random secret of the module, made once. Nothing anyone could
+ * guess from the setup. The secret of the module wins over the unique id so that the links already sent keep
+ * working when an old installation gets a unique id in its conf.php later
  *
  * @return string
  */
@@ -77,16 +79,18 @@ function dolical_invitation_secret(): string
 {
     global $conf, $db;
 
+    $secret = getDolGlobalString('DOLICAL_INVITATION_SECRET');
+    if ($secret !== '') {
+        return $secret;
+    }
+
     if (!empty($conf->file->instance_unique_id)) {
         return $conf->file->instance_unique_id;
     }
 
-    $secret = getDolGlobalString('DOLICAL_INVITATION_SECRET');
-    if ($secret === '') {
-        require_once DOL_DOCUMENT_ROOT . '/core/lib/admin.lib.php';
-        $secret = bin2hex(random_bytes(32));
-        dolibarr_set_const($db, 'DOLICAL_INVITATION_SECRET', $secret, 'chaine', 0, '', 0);
-    }
+    require_once DOL_DOCUMENT_ROOT . '/core/lib/admin.lib.php';
+    $secret = bin2hex(random_bytes(32));
+    dolibarr_set_const($db, 'DOLICAL_INVITATION_SECRET', $secret, 'chaine', 0, '', 0);
 
     return $secret;
 }
