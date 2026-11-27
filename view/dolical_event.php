@@ -37,7 +37,7 @@ if (file_exists('../dolical.main.inc.php')) {
 
 require_once __DIR__ . '/../lib/dolical_event.lib.php';
 
-global $conf, $db, $langs, $user;
+global $conf, $db, $hookmanager, $langs, $user;
 
 $langs->loadLangs(['dolical@dolical', 'agenda', 'companies', 'errors']);
 
@@ -49,6 +49,9 @@ if (!$permissionToRead || $user->socid > 0) {
 
 $action = GETPOST('action', 'aZ09');
 $id     = GETPOSTINT('id');
+
+// The other modules reach this page by the context of the form and the card : their scripts and styles (addHtmlHeader)
+$hookmanager->initHooks(['dolicalevent']);
 
 // What to show : a new event, the form of an event, or its card
 $mode  = $id > 0 ? ($action === 'edit' ? 'edit' : 'card') : 'create';

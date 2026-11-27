@@ -23,7 +23,7 @@
  * Rendered by ajax/event.php (inherits its scope). Expects: $event (null for a new event), $isNew, $formValues,
  * $calendarUsers, $eventTypes, $canAssignAll, $selectedContacts, $selectedThirdparty, $selectedProject,
  * $selectedElements, $eventFiles, $recurrenceChoices, $seriesSize, $reminderTypes, $reminder, $mailDates (dates of the
- * mail the event is planned from, see dolical_find_dates()), $langs.
+ * mail the event is planned from, see dolical_find_dates()), $langs, $db, $hookmanager.
  * Dates are written in the format of the HTML date inputs, the JavaScript sends them back as timestamps.
  */
 
@@ -308,6 +308,15 @@ $title = $isNew ? $langs->trans('DoliCalNewEvent') : $langs->trans('DoliCalEditE
                 </label>
                 <span class="dolical-field__help"><?php echo $langs->trans('DoliCalNotifyParticipantsHelp'); ?></span>
             </div>
+
+            <?php
+            // The fields of the other modules, sent with the form (action 'save') : $action is 'create' or 'edit', as on
+            // the card of the agenda of Dolibarr
+            $hookObject = $event !== null ? $event : new ActionComm($db);
+            $hookAction = $isNew ? 'create' : 'edit';
+            $hookmanager->executeHooks('formObjectOptions', ['view' => 'form'], $hookObject, $hookAction);
+            echo $hookmanager->resPrint;
+            ?>
         </div>
         <input type="hidden" name="note_changed" value="0">
         <?php if (!empty($formValues['email_msgid'])) : ?>

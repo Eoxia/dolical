@@ -144,6 +144,8 @@ window.dolical.eventcard.reload = function() {
       }
     });
     E.position();
+    // The other modules bring their part of the card to life (hooks formObjectOptions, addMoreActionsButtons)
+    $(document).trigger('dolical:cardopen', [id, $popover]);
     E.runPending();
   }).fail(function(xhr) {
     E.close();
