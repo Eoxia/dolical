@@ -42,7 +42,7 @@ require_once __DIR__ . '/../lib/dolical_invitation.lib.php';
 require_once __DIR__ . '/../lib/dolical_series.lib.php';
 require_once __DIR__ . '/../lib/dolical_maildates.lib.php';
 
-global $conf, $db, $langs, $user;
+global $conf, $db, $hookmanager, $langs, $user;
 
 // commercial carries the labels of the progress of an event (StatusActionToDo...)
 $langs->loadLangs(['dolical@dolical', 'agenda', 'commercial', 'companies', 'projects', 'other', 'errors']);
@@ -89,6 +89,25 @@ if ($id > 0) {
     if ($event === null) {
         dolical_json_exit(['success' => false, 'error' => $langs->trans('ErrorRecordNotFound')], 404);
     }
+}
+
+/*
+ * Other modules
+ */
+
+// The other modules reach the form, the card and the changes of an event by this context. doActions comes first, as on
+// the card of the agenda of Dolibarr, for every view and action : a negative answer stops with the error of the module,
+// a positive one means the module answered alone, its resArray is sent
+$hookmanager->initHooks(['dolicalevent']);
+$hookObject     = $event !== null ? $event : new ActionComm($db);
+$hookParameters = ['id' => $id, 'view' => $view];
+$reshook        = $hookmanager->executeHooks('doActions', $hookParameters, $hookObject, $action);
+if ($reshook < 0) {
+    $hookError = $hookmanager->error ?: implode(' ', (array) $hookmanager->errors);
+    dolical_json_exit(['success' => false, 'error' => $hookError ?: $langs->trans('Error')]);
+}
+if ($reshook > 0) {
+    dolical_json_exit(array_merge(['success' => true], (array) $hookmanager->resArray));
 }
 
 /*

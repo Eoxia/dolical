@@ -241,6 +241,10 @@ function dolical_longest_event(): int
  * An event belongs to a person when he owns it or is one of the users assigned to it, as in the native
  * agenda. The events of the other people are only given to a user allowed to read them.
  *
+ * The other modules, by the context 'dolicalcalendar' : printFieldListFrom and printFieldListWhere add to the query
+ * (table actioncomm as a), as in the agenda of Dolibarr ; completeDolicalEvents gets the events by reference, keyed by
+ * their id, to complete them (cssClass : CSS classes of the event in the calendar).
+ *
  * @param  User  $user    Current user
  * @param  int   $start   Start of the period, timestamp included
  * @param  int   $end     End of the period, timestamp excluded
@@ -250,7 +254,7 @@ function dolical_longest_event(): int
  */
 function dolical_fetch_events(User $user, int $start, int $end, array $userIds, array $filters = []): array
 {
-    global $db;
+    global $db, $hookmanager;
 
     if (!dolical_can_read_all($user)) {
         $userIds = [(int) $user->id];
@@ -259,7 +263,8 @@ function dolical_fetch_events(User $user, int $start, int $end, array $userIds, 
     if (empty($userIds) || $end <= $start) {
         return [];
     }
-    $userList = implode(',', $userIds);
+    $userList       = implode(',', $userIds);
+    $hookParameters = ['start' => $start, 'end' => $end, 'userIds' => $userIds, 'filters' => $filters];
 
     $sql  = 'SELECT a.id, a.label, a.datep, a.datep2, a.fulldayevent, a.percent, a.location, a.code, a.transparency,';
     $sql .= ' a.fk_user_action, a.fk_user_author, a.fk_soc, a.fk_project, a.recurid,';
@@ -269,6 +274,9 @@ function dolical_fetch_events(User $user, int $start, int $end, array $userIds, 
     $sql .= ' LEFT JOIN ' . MAIN_DB_PREFIX . 'c_actioncomm as ca ON ca.id = a.fk_action';
     $sql .= ' LEFT JOIN ' . MAIN_DB_PREFIX . 'societe as s ON s.rowid = a.fk_soc';
     $sql .= ' LEFT JOIN ' . MAIN_DB_PREFIX . 'projet as p ON p.rowid = a.fk_project';
+    // The tables of the other modules
+    $hookmanager->executeHooks('printFieldListFrom', $hookParameters);
+    $sql .= $hookmanager->resPrint;
     $sql .= ' WHERE a.entity IN (' . getEntity('agenda') . ')';
     // Overlaps the period : starts before its end, ends (or starts, without end) after its start
     $sql .= " AND a.datep < '" . $db->idate($end) . "'";
@@ -308,6 +316,9 @@ function dolical_fetch_events(User $user, int $start, int $end, array $userIds, 
         $search = $db->escape($db->escapeforlike($filters['search']));
         $sql   .= " AND (a.label LIKE '%" . $search . "%' OR a.location LIKE '%" . $search . "%' OR s.nom LIKE '%" . $search . "%' OR p.ref LIKE '%" . $search . "%' OR p.title LIKE '%" . $search . "%')";
     }
+    // The conditions of the other modules, that start with ' AND '
+    $hookmanager->executeHooks('printFieldListWhere', $hookParameters);
+    $sql .= $hookmanager->resPrint;
     $sql .= ' ORDER BY a.datep ASC, a.id ASC';
     // A busy month of a whole team stays far below, the cap only protects the browser
     $sql .= $db->plimit(3000);
@@ -403,6 +414,10 @@ function dolical_fetch_events(User $user, int $start, int $end, array $userIds, 
         $events[$id]['answers']      = (object) ($event['answers'] ?? []);
         unset($events[$id]['authorId']);
     }
+
+    // The other modules complete the events, by reference
+    $hookParameters['events'] = &$events;
+    $hookmanager->executeHooks('completeDolicalEvents', $hookParameters);
 
     return array_values($events);
 }

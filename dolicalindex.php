@@ -34,7 +34,7 @@ if (file_exists('dolical.main.inc.php')) {
 require_once __DIR__ . '/lib/dolical_event.lib.php';
 require_once __DIR__ . '/lib/dolical_booking.lib.php';
 
-global $conf, $db, $langs, $user;
+global $conf, $db, $hookmanager, $langs, $user;
 
 $langs->loadLangs(['dolical@dolical', 'agenda', 'companies', 'errors']);
 
@@ -43,6 +43,9 @@ $permissionToRead = $user->hasRight('dolical', 'read') && $user->hasRight('agend
 if (!$permissionToRead || $user->socid > 0) {
     accessforbidden();
 }
+
+// The other modules reach the page of the calendar by this context : their scripts and styles (addHtmlHeader)
+$hookmanager->initHooks(['dolicalcalendar']);
 
 /*
  * View

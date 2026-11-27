@@ -391,6 +391,8 @@ window.dolical.eventform.open = function(params) {
   }).done(function(html) {
     $box.html(html);
     F.setup($box);
+    // The other modules bring their fields to life (hook formObjectOptions)
+    $(document).trigger('dolical:formopen', [$box, params || {}]);
   }).fail(function(xhr) {
     $modal.removeClass('modal-active');
     U.toast(U.xhrError(xhr), 'error');

@@ -41,7 +41,7 @@ if (file_exists('../dolical.main.inc.php')) {
 
 require_once __DIR__ . '/../lib/dolical_event.lib.php';
 
-global $user;
+global $hookmanager, $user;
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -62,6 +62,9 @@ if ($start <= 0 || $end <= $start || $end - $start > 50 * 86400) {
     echo json_encode(['success' => false, 'error' => 'BadPeriod']);
     exit;
 }
+
+// The other modules filter and complete the events by the context of the calendar (see dolical_fetch_events())
+$hookmanager->initHooks(['dolicalcalendar']);
 
 $filters = [
     'hideauto'  => GETPOSTINT('hideauto'),

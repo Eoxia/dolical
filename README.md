@@ -344,6 +344,38 @@ Constantes facultatives (*Configuration > Divers*), 0 pour lever une limite :
 | `DOLICAL_CALDAV_FAIL_WINDOW` | 15 | Fenêtre des échecs CalDAV, en minutes |
 | `DOLICAL_BOOKING_HUB` | 0 | 1 : la page de prise de rendez-vous sans personne liste les personnes proposées |
 
+## Pour les autres modules
+
+DoliCal donne aux autres modules les points d'entrée de l'agenda de Dolibarr, sous deux contextes à lui. Un module les
+déclare dans `module_parts['hooks']` de son descripteur (puis se réactive, Dolibarr ne relisant les contextes qu'à
+l'activation).
+
+| Contexte | Pages | Hooks |
+| --- | --- | --- |
+| `dolicalcalendar` | `dolicalindex.php`, `ajax/events.php` | `addHtmlHeader`, `printFieldListFrom`, `printFieldListWhere`, `completeDolicalEvents` |
+| `dolicalevent` | `view/dolical_event.php`, `ajax/event.php` | `addHtmlHeader`, `doActions`, `formObjectOptions`, `addMoreActionsButtons` |
+
+- **Scripts et styles** : `addHtmlHeader` sur le calendrier et sur la page d'un événement seul.
+- **Événements lus** : `printFieldListFrom` et `printFieldListWhere` complètent la requête du calendrier comme dans
+  l'agenda de Dolibarr (`llx_actioncomm as a`), la condition commençant par ` AND ` ; une jointure ne doit pas
+  multiplier les lignes. Paramètres : `start` et `end` (timestamps), `userIds`, `filters`.
+- **Événements complétés** : `completeDolicalEvents` reçoit dans `$parameters['events']`, par référence, les événements
+  indexés par leur id. `cssClass` ajoute des classes CSS à l'événement dans toutes les vues (noms simples : lettres,
+  chiffres, `-` et `_`) ; les autres clés arrivent telles quelles au navigateur.
+- **Actions** : `doActions` passe avant toute vue et toute action de `ajax/event.php` (`$action` vaut `save`, `move`,
+  `delete`…, vide pour une vue ; `$object` est l'événement, neuf quand il n'existe pas encore). Un retour négatif arrête
+  avec l'erreur du module ; un retour positif veut dire que le module a répondu seul, et son `results` part en JSON :
+  un module y ajoute ses propres actions, envoyées en POST avec le jeton (`window.dolical.util.post`). Ce qui suit
+  l'enregistrement passe par les triggers de l'événement (`ACTIONCOMM_CREATE`, `ACTIONCOMM_MODIFY`).
+- **Formulaire** : `formObjectOptions` (`$parameters['view']` vaut `form`, `$action` vaut `create` ou `edit`) affiche
+  ses champs après ceux de DoliCal ; ils partent avec le formulaire.
+- **Fiche** : `formObjectOptions` (`view` vaut `card`, `$action` vaut `view`) affiche ce qu'il veut avant le pied de la
+  fiche ; `addMoreActionsButtons` ajoute ses actions au menu « … » : des liens, ou des boutons de classe
+  `dolical-card__action` avec un `data-action` à lui, que la fiche ne traite pas.
+- **Événements jQuery** sur `document` : `dolical:loaded` (événements du calendrier chargés), `dolical:changed` (un
+  événement enregistré, déplacé ou supprimé, avec son id quand il y en a un), `dolical:formopen` (formulaire affiché,
+  avec sa fenêtre et ses paramètres d'ouverture), `dolical:cardopen` (fiche affichée, avec l'id et la fiche).
+
 ## Prérequis
 
 Dolibarr 23 ou 24, modules Agenda et Tiers. Aucun module externe.

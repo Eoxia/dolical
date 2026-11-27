@@ -2,6 +2,11 @@
 
 ## Non publié
 
+- Pour les autres modules : les contextes de hooks `dolicalcalendar` (calendrier) et `dolicalevent` (formulaire, fiche
+  et actions d'un événement), avec les hooks de l'agenda de Dolibarr (`addHtmlHeader`, `printFieldListFrom`,
+  `printFieldListWhere`, `doActions`, `formObjectOptions`, `addMoreActionsButtons`) et `completeDolicalEvents` pour
+  compléter les événements du calendrier, dont leur classe CSS. Événements jQuery `dolical:formopen` et
+  `dolical:cardopen`. Rien ne change sans un module qui les utilise.
 - Liens publics (réponse aux invitations, pages de prise de rendez-vous) : ils restent valables quand on ajoute plus tard
   la clé d'instance (`$dolibarr_main_instance_unique_id`) au `conf.php` d'une installation qui n'en avait pas. Le secret
   déjà tiré par le module est gardé ; une installation qui avait déjà sa clé ne change pas.

@@ -20,7 +20,8 @@
  * \ingroup dolical
  * \brief   Card of an event, shown when it is clicked in the calendar.
  *
- * Rendered by ajax/event.php (inherits its scope). Expects: $card from dolical_get_event_card(), $langs.
+ * Rendered by ajax/event.php (inherits its scope). Expects: $card from dolical_get_event_card(), $event, $langs,
+ * $hookmanager.
  * Colors travel in data-color attributes, the JavaScript turns them into a CSS variable.
  */
 
@@ -61,6 +62,13 @@ $billingIcons  = ['paid' => 'fas fa-check-circle', 'unpaid' => 'fas fa-hourglass
                     <button type="button" class="dolical-card__action" data-action="clone"><i class="far fa-clone pictofixedwidth"></i><?php echo $langs->trans('DoliCalDuplicate'); ?></button>
                     <button type="button" class="dolical-card__action" data-action="copylink" data-copy="<?php echo dol_escape_htmltag(dol_buildpath('/dolical/dolicalindex.php', 2) . '?event=' . $card['id']); ?>"><i class="fas fa-link pictofixedwidth"></i><?php echo $langs->trans('DoliCalCopyLink'); ?></button>
                     <a class="dolical-card__action" href="<?php echo dol_escape_htmltag($card['nativeUrl']); ?>"><i class="fas fa-external-link-alt pictofixedwidth"></i><?php echo $langs->trans('DoliCalOpenNativeCard'); ?></a>
+                    <?php
+                    // The actions of the other modules : links, or buttons of class dolical-card__action whose data-action
+                    // is theirs, the card leaves them alone
+                    $hookAction = 'view';
+                    $hookmanager->executeHooks('addMoreActionsButtons', ['view' => 'card'], $event, $hookAction);
+                    echo $hookmanager->resPrint;
+                    ?>
                     <?php if ($card['canDelete']) : ?>
                         <button type="button" class="dolical-card__action dolical-card__action--danger" data-action="delete"><i class="far fa-trash-alt pictofixedwidth"></i><?php echo $langs->trans('Delete'); ?></button>
                     <?php endif; ?>
@@ -402,6 +410,13 @@ $billingIcons  = ['paid' => 'fas fa-check-circle', 'unpaid' => 'fas fa-hourglass
                 <button type="button" class="dolical-link dolical-card__note-toggle dolical-card__indent"><?php echo $langs->trans('DoliCalShowMore'); ?></button>
             </div>
         <?php endif; ?>
+
+        <?php
+        // What the other modules show of the event, before the foot of the card
+        $hookAction = 'view';
+        $hookmanager->executeHooks('formObjectOptions', ['view' => 'card'], $event, $hookAction);
+        echo $hookmanager->resPrint;
+        ?>
 
         <?php if (!empty($card['meta'])) : ?>
             <div class="dolical-card__meta"><?php echo dol_escape_htmltag(implode(' · ', $card['meta'])); ?></div>

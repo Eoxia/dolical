@@ -860,6 +860,12 @@ window.dolical.calendar.stateClasses = function(event, userId) {
   if (event.toConfirm) {
     classes += ' is-to-confirm';
   }
+  // The classes given by the other modules (hook completeDolicalEvents), the plain names only
+  String(event.cssClass || '').split(/\s+/).forEach(function(name) {
+    if (/^[A-Za-z0-9_-]+$/.test(name)) {
+      classes += ' ' + name;
+    }
+  });
   return classes;
 };
 
