@@ -37,6 +37,16 @@ window.dolical.util.init = function() {
 };
 
 /**
+ * Whether the keys are for the calendar : always on the pages of DoliCal ; inside the page of another module, only once
+ * the calendar is used (the last press of the pointer was on it), the keys of that page staying its own.
+ *
+ * @returns {Boolean}
+ */
+window.dolical.util.keysForCalendar = function() {
+  return !window.dolical.util.config().embedded || window.dolical.util.calendarInUse === true;
+};
+
+/**
  * Configuration of the calendar page, read once from the data attribute of the frame.
  *
  * @returns {Object}

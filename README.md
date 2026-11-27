@@ -376,6 +376,32 @@ l'activation).
   événement enregistré, déplacé ou supprimé, avec son id quand il y en a un), `dolical:formopen` (formulaire affiché,
   avec sa fenêtre et ses paramètres d'ouverture), `dolical:cardopen` (fiche affichée, avec l'id et la fiche).
 
+## Le calendrier dans la page d'un autre module
+
+Une page d'un autre module affiche le calendrier où elle veut, à la place d'une iframe :
+
+```php
+dol_include_once('/dolical/lib/dolical_event.lib.php');
+
+$assets = dolical_calendar_assets();
+llxHeader('', $title, '', '', 0, 0, $assets['js'], $assets['css']);
+// La page : une liste, une fiche…
+dolical_print_calendar($user, ['height' => '720px', 'view' => 'week', 'users' => [$user->id]]);
+llxFooter();
+```
+
+- Options, toutes facultatives : `height` (hauteur CSS en `px`, `vh`, `dvh`, `em` ou `rem`, `80vh` par défaut), `view`
+  (`day`, `week`, `team`, `month` ou `list`), `users` (ids des personnes affichées, parmi celles que l'utilisateur peut
+  voir).
+- Sans le module, sans les droits de lecture du calendrier ou pour un utilisateur externe, rien n'est affiché : la
+  fonction rend `false` et la page continue sans lui.
+- Le calendrier ne lit rien de l'adresse, dont les paramètres sont ceux de la page (`?view=`, `?users=`, `?event=`,
+  `?action=create`, `socid`…). Ses choix (vue, personnes, filtres) sont gardés à part de ceux de la page de DoliCal.
+- Les touches restent à la page : elles vont au calendrier après un clic dessus, et reviennent à la page après un clic
+  ailleurs.
+- La page ne reçoit pas le contexte `dolicalcalendar`, qui ferait passer les hooks de lecture des événements dans ses
+  propres requêtes. Ces hooks restent appelés par `ajax/events.php`, et ceux de `dolicalevent` par `ajax/event.php`.
+
 ## Prérequis
 
 Dolibarr 23 ou 24, modules Agenda et Tiers. Aucun module externe.

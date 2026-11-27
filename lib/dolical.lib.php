@@ -155,6 +155,23 @@ function dolical_asset(string $path): string
 }
 
 /**
+ * Scripts and style of DoliCal, for llxHeader() : the pages of DoliCal, and the page of another module that shows the
+ * calendar (dolical_print_calendar())
+ *
+ * @return array ['js' => paths, 'css' => paths]
+ */
+function dolical_calendar_assets(): array
+{
+    // The entry point first, then the modules in the order their init must run
+    $js = [dolical_asset('js/dolical.js')];
+    foreach (['calendar', 'eventcard', 'eventform', 'import', 'report', 'sync', 'util', 'single', 'shortcuts'] as $module) {
+        $js[] = dolical_asset('js/modules/' . $module . '.js');
+    }
+
+    return ['js' => $js, 'css' => [dolical_asset('css/dolical.css')]];
+}
+
+/**
  * Header of a page of DoliCal : the Dolibarr header with the style and the scripts of the module
  *
  * @param  string $title         Title of the page
@@ -163,13 +180,9 @@ function dolical_asset(string $path): string
  */
 function dolical_header(string $title, string $morecssonbody = ''): void
 {
-    // The entry point first, then the modules in the order their init must run
-    $js = [dolical_asset('js/dolical.js')];
-    foreach (['calendar', 'eventcard', 'eventform', 'import', 'report', 'sync', 'util', 'single', 'shortcuts'] as $module) {
-        $js[] = dolical_asset('js/modules/' . $module . '.js');
-    }
+    $assets = dolical_calendar_assets();
 
-    llxHeader('', $title, '', '', 0, 0, $js, [dolical_asset('css/dolical.css')], '', $morecssonbody);
+    llxHeader('', $title, '', '', 0, 0, $assets['js'], $assets['css'], '', $morecssonbody);
 }
 
 /**

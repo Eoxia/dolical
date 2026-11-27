@@ -2,6 +2,10 @@
 
 ## Non publié
 
+- Calendrier dans la page d'un autre module, à la place d'une iframe : `dolical_print_calendar()` l'affiche où la page
+  le veut, `dolical_calendar_assets()` donne ses scripts et son style pour `llxHeader()`. Hauteur, vue et personnes
+  choisies par la page ; rien n'est lu de son adresse ; les touches restent à la page tant qu'on n'utilise pas le
+  calendrier. La page de DoliCal passe par la même fonction.
 - Pour les autres modules : les contextes de hooks `dolicalcalendar` (calendrier) et `dolicalevent` (formulaire, fiche
   et actions d'un événement), avec les hooks de l'agenda de Dolibarr (`addHtmlHeader`, `printFieldListFrom`,
   `printFieldListWhere`, `doActions`, `formObjectOptions`, `addMoreActionsButtons`) et `completeDolicalEvents` pour

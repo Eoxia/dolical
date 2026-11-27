@@ -20,12 +20,13 @@
  * \ingroup dolical
  * \brief   Frame of the calendar : people and filters on the side, toolbar and grid, card and form shells.
  *
- * Rendered by dolicalindex.php (inherits its scope). Expects: $calendarConfig, $calendarUsers,
+ * Rendered by dolical_print_calendar() (inherits its scope). Expects: $calendarConfig, $calendarUsers,
  * $calendarGroups, $eventTypes, $views, $langs, $user.
  * The grid itself is drawn by js/modules/calendar.js from the events of ajax/events.php.
  */
 ?>
-<div class="dolical-app" data-config="<?php echo dol_escape_htmltag(json_encode($calendarConfig)); ?>">
+<?php // Inside the page of another module : the height it chose, instead of the height of the screen ?>
+<div class="dolical-app<?php echo $calendarConfig['embedded'] ? ' is-embedded' : ''; ?>"<?php echo $calendarConfig['embedded'] ? ' style="--dolical-height: ' . dol_escape_htmltag($calendarConfig['embed']['height']) . '"' : ''; ?> data-config="<?php echo dol_escape_htmltag(json_encode($calendarConfig)); ?>">
     <aside class="dolical-sidebar">
         <?php if ($calendarConfig['canCreate']) : ?>
             <button type="button" class="dolical-btn dolical-btn--primary dolical-btn--create" data-action="create" title="<?php echo dol_escape_htmltag($langs->trans('DoliCalNewEvent') . ' (N)'); ?>"><i class="fas fa-plus"></i><?php echo $langs->trans('DoliCalNewEvent'); ?></button>
