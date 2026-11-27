@@ -207,9 +207,26 @@ window.dolical.calendar.event = function() {
       window.dolical.util.calendarInUse = $(event.target).closest('.dolical-app, .dolical-popover, .dolical-modal, .dolical-contextmenu').length > 0;
     });
   }
-  $(document).on('dolical:changed', function() {
+  $(document).on('dolical:changed', function(event, id) {
     C.load();
+    // The other windows of the browser are told : another calendar reloads, the page of a module follows
+    window.dolical.util.broadcast('changed', {id: id || 0});
   });
+  // A change made in another window reloads this calendar, unless the user is busy in it
+  const channel = window.dolical.util.channel();
+  if (channel) {
+    channel.addEventListener('message', function(message) {
+      if (message.data && message.data.type === 'changed' && !C.drag && !C.select && !$('#dolical-event-modal').hasClass('modal-active')) {
+        C.load(true);
+      }
+    });
+  }
+
+  // An element dragged from the page or from another window (calendar.DROP_TYPE)
+  const dropCells = '.dolical-calendar .ra-tg__col, .dolical-calendar .ra-tg__allday-col, .dolical-calendar .ra-month__cell, .dolical-calendar .ra-team__cell';
+  $(document).on('dragover', dropCells, C.dropOver);
+  $(document).on('dragleave', dropCells, C.dropLeave);
+  $(document).on('drop', dropCells, C.drop);
 
   let resizeTimer = null;
   $(window).on('resize', function() {
@@ -1492,6 +1509,22 @@ window.dolical.calendar.clickEmpty = function(event) {
     return;
   }
 
+  window.dolical.eventform.open(C.slotOf($cell, event.pageY, 30));
+};
+
+/**
+ * Dates and person of a cell : in a column of hours, the time under the pointer ; the band of the whole days ; a day of
+ * the month or of the team, at 9:00. The person is the one of the column, else the one shown, else the user.
+ *
+ * @param   {jQuery} $cell Cell
+ * @param   {Number} pageY Pointer
+ * @param   {Number} step  Minutes the time is rounded down to
+ * @returns {Object}       {user, start, end, allday}, as eventform.open() takes them
+ */
+window.dolical.calendar.slotOf = function($cell, pageY, step) {
+  const C      = window.dolical.calendar;
+  const U      = window.dolical.util;
+  const config = U.config();
   const day    = U.fromDayKey($cell.attr('data-date'));
   const userId = parseInt($cell.attr('data-user'), 10) || 0;
   const params = {user: userId || (C.state.users.length === 1 ? C.state.users[0] : config.currentUser)};
@@ -1503,14 +1536,189 @@ window.dolical.calendar.clickEmpty = function(event) {
   } else {
     let minutes = 9 * 60;
     if ($cell.hasClass('ra-tg__col')) {
-      minutes = Math.floor((event.pageY - $cell.offset().top) * 60 / C.HOUR_HEIGHT / 30) * 30;
+      minutes = Math.max(0, Math.min(1440 - step, Math.floor((pageY - $cell.offset().top) * 60 / C.HOUR_HEIGHT / step) * step));
     }
     const start  = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, minutes);
     params.start = Math.floor(start.getTime() / 1000);
     params.end   = params.start + config.defaultDuration * 60;
   }
+  return params;
+};
 
-  window.dolical.eventform.open(params);
+/*
+ * Drop from elsewhere : an element dragged from the page or from another window of the browser
+ */
+
+/**
+ * Type of the data an element dragged into the calendar carries : an object in JSON, see the README.
+ */
+window.dolical.calendar.DROP_TYPE = 'application/x-dolical-event';
+
+/**
+ * Whether what is dragged is an element for the calendar : its type only, the data are read at the drop.
+ *
+ * @param   {Event} event Drag
+ * @returns {Boolean}
+ */
+window.dolical.calendar.carriesDrop = function(event) {
+  const transfer = event.originalEvent && event.originalEvent.dataTransfer;
+  return !!transfer && Array.prototype.indexOf.call(transfer.types || [], window.dolical.calendar.DROP_TYPE) !== -1;
+};
+
+/**
+ * Duration of the element dragged, known before the drop : the browser shows only the types of the data while they
+ * pass, so the element may add the type application/x-dolical-duration-<minutes>. Else the default duration.
+ *
+ * @param   {DataTransfer} transfer Data dragged
+ * @returns {Number}                Minutes
+ */
+window.dolical.calendar.dragDuration = function(transfer) {
+  const types = Array.prototype.slice.call(transfer.types || []);
+  for (let i = 0; i < types.length; i++) {
+    const match = /^application\/x-dolical-duration-(\d{1,4})$/.exec(types[i]);
+    if (match && parseInt(match[1], 10) > 0) {
+      return parseInt(match[1], 10);
+    }
+  }
+  return window.dolical.util.config().defaultDuration;
+};
+
+/**
+ * An element passes over a cell, the drop allowed : in a column of hours, the slot under the pointer drawn as the
+ * selection of a new event (ra-select) ; a day is lit.
+ *
+ * @param   {Event} event Drag
+ * @returns {void}
+ */
+window.dolical.calendar.dropOver = function(event) {
+  const C = window.dolical.calendar;
+  const U = window.dolical.util;
+  if (!C.carriesDrop(event) || !U.config().canCreate) {
+    return;
+  }
+  event.preventDefault();
+  const transfer = event.originalEvent.dataTransfer;
+  transfer.dropEffect = 'copy';
+  C.dropClear(this);
+
+  const $cell = $(this);
+  if (!$cell.hasClass('ra-tg__col')) {
+    $cell.addClass('is-drop-target');
+    return;
+  }
+  const from = C.selectMinute(this, event.originalEvent.clientY);
+  const to   = Math.min(1440, from + C.dragDuration(transfer));
+  const day  = U.fromDayKey($cell.attr('data-date'));
+  let $ghost = $cell.children('.ra-select.is-drop');
+  if (!$ghost.length) {
+    $ghost = $('<div class="ra-select is-drop"><span class="ra-select__time"></span></div>').appendTo($cell);
+  }
+  $ghost[0].style.setProperty('--ra-top', (from * C.HOUR_HEIGHT / 60) + 'px');
+  $ghost[0].style.setProperty('--ra-height', ((to - from) * C.HOUR_HEIGHT / 60) + 'px');
+  $ghost.find('.ra-select__time').text(U.time(new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, from)) + ' – ' + U.time(new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, to)));
+
+  // The pointer and the image dragged cover the slot : its hours in the column of the hours, its day (or its person)
+  // in the head, where they cannot hide them
+  const $grid = $cell.closest('.ra-tg');
+  let $mark   = $grid.find('.ra-tg__hours > .ra-drop-mark');
+  if (!$mark.length) {
+    $mark = $('<div class="ra-drop-mark"></div>').appendTo($grid.find('.ra-tg__hours'));
+  }
+  $mark[0].style.setProperty('--ra-top', (from * C.HOUR_HEIGHT / 60) + 'px');
+  $mark[0].style.setProperty('--ra-height', ((to - from) * C.HOUR_HEIGHT / 60) + 'px');
+  $mark.text(U.time(new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, from)));
+  $grid.find('.ra-tg__colhead').removeClass('is-drop-day').eq($cell.parent().children('.ra-tg__col').index($cell)).addClass('is-drop-day');
+};
+
+/**
+ * Clear what shows the element passing : the lit day, the slot drawn ; but in the cell still under it.
+ *
+ * @param   {Element|null} keep Cell under the element
+ * @returns {void}
+ */
+window.dolical.calendar.dropClear = function(keep) {
+  $('.dolical-calendar .is-drop-target').not(keep).removeClass('is-drop-target');
+  $('.dolical-calendar .ra-select.is-drop').filter(function() {
+    return this.parentNode !== keep;
+  }).remove();
+  // The marks of the hours and of the day follow the element from a column of hours to the next one
+  if (!keep || !$(keep).hasClass('ra-tg__col')) {
+    $('.dolical-calendar .ra-drop-mark').remove();
+    $('.dolical-calendar .ra-tg__colhead.is-drop-day').removeClass('is-drop-day');
+  }
+};
+
+/**
+ * The element leaves the cell : going over an event inside it is not leaving it.
+ *
+ * @param   {Event} event Drag
+ * @returns {void}
+ */
+window.dolical.calendar.dropLeave = function(event) {
+  const to = event.originalEvent.relatedTarget;
+  if (!this.contains(to)) {
+    $(this).removeClass('is-drop-target').children('.ra-select.is-drop').remove();
+    // Out of the columns of hours : the marks of the hours and of the day go too
+    if (!$(to).closest('.dolical-calendar .ra-tg__col').length) {
+      window.dolical.calendar.dropClear(null);
+    }
+  }
+};
+
+/**
+ * An element dropped on a cell : the form of a new event, at the time and for the person of the cell, filled with what
+ * the element brings. dolical:drop lets the other modules change it first, or refuse the drop (preventDefault()) : the
+ * page of the element is then told, as for a form closed.
+ *
+ * @param   {Event} event Drop
+ * @returns {void}
+ */
+window.dolical.calendar.drop = function(event) {
+  const C = window.dolical.calendar;
+  if (!C.carriesDrop(event) || !window.dolical.util.config().canCreate) {
+    return;
+  }
+  event.preventDefault();
+  C.dropClear(null);
+
+  let item = null;
+  try {
+    item = JSON.parse(event.originalEvent.dataTransfer.getData(C.DROP_TYPE));
+  } catch (error) {
+    item = null;
+  }
+  if (!item || typeof item !== 'object' || Array.isArray(item)) {
+    return;
+  }
+
+  const params   = C.slotOf($(this), event.originalEvent.pageY, C.SNAP);
+  const duration = parseInt(item.duration, 10);
+  if (!params.allday && duration > 0) {
+    params.end = params.start + duration * 60;
+  }
+  ['label', 'type_code', 'socid', 'projectid', 'location', 'note'].forEach(function(name) {
+    if (item[name] !== undefined && item[name] !== null && item[name] !== '') {
+      params[name] = item[name];
+    }
+  });
+  // Lists : ids of the colleagues and of the contacts, documents as element:id
+  [['users', 'users'], ['contactids', 'contactids'], ['elements', 'elements']].forEach(function(names) {
+    if (Array.isArray(item[names[0]]) && item[names[0]].length) {
+      params[names[1]] = item[names[0]].join(',');
+    }
+  });
+  if (item.extra !== undefined) {
+    params.extra = JSON.stringify(item.extra);
+  }
+
+  const dropEvent = $.Event('dolical:drop');
+  $(document).trigger(dropEvent, [params, item]);
+  if (dropEvent.isDefaultPrevented()) {
+    $(document).trigger('dolical:dropcancelled', [0, item]);
+    window.dolical.util.broadcast('dropcancelled', {id: 0, item: item});
+    return;
+  }
+  window.dolical.eventform.openDropped(params, item);
 };
 
 /**

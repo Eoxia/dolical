@@ -2,6 +2,12 @@
 
 ## Non publié
 
+- Déposer dans le calendrier un élément glissé depuis la page ou depuis une autre fenêtre (double écran) : il ouvre le
+  formulaire d'un nouvel événement à l'heure et pour la personne de la case, rempli de ce qu'il apporte (titre, type,
+  durée, collègues, tiers, projet, contacts, documents liés, lieu, description, données du module). Sa page est
+  prévenue quand l'événement est enregistré ou le formulaire fermé, dans la même fenêtre ou dans une autre
+  (`BroadcastChannel`). Les changements du calendrier sont annoncés aux autres fenêtres : un autre calendrier ouvert
+  se recharge.
 - Calendrier dans la page d'un autre module, à la place d'une iframe : `dolical_print_calendar()` l'affiche où la page
   le veut, `dolical_calendar_assets()` donne ses scripts et son style pour `llxHeader()`. Hauteur, vue et personnes
   choisies par la page ; rien n'est lu de son adresse ; les touches restent à la page tant qu'on n'utilise pas le
