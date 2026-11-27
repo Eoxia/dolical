@@ -47,6 +47,34 @@ window.dolical.util.keysForCalendar = function() {
 };
 
 /**
+ * Channel of the windows of the browser on this site ('dolical') : the calendar tells its changes to the other windows,
+ * another calendar or the page of a module whose element was dropped. Null without BroadcastChannel.
+ *
+ * @returns {BroadcastChannel|null}
+ */
+window.dolical.util.channel = function() {
+  if (window.dolical.util.channelCache === undefined) {
+    window.dolical.util.channelCache = typeof BroadcastChannel === 'function' ? new BroadcastChannel('dolical') : null;
+  }
+  return window.dolical.util.channelCache;
+};
+
+/**
+ * Tell the other windows : {type, ...data}. The channel that sends does not get its own message ; every other channel
+ * 'dolical' does, in another window or in this page (the one of a module whose element was dropped).
+ *
+ * @param   {String} type changed, dropsaved or dropcancelled
+ * @param   {Object} data What goes with it
+ * @returns {void}
+ */
+window.dolical.util.broadcast = function(type, data) {
+  const channel = window.dolical.util.channel();
+  if (channel) {
+    channel.postMessage($.extend({type: type}, data || {}));
+  }
+};
+
+/**
  * Configuration of the calendar page, read once from the data attribute of the frame.
  *
  * @returns {Object}

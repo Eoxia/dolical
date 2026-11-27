@@ -215,6 +215,18 @@ if ($view === 'form') {
             return dol_strtolower(trim($email));
         }, explode(',', GETPOST('emails', 'alphanohtml'))), 'isValidEmail'))), 0, 20);
 
+        // From an element dropped into the calendar (js : calendar.drop, by POST too) : its type, its colleagues among
+        // the people the user may show, its place and its description
+        $typeCode = GETPOST('type_code', 'aZ09');
+        if ($typeCode !== '' && isset($eventTypes[$typeCode])) {
+            $formValues['type_code'] = $typeCode;
+        }
+        $formValues['user_ids'] = array_values(array_filter(array_unique(array_map('intval', explode(',', GETPOST('users', 'intcomma')))), function ($userId) use ($calendarUsers, $ownerId) {
+            return $userId !== $ownerId && isset($calendarUsers[$userId]);
+        }));
+        $formValues['location'] = dol_trunc(trim(GETPOST('location', 'alphanohtml')), 255, 'right', 'UTF-8', 1);
+        $formValues['note']     = GETPOST('note', 'restricthtml');
+
         // The dates written in the mail (module Inbox) : all of them offered under the dates of the form, the first one
         // with its hours fills them, unless the calendar gave a slot
         $mailDates = $formValues['email_msgid'] !== '' ? dolical_mail_dates($formValues['email_msgid'], $user) : [];
@@ -335,6 +347,12 @@ if ($view === 'form') {
             $reminder['enabled'] = false;
         }
     }
+
+    // The data of the module whose element was dropped (js : calendar.drop), for its fields in the form (hook
+    // formObjectOptions, $parameters['extra']) : the module checks them as anything sent by the browser
+    $formExtra = GETPOST('extra', 'none');
+    $formExtra = strlen($formExtra) <= 65536 ? json_decode($formExtra, true) : null;
+    $formExtra = is_array($formExtra) ? $formExtra : [];
 
     header('Content-Type: text/html; charset=utf-8');
     require __DIR__ . '/../core/tpl/dolical_event_form.tpl.php';

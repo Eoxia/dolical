@@ -23,7 +23,8 @@
  * Rendered by ajax/event.php (inherits its scope). Expects: $event (null for a new event), $isNew, $formValues,
  * $calendarUsers, $eventTypes, $canAssignAll, $selectedContacts, $selectedThirdparty, $selectedProject,
  * $selectedElements, $eventFiles, $recurrenceChoices, $seriesSize, $reminderTypes, $reminder, $mailDates (dates of the
- * mail the event is planned from, see dolical_find_dates()), $langs, $db, $hookmanager.
+ * mail the event is planned from, see dolical_find_dates()), $formExtra (data of the module whose element was dropped),
+ * $langs, $db, $hookmanager.
  * Dates are written in the format of the HTML date inputs, the JavaScript sends them back as timestamps.
  */
 
@@ -314,7 +315,7 @@ $title = $isNew ? $langs->trans('DoliCalNewEvent') : $langs->trans('DoliCalEditE
             // the card of the agenda of Dolibarr
             $hookObject = $event !== null ? $event : new ActionComm($db);
             $hookAction = $isNew ? 'create' : 'edit';
-            $hookmanager->executeHooks('formObjectOptions', ['view' => 'form'], $hookObject, $hookAction);
+            $hookmanager->executeHooks('formObjectOptions', ['view' => 'form', 'extra' => $formExtra], $hookObject, $hookAction);
             echo $hookmanager->resPrint;
             ?>
         </div>

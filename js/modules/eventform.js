@@ -46,6 +46,10 @@ window.dolical.eventform.event = function() {
   const F = window.dolical.eventform;
 
   $(document).on('click', '#dolical-event-modal .dolical-form__submit', F.submit);
+  // The form of an element dropped, closed without saving
+  $(document).on('click', '#dolical-event-modal .modal-close', function() {
+    F.dropDone('dropcancelled', 0);
+  });
   $(document).on('change', '#dolical-event-modal input[name="fullday"]', F.toggleFullday);
   $(document).on('change', '#dolical-event-modal input[name="start_at"], #dolical-event-modal input[name="start_day"]', F.keepDuration);
   $(document).on('focus', '#dolical-event-modal input[name="start_at"], #dolical-event-modal input[name="start_day"]', F.rememberStart);
@@ -380,13 +384,14 @@ window.dolical.eventform.open = function(params) {
   $box.html('<div class="dolical-form__loading"><i class="fas fa-circle-notch fa-spin"></i></div>');
   $modal.addClass('modal-active');
 
-  // What comes from a mail (title, addresses, Message-ID) goes by POST, the token in the body : never in an
-  // address, so never in a log. Else a read in GET without token, as the other views
-  const fromMail = !!(params && (params.label || params.emails || params.email_msgid));
+  // What comes from a mail (title, addresses, Message-ID) or from an element dropped (title, description, data of a
+  // module) goes by POST, the token in the body : never in an address, so never in a log. Else a read in GET without
+  // token, as the other views
+  const byPost = !!(params && (params.label || params.emails || params.email_msgid || params.note || params.extra));
   $.ajax({
     url: config.urls.event,
-    method: fromMail ? 'POST' : 'GET',
-    data: $.extend({view: 'form'}, fromMail ? {token: config.token} : {}, params || {}),
+    method: byPost ? 'POST' : 'GET',
+    data: $.extend({view: 'form'}, byPost ? {token: config.token} : {}, params || {}),
     dataType: 'html'
   }).done(function(html) {
     $box.html(html);
@@ -396,7 +401,42 @@ window.dolical.eventform.open = function(params) {
   }).fail(function(xhr) {
     $modal.removeClass('modal-active');
     U.toast(U.xhrError(xhr), 'error');
+    F.dropDone('dropcancelled', 0);
   });
+};
+
+/**
+ * The form of an element dropped into the calendar (calendar.drop) : the element is followed until the form is saved
+ * or closed, and its page told, in this window (dolical:dropsaved, dolical:dropcancelled) or in another one (message of
+ * the same type on the channel 'dolical', with the element).
+ *
+ * @param   {Object} params Of eventform.open()
+ * @param   {Object} item   Element dropped
+ * @returns {void}
+ */
+window.dolical.eventform.openDropped = function(params, item) {
+  const F = window.dolical.eventform;
+  F.dropDone('dropcancelled', 0);
+  F.dropped = item;
+  F.open(params);
+};
+
+/**
+ * End of the element dropped : saved as an event, or its form closed.
+ *
+ * @param   {String} type dropsaved or dropcancelled
+ * @param   {Number} id   Event saved, 0 else
+ * @returns {void}
+ */
+window.dolical.eventform.dropDone = function(type, id) {
+  const F    = window.dolical.eventform;
+  const item = F.dropped;
+  if (!item) {
+    return;
+  }
+  F.dropped = null;
+  $(document).trigger('dolical:' + type, [id, item]);
+  window.dolical.util.broadcast(type, {id: id, item: item});
 };
 
 /**
@@ -993,6 +1033,7 @@ window.dolical.eventform.send = function(data, id) {
     }
     // The message goes with the change : the page of one event gives it to the window that embeds it
     $(document).trigger('dolical:changed', [response.id, message]);
+    F.dropDone('dropsaved', response.id);
     // A new event shows its card at once : the people and documents can be checked there
     if (!id && window.dolical.calendar.state) {
       window.dolical.eventcard.open(response.id, null);

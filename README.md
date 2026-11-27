@@ -402,6 +402,58 @@ llxFooter();
 - La page ne reçoit pas le contexte `dolicalcalendar`, qui ferait passer les hooks de lecture des événements dans ses
   propres requêtes. Ces hooks restent appelés par `ajax/events.php`, et ceux de `dolicalevent` par `ajax/event.php`.
 
+## Déposer dans le calendrier un élément venu d'ailleurs
+
+Un élément glissé depuis la page qui affiche le calendrier, ou depuis une autre fenêtre du même navigateur (double
+écran), devient un rendez-vous. Déposé sur une case, il ouvre le formulaire d'un nouvel événement à l'heure et pour la
+personne de la case, rempli de ce qu'il apporte. Il porte ses données sous le type `application/x-dolical-event`, en
+JSON :
+
+```js
+row.addEventListener('dragstart', function(event) {
+  event.dataTransfer.setData('application/x-dolical-event', JSON.stringify({
+    label: 'Intervention chez Dupont',
+    type_code: 'AC_RDV',
+    duration: 90,
+    users: [3, 7],
+    socid: 12,
+    projectid: 4,
+    contactids: [25],
+    elements: ['ticket:45'],
+    location: '12 rue des Lilas, Lyon',
+    note: 'Apporter le devis',
+    extra: {mymodule_row: 45}
+  }));
+  // The duration, readable while it passes over the calendar
+  event.dataTransfer.setData('application/x-dolical-duration-90', '90');
+});
+```
+
+- Pendant le survol, le créneau sous le pointeur est dessiné comme la sélection d'un nouvel événement. Le navigateur ne
+  montre alors que les types des données, pas leur contenu : pour que le créneau ait la durée de l'élément, l'élément
+  ajoute le type `application/x-dolical-duration-<minutes>` (par exemple
+  `event.dataTransfer.setData('application/x-dolical-duration-90', '90')`), sinon c'est la durée par défaut. Le pointeur
+  et l'image glissée couvrant le créneau, son heure de début s'affiche aussi dans la colonne des heures, et son jour (ou
+  sa personne) dans l'en-tête. Le créneau commençant au pointeur et descendant, une petite image placée au-dessus
+  du pointeur (`setDragImage()`) le laisse voir, mieux qu'une ligne entière de liste.
+- Toutes les clés sont facultatives. `duration` en minutes, sinon la durée par défaut ; `users` : les collègues invités,
+  le propriétaire étant la personne de la colonne ; `elements` : les documents liés, en `type:id` ; `type_code` quand
+  les types d'événements sont utilisés. Le formulaire les vérifie comme une saisie : un tiers, un projet, un contact
+  ou un document que l'utilisateur ne peut pas voir est écarté, comme un collègue qu'il ne peut pas afficher.
+- `extra` : les données du module, rendues à son hook `formObjectOptions` (`$parameters['extra']`) pour ses champs.
+  Elles viennent du navigateur : le module les vérifie.
+- Avant l'ouverture du formulaire, l'événement jQuery `dolical:drop` (paramètres du formulaire, élément) laisse un
+  module les changer.
+- Une fois le formulaire enregistré ou fermé, la page de l'élément est prévenue par un message du canal
+  `BroadcastChannel('dolical')` : `{type: 'dropsaved', id, item}` ou `{type: 'dropcancelled', id: 0, item}`. Le canal le
+  livre dans une autre fenêtre comme dans la page du calendrier : l'écouter suffit dans les deux cas. Dans la page du
+  calendrier, les événements jQuery `dolical:dropsaved` (id de l'événement, élément) et `dolical:dropcancelled`
+  (0, élément) disent la même chose : une page écoute l'un ou l'autre, pas les deux.
+- Le calendrier annonce aussi chacun de ses changements sur ce canal (`{type: 'changed', id}`) : un autre calendrier
+  ouvert se recharge.
+
+Les données d'un glisser-déposer ne passent d'une fenêtre à l'autre qu'à l'intérieur d'un même navigateur.
+
 ## Prérequis
 
 Dolibarr 23 ou 24, modules Agenda et Tiers. Aucun module externe.
