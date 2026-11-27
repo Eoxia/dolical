@@ -1463,6 +1463,10 @@ body.dolical-is-dragging {
     height: calc(100vh - var(--dolical-top, 130px) - 12px);
     min-height: 480px;
   }
+  /* Inside the page of another module : the height it chose (dolical_print_calendar()) */
+  .dolical-app.is-embedded {
+    height: var(--dolical-height, 80vh);
+  }
   .dolical-sidebar {
     position: static;
     min-height: 0;

@@ -51,13 +51,6 @@ $hookmanager->initHooks(['dolicalcalendar']);
  * View
  */
 
-$calendarUsers  = dolical_get_calendar_users($user);
-$calendarGroups = dolical_get_calendar_groups($user, $calendarUsers);
-$eventTypes     = dolical_get_event_types();
-
-$views          = dolical_calendar_views();
-$calendarConfig = dolical_calendar_config($user, $calendarUsers, $calendarGroups);
-
 $title = $langs->trans('DoliCalCalendar');
 
 // The calendar has its own side panel : the left menu only took its room
@@ -65,7 +58,7 @@ $conf->dol_hide_leftmenu = 1;
 
 dolical_header($title, 'dolical-page');
 
-require __DIR__ . '/core/tpl/dolical_calendar.tpl.php';
+dolical_print_calendar($user);
 
 // End of page
 llxFooter();

@@ -299,7 +299,7 @@ window.dolical.shortcuts.keyboard = function(event) {
     $('#dolical-keys-modal').removeClass('modal-active');
     return;
   }
-  if (event.ctrlKey || event.metaKey || event.altKey || $(event.target).is('input, textarea, select, [contenteditable], [contenteditable] *') || $('.dolical-modal.modal-active').length) {
+  if (!window.dolical.util.keysForCalendar() || event.ctrlKey || event.metaKey || event.altKey || $(event.target).is('input, textarea, select, [contenteditable], [contenteditable] *') || $('.dolical-modal.modal-active').length) {
     return;
   }
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;

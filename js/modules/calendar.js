@@ -60,7 +60,7 @@ window.dolical.calendar.init = function() {
   const U      = window.dolical.util;
   const C      = window.dolical.calendar;
   const config = U.config();
-  const saved  = U.load('state') || {};
+  const saved  = U.load(C.stateKey()) || {};
   const known  = config.users.map(function(person) {
     return person.id;
   });
@@ -81,16 +81,23 @@ window.dolical.calendar.init = function() {
     view = 'list';
   }
 
-  // A shared link chooses the people and the view : ?users=1,95&view=team
-  const query  = new URLSearchParams(window.location.search);
-  const wanted = (query.get('users') || '').split(',').map(Number).filter(function(id) {
+  // A shared link chooses the people and the view : ?users=1,95&view=team. Inside the page of another module, the
+  // address is the one of that page : the module chooses them (dolical_print_calendar())
+  let asked = {users: [], view: ''};
+  if (config.embedded) {
+    asked = {users: config.embed.users || [], view: config.embed.view || ''};
+  } else {
+    const query = new URLSearchParams(window.location.search);
+    asked = {users: (query.get('users') || '').split(',').map(Number), view: query.get('view')};
+  }
+  const wanted = asked.users.filter(function(id) {
     return known.indexOf(id) !== -1;
   });
   if (wanted.length && config.canReadAll) {
     users = wanted;
   }
-  if (['day', 'week', 'team', 'month', 'list'].indexOf(query.get('view')) !== -1) {
-    view = query.get('view');
+  if (['day', 'week', 'team', 'month', 'list'].indexOf(asked.view) !== -1) {
+    view = asked.view;
   }
 
   const savedFilters = saved.filters || {};
@@ -194,6 +201,12 @@ window.dolical.calendar.event = function() {
   $(document).on('pointerdown', '.dolical-calendar .ra-tg__col, .dolical-calendar .ra-tg__allday-col, .dolical-calendar .ra-month__cell', C.selectStart);
 
   $(document).on('keydown', C.keyboard);
+  // Inside the page of another module, the keys belong to that page until the calendar is used (util.keysForCalendar)
+  if (window.dolical.util.config().embedded) {
+    $(document).on('pointerdown', function(event) {
+      window.dolical.util.calendarInUse = $(event.target).closest('.dolical-app, .dolical-popover, .dolical-modal, .dolical-contextmenu').length > 0;
+    });
+  }
   $(document).on('dolical:changed', function() {
     C.load();
   });
@@ -219,11 +232,21 @@ window.dolical.calendar.event = function() {
  */
 window.dolical.calendar.persist = function() {
   const state = window.dolical.calendar.state;
-  window.dolical.util.save('state', {
+  window.dolical.util.save(window.dolical.calendar.stateKey(), {
     view: state.view,
     users: state.users,
     filters: {hideauto: state.filters.hideauto, status: state.filters.status, types: state.filters.types}
   });
+};
+
+/**
+ * Key of the choices kept by the browser : the calendar inside the page of another module keeps its own, the page of
+ * DoliCal keeps its choices.
+ *
+ * @returns {String}
+ */
+window.dolical.calendar.stateKey = function() {
+  return window.dolical.util.config().embedded ? 'embedded.state' : 'state';
 };
 
 /**
@@ -1198,7 +1221,8 @@ window.dolical.calendar.minicalNavigate = function() {
  */
 window.dolical.calendar.fitHeight = function() {
   const app = document.querySelector('.dolical-app');
-  if (app) {
+  // Inside the page of another module, the module chose the height (--dolical-height)
+  if (app && !window.dolical.util.config().embedded) {
     app.style.setProperty('--dolical-top', Math.max(0, Math.round(app.getBoundingClientRect().top + window.scrollY)) + 'px');
   }
 };
@@ -1420,7 +1444,7 @@ window.dolical.calendar.changeSearch = function() {
  */
 window.dolical.calendar.keyboard = function(event) {
   // Not while a window is open : the form, a question, the list of the shortcuts
-  if (event.ctrlKey || event.metaKey || event.altKey || $(event.target).is('input, textarea, select, [contenteditable]') || $('.dolical-modal.modal-active').length) {
+  if (!window.dolical.util.keysForCalendar() || event.ctrlKey || event.metaKey || event.altKey || $(event.target).is('input, textarea, select, [contenteditable]') || $('.dolical-modal.modal-active').length) {
     return;
   }
   const map = {ArrowLeft: 'prev', ArrowRight: 'next', t: 'today', T: 'today'};

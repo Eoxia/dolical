@@ -1639,17 +1639,21 @@ function dolical_calendar_views(): array
  * Everything the JavaScript of the calendar, of the card and of the form needs, in one data attribute : no inline
  * script. Used by the calendar page and by the page of one event (view/dolical_event.php)
  *
- * @param  User  $user           Current user
- * @param  array $calendarUsers  People the user may show (dolical_get_calendar_users)
- * @param  array $calendarGroups Their groups (dolical_get_calendar_groups)
+ * @param  User       $user           Current user
+ * @param  array      $calendarUsers  People the user may show (dolical_get_calendar_users)
+ * @param  array      $calendarGroups Their groups (dolical_get_calendar_groups)
+ * @param  array|null $embed          Calendar inside the page of another module (dolical_print_calendar()) : ['height',
+ *                                    'view', 'users'] ; null for the pages of DoliCal
  * @return array
  */
-function dolical_calendar_config(User $user, array $calendarUsers, array $calendarGroups): array
+function dolical_calendar_config(User $user, array $calendarUsers, array $calendarGroups, ?array $embed = null): array
 {
     global $langs;
 
     $defaultView = getDolGlobalString('DOLICAL_DEFAULT_VIEW', 'week');
     $views       = dolical_calendar_views();
+    // The address is the one of the page of another module : its parameters are not for the calendar
+    $fromRequest = $embed === null;
 
     // Everything the JavaScript needs travels in one data attribute : no inline script
     return [
@@ -1672,14 +1676,16 @@ function dolical_calendar_config(User $user, array $calendarUsers, array $calend
         'locale'          => str_replace('_', '-', $langs->defaultlang),
         'users'           => array_values($calendarUsers),
         'groups'          => $calendarGroups,
-        'openEvent'       => GETPOSTINT('event'),
-        'openCreate'      => GETPOST('action', 'aZ09') === 'create',
+        'openEvent'       => $fromRequest ? GETPOSTINT('event') : 0,
+        'openCreate'      => $fromRequest && GETPOST('action', 'aZ09') === 'create',
         'createParams'    => [
-            'socid'      => GETPOSTINT('socid'),
-            'projectid'  => GETPOSTINT('projectid'),
-            'contactids' => GETPOST('contactids', 'intcomma'),
-            'elements'   => GETPOST('elements', 'alphanohtml'),
+            'socid'      => $fromRequest ? GETPOSTINT('socid') : 0,
+            'projectid'  => $fromRequest ? GETPOSTINT('projectid') : 0,
+            'contactids' => $fromRequest ? GETPOST('contactids', 'intcomma') : '',
+            'elements'   => $fromRequest ? GETPOST('elements', 'alphanohtml') : '',
         ],
+        'embedded'        => !$fromRequest,
+        'embed'           => $embed,
         'i18n' => [
             'today'          => $langs->transnoentities('Today'),
             'allDay'         => $langs->transnoentities('DoliCalAllDay'),
@@ -1770,6 +1776,51 @@ function dolical_calendar_config(User $user, array $calendarUsers, array $calend
             'unsavedChanges'       => $langs->transnoentities('DoliCalUnsavedChanges'),
         ],
     ];
+}
+
+/**
+ * The calendar : side bar, toolbar and grid, with the shells of the card and of the form. Printed by the page of
+ * DoliCal, or inside the page of another module in place of a frame : that page loads dolical_calendar_assets() in
+ * llxHeader() first. Nothing is printed for a user who may not read the calendar
+ *
+ * @param  User       $user    Current user
+ * @param  array|null $options Inside the page of another module : ['height' => CSS height, 80vh by default, 'view' =>
+ *                             day|week|team|month|list, 'users' => ids of the people shown]. Null for the page of DoliCal
+ * @return bool                Whether the calendar was printed
+ */
+function dolical_print_calendar(User $user, ?array $options = null): bool
+{
+    global $langs;
+
+    if (!isModEnabled('dolical') || !$user->hasRight('dolical', 'read') || !$user->hasRight('agenda', 'myactions', 'read') || $user->socid > 0) {
+        return false;
+    }
+
+    // The side bar links to the page of the person for the meetings booked online
+    require_once __DIR__ . '/dolical_booking.lib.php';
+    $langs->loadLangs(['dolical@dolical', 'agenda', 'companies']);
+
+    $views = dolical_calendar_views();
+    $embed = null;
+    if ($options !== null) {
+        $height = (string) ($options['height'] ?? '');
+        $view   = (string) ($options['view'] ?? '');
+        $embed  = [
+            // A plain length only : it goes in a style attribute
+            'height' => preg_match('/^\d{1,4}(\.\d{1,2})?(px|vh|dvh|em|rem)$/', $height) ? $height : '80vh',
+            'view'   => isset($views[$view]) ? $view : '',
+            'users'  => array_values(array_filter(array_map('intval', (array) ($options['users'] ?? [])))),
+        ];
+    }
+
+    $calendarUsers  = dolical_get_calendar_users($user);
+    $calendarGroups = dolical_get_calendar_groups($user, $calendarUsers);
+    $eventTypes     = dolical_get_event_types();
+    $calendarConfig = dolical_calendar_config($user, $calendarUsers, $calendarGroups, $embed);
+
+    require __DIR__ . '/../core/tpl/dolical_calendar.tpl.php';
+
+    return true;
 }
 
 /**
