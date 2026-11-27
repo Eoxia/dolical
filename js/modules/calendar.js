@@ -1667,7 +1667,8 @@ window.dolical.calendar.dropLeave = function(event) {
 
 /**
  * An element dropped on a cell : the form of a new event, at the time and for the person of the cell, filled with what
- * the element brings. dolical:drop lets the other modules change it first.
+ * the element brings. dolical:drop lets the other modules change it first, or refuse the drop (preventDefault()) : the
+ * page of the element is then told, as for a form closed.
  *
  * @param   {Event} event Drop
  * @returns {void}
@@ -1710,7 +1711,13 @@ window.dolical.calendar.drop = function(event) {
     params.extra = JSON.stringify(item.extra);
   }
 
-  $(document).trigger('dolical:drop', [params, item]);
+  const dropEvent = $.Event('dolical:drop');
+  $(document).trigger(dropEvent, [params, item]);
+  if (dropEvent.isDefaultPrevented()) {
+    $(document).trigger('dolical:dropcancelled', [0, item]);
+    window.dolical.util.broadcast('dropcancelled', {id: 0, item: item});
+    return;
+  }
   window.dolical.eventform.openDropped(params, item);
 };
 

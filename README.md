@@ -443,7 +443,8 @@ row.addEventListener('dragstart', function(event) {
 - `extra` : les données du module, rendues à son hook `formObjectOptions` (`$parameters['extra']`) pour ses champs.
   Elles viennent du navigateur : le module les vérifie.
 - Avant l'ouverture du formulaire, l'événement jQuery `dolical:drop` (paramètres du formulaire, élément) laisse un
-  module les changer.
+  module les changer, ou refuser le dépôt par `preventDefault()` : pas de formulaire, et la page de l'élément reçoit
+  `dropcancelled` comme pour un formulaire fermé.
 - Une fois le formulaire enregistré ou fermé, la page de l'élément est prévenue par un message du canal
   `BroadcastChannel('dolical')` : `{type: 'dropsaved', id, item}` ou `{type: 'dropcancelled', id: 0, item}`. Le canal le
   livre dans une autre fenêtre comme dans la page du calendrier : l'écouter suffit dans les deux cas. Dans la page du
